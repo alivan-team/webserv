@@ -1,6 +1,6 @@
 # Webserv (CODAM : School42)
 
-HTTP/1.1 web server implementation in C++98.
+HTTP/1.1 web server implementation in C++;
 
 ## Team
 
