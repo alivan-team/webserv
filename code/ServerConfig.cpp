@@ -8,13 +8,30 @@ ServerConfig::ServerConfig() : _port(8080), _server_name("localhost"), _root("./
 
 ServerConfig::~ServerConfig() {};
 
-void ServerConfig::setPort(int port){
+bool check_num(std::string &value) { 
 
-	if (port < 1 || port > 65535) {
+	if (value.empty())
+        return false;
+
+    for (size_t i = 0; i < value.size(); i++) {
+        if (!std::isdigit(static_cast<unsigned char>(value[i])))
+            return false;
+    }
+	return true;
+}
+
+void ServerConfig::setPort(std::string value){
+
+	if (check_num(value))
+		throw std::runtime_error("Incorrect port");
+    
+	int i_value = std::atoi(value.c_str());
+
+	if (i_value < 1 || i_value > 65535) {
 		throw std::runtime_error("Invalid port");
 	}
 
-	_port = port;
+	_port = i_value;
 };
 
 void ServerConfig::setServerName(std::string server_name) {

@@ -56,8 +56,10 @@ void ConfigParser::parse(const std::string& filename)
            
             while (i  < configTokens.size() && configTokens[i] != "}" ) {
                 
-                if (configTokens[i] == "listen") {
-                    server.setPort(std::atoi(configTokens[i + 1].c_str()));
+                try {
+
+                } catch(std::string exeption ) {
+                    throw ;
                 }
             }
 
