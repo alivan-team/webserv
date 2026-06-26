@@ -21,10 +21,7 @@ class LocationConfig {
     public:
         // LocationConfig();
         // ~LocationConfig();
-        // evaluations for Location cofig
-        check_path();
-        setPath();
-        getPath();
+
 
         
 };

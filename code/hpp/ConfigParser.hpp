@@ -11,9 +11,13 @@
 class ConfigParser {
 
 	private:
+		typedef void (ServerConfig::*Setter)(const std::string&);
+
+    	std::map<std::string, Setter> setters;
 	    std::vector<ServerConfig> servers;
 	
 	public:
+		ConfigParser();
 		void parse(const std::string& filename);
 		// const std::vector<ServerConfig>& getServers() const;
 

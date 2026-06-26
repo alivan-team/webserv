@@ -1,5 +1,12 @@
 #include "./hpp/ConfigParser.hpp"
 
+ConfigParser::ConfigParser() {
+    setters["listen"] = &ServerConfig::setPort;
+    setters["server_name"] = &ServerConfig::setServerName;
+    setters["root"] = &ServerConfig::setRoot;
+    setters["index"] = &ServerConfig::setIndex;
+}
+
 std::vector<std::string> tokenize(std::ifstream& file)
 {
     std::vector<std::string> tokens;
@@ -68,35 +75,35 @@ void ConfigParser::parse(const std::string& filename)
     
     }
 
-    bool valid(i) {
-        if (i + 1 valid)
-            true
-        false
-    }
+    // bool valid(i) {
+    //     if (i + 1 valid)
+    //         true
+    //     false
+    // }
 
-    while (configTokens[i] != "}")
-        {
-            if (valid && configTokens[i] == "listen")
-            {
-                server.setPort(configTokens[i + 1]);
+    // while (configTokens[i] != "}")
+    //     {
+    //         if (valid && configTokens[i] == "listen")
+    //         {
+    //             server.setPort(configTokens[i + 1]);
 
-            }
-            else if (configTokens[i] == "server_name")
-            {
-                server.setServerName(configTokens[i + 1]);
-            }
-            else if (configTokens[i] == "root")
-            {
-                server.setRoot(configTokens[i + 1]);
-            }
-            else if (configTokens[i] == "index")
-            {
-                server.setIndex(configTokens[i + 1]);
-            }
-            if (configTokens[i] == "location")
-                // call funcitons for location .
+    //         }
+    //         else if (configTokens[i] == "server_name")
+    //         {
+    //             server.setServerName(configTokens[i + 1]);
+    //         }
+    //         else if (configTokens[i] == "root")
+    //         {
+    //             server.setRoot(configTokens[i + 1]);
+    //         }
+    //         else if (configTokens[i] == "index")
+    //         {
+    //             server.setIndex(configTokens[i + 1]);
+    //         }
+    //         if (configTokens[i] == "location")
+    //             // call funcitons for location .
 
-        }
+    //     }
 
 
 
