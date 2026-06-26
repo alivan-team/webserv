@@ -11,7 +11,7 @@
 class ConfigParser {
 
 	private:
-		using Setter = void (ServerConfig::*)(const std::string&);
+		using Setter = void (ServerConfig::*)(const std::vector<std::string>&);
 
     	std::map<std::string, Setter> setters;
 

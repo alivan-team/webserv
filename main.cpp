@@ -4,6 +4,22 @@
 #include <iostream>
 #include <exception>
 
+void printVector(const std::vector<int>& vec)
+{
+    for (int value : vec)
+        std::cout << value << " ";
+
+    std::cout << "\n";
+}
+
+void printVector(const std::vector<std::string>& vec)
+{
+    for (const auto& value : vec)
+        std::cout << value << " ";
+
+    std::cout << "\n";
+}
+
 int main(int argc, char **argv)
 {
 
@@ -32,11 +48,20 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < servers.size(); ++i)
     {
         std::cout << "Server " << i << "\n";
-        std::cout << "Port: " << servers[i].getPort() << "\n";
-        std::cout << "Server name: " << servers[i].getServerName() << "\n";
-        std::cout << "Root: " << servers[i].getRoot() << "\n";
-        std::cout << "Index: " << servers[i].getIndex() << "\n";
-        std::cout << "-------------------\n";
+
+        std::cout << "Ports: ";
+        printVector(servers[i].getPort());
+
+        std::cout << "Server names: ";
+        printVector(servers[i].getServerName());
+
+        std::cout << "Roots: ";
+        printVector(servers[i].getRoot());
+
+        std::cout << "Indexes: ";
+        printVector(servers[i].getIndex());
+
+        std::cout << "-----------------\n";
     }
 
     // std::cout << "Port: " << config.port << "\n";

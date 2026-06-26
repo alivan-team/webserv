@@ -56,6 +56,7 @@ void ConfigParser::parse(const std::string& filename)
 {
 
     std::ifstream file(filename.c_str());
+    // check currect file
 
     if (!file) {
         throw std::runtime_error("Cannot open config file");
@@ -72,26 +73,34 @@ void ConfigParser::parse(const std::string& filename)
            
             while (i  < configTokens.size() && (configTokens[i] != "location" && configTokens[i] != "error_page")) {
                 
-                if (i + 2 >= configTokens.size())
-                    throw std::runtime_error("Incomplete directive");
-                
                 std::string key = configTokens[i];
-                std::string value = configTokens[i + 1];
-                std::string semi = configTokens[i + 2];
 
-                if (semi != ";")
-                    throw std::runtime_error("Missing ; after " + key);
-                
                 std::map<std::string, Setter>::iterator it = setters.find(key);
+                // std::cout << "key -> " << key << "  <>  setters.find(key) -> " << it->first << std::endl;
 
                 if (it == setters.end())
-                    throw std::runtime_error("Unknown directive: " + key);
+                    break ;
 
+                i++;
+
+                std::vector<std::string> values;     
+
+                while (configTokens[i] != ";") {
+                    values.push_back(configTokens[i]);
+                    ++i;
+                }
+
+                if (i >= configTokens.size())
+                    throw std::runtime_error("Missing ; after " + key);
+
+                if (values.empty())
+                    throw std::runtime_error("Missing value after " + key);
+                    
+                    
                 Setter fun = it->second; // just Setter in ConfigParser is an alias to = void (ServerConfig::*)(const std::string&)
-                (server.*fun)(value); // = we can call directly (server.*(it->second))(value);
-
-                i += 3;
-                
+                (server.*fun)(values); // = we can call directly (server.*(it->second))(value);
+                i++;
+                    
             }
 
             // while (i  < configTokens.size() && configTokens[i] == "error_page" ) {
@@ -102,20 +111,54 @@ void ConfigParser::parse(const std::string& filename)
 
             // }
 
+            // check if the current token has "}" 
             servers.push_back(server);
         }
     
     }
 
-    // std::map<std::string, DirectiveParser>::iterator it =
-    //     directiveMap.find(tokens[i]);
+    // bool valid(i) {
+    //     if (i + 1 valid)
+    //         true
+    //     false
+    // }
 
-    // if (it == directiveMap.end())
-    //     throw std::runtime_error("Unknown directive");
+    // while (configTokens[i] != "}")
+    //     {
+    //         if (valid && configTokens[i] == "listen")
+    //         {
+    //             server.setPort(configTokens[i + 1]);
 
-    // (this->*(it->second))(server, i);
+    //         }
+    //         else if (configTokens[i] == "server_name")
+    //         {
+    //             server.setServerName(configTokens[i + 1]);
+    //         }
+    //         else if (configTokens[i] == "root")
+    //         {
+    //             server.setRoot(configTokens[i + 1]);
+    //         }
+    //         else if (configTokens[i] == "index")
+    //         {
+    //             server.setIndex(configTokens[i + 1]);
+    //         }
+    //         if (configTokens[i] == "location")
+    //             // call funcitons for location .
 
-    // check if all the values are there.
+    //     }
+
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	// ServerConfig server;
+
+    // read file
+    // fill ServerConfig
+
+	// put the parsed object in the vector.
+
+    // return config;
 }
 
 // const std::vector<ServerConfig>& ConfigParser::getServers() const {
