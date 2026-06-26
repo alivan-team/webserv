@@ -6,6 +6,8 @@
 #include <exception>
 #include <string>
 #include <map>
+#include <stdexcept>
+#include <cctype>
 
 class ErrorPages {
 

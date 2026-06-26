@@ -10,7 +10,12 @@ ServerConfig::~ServerConfig() {};
 
 void ServerConfig::setPort(int port){
 
-	if (port < 1 || port > 65535) {
+	if (!check_num(value))
+		throw std::runtime_error("Incorrect port");
+    
+	int i_value = std::atoi(value.c_str());
+
+	if (i_value < 1 || i_value > 65535) {
 		throw std::runtime_error("Invalid port");
 	}
 

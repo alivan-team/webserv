@@ -11,11 +11,15 @@
 class ConfigParser {
 
 	private:
+		using Setter = void (ServerConfig::*)(const std::string&);
+
+    	std::map<std::string, Setter> setters;
+
 	    std::vector<ServerConfig> servers;
 	
 	public:
 		void parse(const std::string& filename);
-		// const std::vector<ServerConfig>& getServers() const;
+		const std::vector<ServerConfig>& getServers() const;
 
 };
 
