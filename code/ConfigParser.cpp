@@ -1,4 +1,5 @@
 #include "./hpp/ConfigParser.hpp"
+#include "./hpp/ServerConfig.hpp"
 
 ConfigParser::ConfigParser() {
     setters["listen"] = &ServerConfig::setPort;

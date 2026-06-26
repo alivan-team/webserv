@@ -41,10 +41,10 @@ class ServerConfig {
         ServerConfig();
         ~ServerConfig();
 
-        void setPort(std::string port);
-        void setServerName(std::string server_name);
-        void setRoot(std::string root);
-        void setIndex(std::string index_name);
+        void setPort(const std::string& port);
+        void setServerName(const std::string& server_name);
+        void setRoot(const std::string& root);
+        void setIndex(const std::string& index_name);
 
         int getPort() const;
         const std::string& getServerName() const;

@@ -8,7 +8,7 @@ ServerConfig::ServerConfig() : _port(8080), _server_name("localhost"), _root("./
 
 ServerConfig::~ServerConfig() {};
 
-bool check_num(std::string &value) { 
+bool check_num(const std::string& value) { 
 
 	if (value.empty())
         return false;
@@ -20,7 +20,7 @@ bool check_num(std::string &value) {
 	return true;
 }
 
-void ServerConfig::setPort(std::string value){
+void ServerConfig::setPort(const std::string& value){
 
 	if (check_num(value))
 		throw std::runtime_error("Incorrect port");
@@ -34,7 +34,7 @@ void ServerConfig::setPort(std::string value){
 	_port = i_value;
 };
 
-void ServerConfig::setServerName(std::string server_name) {
+void ServerConfig::setServerName(const std::string& server_name) {
 
 	if (server_name.empty())
         throw std::runtime_error("Invalid server name");
@@ -50,7 +50,7 @@ void ServerConfig::setServerName(std::string server_name) {
 	_server_name = server_name;
 };
 
-void ServerConfig::setRoot(std::string root) {
+void ServerConfig::setRoot(const std::string& root) {
 
 	if (root.empty())
     	throw std::runtime_error("Invalid root");
@@ -64,7 +64,7 @@ void ServerConfig::setRoot(std::string root) {
 	_root = root;
 };
 
-void ServerConfig::setIndex(std::string index_name) {
+void ServerConfig::setIndex(const std::string& index_name) {
 
 	if (index_name.empty())
     	throw std::runtime_error("Invalid index name");

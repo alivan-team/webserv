@@ -14,6 +14,7 @@ class ConfigParser {
 		typedef void (ServerConfig::*Setter)(const std::string&);
 
     	std::map<std::string, Setter> setters;
+		
 	    std::vector<ServerConfig> servers;
 	
 	public:
