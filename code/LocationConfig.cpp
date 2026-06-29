@@ -76,7 +76,11 @@ void LocationConfig::setCgiPath(const std::vector<std::string>& cgipath){
 };
 
 void LocationConfig::setRedirect(const std::vector<std::string>& redirpath){
+	if (redirpath.size() != 2)
+		throw std::runtime_error("Incorrect argument number for Redirection");
 
+	if (check_num)
+	_redir._number =redirpath[0];
 };
 
 std::string LocationConfig::getUriPath()

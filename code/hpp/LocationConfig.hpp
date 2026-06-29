@@ -6,6 +6,7 @@
 #include <exception>
 #include <string>
 #include <map>
+#include "./hpp/client.hpp"
 
 struct Method{
 	bool get;
@@ -13,12 +14,23 @@ struct Method{
 	bool del;
 };
 
+struct Redirection{
+	int	_number; // status - error
+	std::string _redirPath; // - redirect for this error
+};
 class LocationConfig {
 
     private:
         std::string _uriPath;                  // "/upload" -> CGI
-        Method methods;  // GET POST DELETE
-        std::string upload_store;
+        Method _methods;  // GET POST DELETE
+        std::string _upload_store;
+		bool _autoIndex;
+		std::string _rootPath;
+		std::vector<std::string> _indpaths;
+		std::vector<std::string> _cgi_extensions;
+		std::vector<std::string> _cgi_paths;
+		Redirection _redir;
+
 		// evaluations for Location config
 		bool checkUriPath(const std::string &uripath);
 		bool checkFSPath(const std::string &fspath);
