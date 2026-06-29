@@ -7,25 +7,27 @@
 #include <string>
 #include <map>
 
-class ErrorPages {
-
+struct Method{
+	bool get;
+	bool post;
+	bool del;
 };
 
 class LocationConfig {
 
     private:
-        std::string path;                  // "/upload" -> CGI
-        std::vector<std::string> methods;  // GET POST DELETE
+        std::string _uriPath;                  // "/upload" -> CGI
+        Method methods;  // GET POST DELETE
         std::string upload_store;
 
     public:
         LocationConfig();
         ~LocationConfig();
-		
+
         // evaluations for Location cofig
-        bool checkPath(std::string path);
-        bool setPath(std::string path);
-        bool getPath(std::string path);
+        bool checkUriPath(std::string uripath);
+        bool setUriPath(std::string uripath);
+        bool getUriPath(std::string uripath);
 
         
 };
