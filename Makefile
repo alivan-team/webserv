@@ -1,7 +1,7 @@
 NAME		:= webserv
 
 CXX			:= c++
-CXXFLAGS	:= -Wall -Wextra -Werror -std=c++17
+CXXFLAGS	:= -Wall -Wextra -Werror -std=c++17 -g
 CPPFLAGS	:= -Icode/hpp
 
 OBJ_DIR		:= build
