@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Build directories
+build/
+obj/
+
+# Compiled object and dependency files
+*.o
+*.obj
+*.d
+
+# Compiled binaries
+webserv
+*.out
+*.exe
+
+# Debug and coverage artifacts
+*.dSYM/
+*.gcda
+*.gcno
+*.gcov
