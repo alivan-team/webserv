@@ -13,6 +13,7 @@ obj/
 
 # Compiled binaries
 webserv
+./webserv
 *.out
 *.exe
 
