@@ -1,33 +1,41 @@
 #include "./hpp/LocationConfig.hpp"
 
-class LocationConfig {
+#include <cctype>
 
-    private:
-        std::string _uriPath;                  // "/upload" -> CGI
-        Method methods;  // GET POST DELETE
-        std::string upload_store;
+LocationConfig::LocationConfig()
+    : _uriPath(), methods(), upload_store()
+{
+    methods.get = false;
+    methods.post = false;
+    methods.del = false;
+}
 
-	public:
-        LocationConfig::LocationConfig(){
+LocationConfig::~LocationConfig()
+{
+}
 
-		};
+bool LocationConfig::checkUriPath(std::string uripath)
+{
+    if (uripath.empty() || uripath[0] != '/')
+        return false;
 
-        LocationConfig::~LocationConfig(){
+    for (std::string::size_type i = 0; i < uripath.size(); ++i) {
+        unsigned char ch = static_cast<unsigned char>(uripath[i]);
+        if (std::isspace(ch) || std::iscntrl(ch))
+            return false;
+    }
+    return true;
+}
 
-		};
+bool LocationConfig::setUriPath(std::string uripath)
+{
+    if (!checkUriPath(uripath))
+        return false;
+    _uriPath = uripath;
+    return true;
+}
 
-		// evaluations for Location cofig
-		bool LocationConfig::checkUriPath(std::string uripath){
-
-		};
-
-        bool LocationConfig::setUriPath(std::string uripath){
-
-		};
-
-        bool LocationConfig::getUriPath(std::string uripath){
-			
-		};
-
-        
-};
+bool LocationConfig::getUriPath(std::string uripath)
+{
+    return _uriPath == uripath;
+}

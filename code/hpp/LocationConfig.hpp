@@ -29,7 +29,6 @@ class LocationConfig {
         bool setUriPath(std::string uripath);
         bool getUriPath(std::string uripath);
 
-        
 };
 
 #endif
