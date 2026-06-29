@@ -8,23 +8,7 @@
 #include <map>
 #include <stdexcept>
 #include <cctype>
-
-class ErrorPages {
-
-};
-
-class LocationConfig {
-
-    private:
-        std::string path;                  // "/upload" -> CGI
-        std::vector<std::string> methods;  // GET POST DELETE
-        std::string upload_store;
-
-    public:
-        // LocationConfig();
-        // ~LocationConfig();
-        
-};
+#include "LocationConfig.hpp"
 
 class ServerConfig {
 
