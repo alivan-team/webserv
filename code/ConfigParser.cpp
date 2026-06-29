@@ -1,11 +1,21 @@
 #include "./hpp/ConfigParser.hpp"
 #include "./hpp/ServerConfig.hpp"
+#include "./hpp/LocationConfig.hpp"
 
 ConfigParser::ConfigParser() {
     setters["listen"] = &ServerConfig::setPort;
     setters["server_name"] = &ServerConfig::setServerName;
     setters["root"] = &ServerConfig::setRoot;
     setters["index"] = &ServerConfig::setIndex;
+
+	locationSetters["allow_methods"] = &LocationConfig::setAllowMethods;
+	locationSetters["upload_store"] = &LocationConfig::setUploadStore;
+	locationSetters["autoindex"] = &LocationConfig::setAutoIndex;
+	locationSetters["root"] = &LocationConfig::setRoot;
+	locationSetters["index"] = &LocationConfig::setIndex;
+	locationSetters["cgi_extension"] = &LocationConfig::setCgiExtension;
+	locationSetters["cgi_path"] = &LocationConfig::setCgiPath;
+	locationSetters["return"] = &LocationConfig::setRedirect;
 }
 
 const std::vector<ServerConfig>& ConfigParser::getServers() const {
@@ -102,12 +112,51 @@ void ConfigParser::parse(const std::string& filename)
                 i++;
                     
             }
+			
+			while (i  < configTokens.size() && configTokens[i] == "location" ) {
+				
+				i++;
+				std::string uripath = configTokens[i];
+				LocationConfig location;
 
+				if (i + 2  >= configTokens.size() || configTokens[i + 1] != "{"){
+					throw std::runtime_error("Missing location sectin");
+				}
+
+				i++;
+				while (i  < configTokens.size() && configTokens[i] != "}"){
+
+					std::string key = configTokens[i];
+
+					std::map<std::string, LocationSetter>::iterator it = locationSetters.find(key);
+
+					if (it == locationSetters.end())
+						break ;
+
+					i++;
+
+					std::vector<std::string> values;     
+
+					while (i  < configTokens.size() && configTokens[i] != ";") {
+						values.push_back(configTokens[i]);
+						++i;
+					}
+					if (i >= configTokens.size())
+						throw std::runtime_error("Missing ; after " + key);
+
+					if (values.empty())
+						throw std::runtime_error("Missing value after " + key);
+
+					LocationSetter fun = it->second; // just Setter in ConfigParser is an alias to = void (ServerConfig::*)(const std::string&)
+					(location.*fun)(values); // = we can call directly (server.*(it->second))(value);
+					i++;
+				}
+				location.setUriPath(uripath);
+				server.addLocation(location);
+				i++;
+			}
+			
             // while (i  < configTokens.size() && configTokens[i] == "error_page" ) {
-
-            // }
-            
-            // while (i  < configTokens.size() && configTokens[i] == "location" ) {
 
             // }
 

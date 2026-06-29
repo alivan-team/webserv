@@ -109,6 +109,8 @@ void ServerConfig::setIndex(const std::vector<std::string>& index_name) {
 
 };
 
+
+
 const std::vector<int>& ServerConfig::getPort() const { return _port; };
 
 const std::vector<std::string>& ServerConfig::getServerName() const { return _server_name; };
@@ -116,3 +118,11 @@ const std::vector<std::string>& ServerConfig::getServerName() const { return _se
 const std::vector<std::string>& ServerConfig::getRoot() const { return _root; };
 
 const std::vector<std::string>& ServerConfig::getIndex() const { return _index; };
+
+
+// Added by Alina for Location block
+void ServerConfig::addLocation(const LocationConfig &locations) {
+		
+	_locations.push_back(locations);
+
+};
