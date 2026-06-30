@@ -114,5 +114,4 @@ const std::vector<std::string>& ServerConfig::getIndex() const { return _index; 
 void ServerConfig::addLocation(const LocationConfig &locations) {
 		
 	_locations.push_back(locations);
-
 };
