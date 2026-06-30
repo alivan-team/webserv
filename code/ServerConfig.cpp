@@ -39,9 +39,9 @@ static bool validServerName(const std::string& name)
 
 void ServerConfig::setPort(const std::vector<std::string>& port){
 
-	_port.pop_back();
+	// _port.pop_back();
 	// std::cout << "Setport -> " << port.size() << "post var --> " << port[0] << port[1] << std::endl;
-	if (port.size() == 1 && !check_num(port[0]))
+	if (port.size() != 1 || !check_num(port[0]))
 		throw std::runtime_error("Incorrect port");
     
 	int i_port = std::atoi(port[0].c_str());
@@ -63,12 +63,12 @@ void ServerConfig::setServerName(const std::vector<std::string>& server_name) {
             throw std::runtime_error("Invalid server name");
     }
 
-    _server_name = server_name;
+    _server_name.insert(_server_name.end(), server_name.begin(), server_name.end());
 };
 
 void ServerConfig::setRoot(const std::vector<std::string>& root) {
 
-	if (root.empty())
+	if (root.empty() || root.size() != 1)
     	throw std::runtime_error("Invalid root");
 
 	for (const std::string& r : root) {
@@ -80,7 +80,7 @@ void ServerConfig::setRoot(const std::vector<std::string>& root) {
 			throw std::runtime_error("Invalid root");
 		}
 	}
-	_root = root;
+	_root.insert(_root.end(), root.begin(), root.end());
 
 };
 
@@ -95,7 +95,7 @@ void ServerConfig::setIndex(const std::vector<std::string>& index_name) {
 			throw std::runtime_error("Invalid index name");
 	}
 		
-	_index = index_name;
+	_index.insert(_index.end(), index_name.begin(), index_name.end());
 
 };
 
@@ -114,5 +114,4 @@ const std::vector<std::string>& ServerConfig::getIndex() const { return _index; 
 void ServerConfig::addLocation(const LocationConfig &locations) {
 		
 	_locations.push_back(locations);
-
 };
