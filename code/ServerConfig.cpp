@@ -102,6 +102,7 @@ void ServerConfig::setIndex(const std::vector<std::string>& index_name) {
 void ServerConfig::setClientMaxBodySize(const std::vector<std::string>& client_max_body_size) {
 
 	// char *end;
+	errno = 0;
 
 	if (client_max_body_size.size() != 1)
 		throw std::runtime_error("client_max_body_size expects exactly one value");
@@ -112,7 +113,7 @@ void ServerConfig::setClientMaxBodySize(const std::vector<std::string>& client_m
 
 	unsigned long long int value = std::strtoull(client_max_body_size[0].c_str(), NULL, 10);
 
-	if (value > UINT_MAX)
+	if (errno == ERANGE || value > UINT_MAX)
 		throw std::runtime_error("Invalid client_max_body_size number");
 
 	_client_max_body_size.push_back(static_cast<unsigned>(value));
