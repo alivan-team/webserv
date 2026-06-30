@@ -12,12 +12,29 @@ void printVector(const std::vector<int>& vec)
     std::cout << "\n";
 }
 
+void printVector(const std::vector<unsigned int>& vec)
+{
+    for (int value : vec)
+        std::cout << value << " ";
+
+    std::cout << "\n";
+}
+
 void printVector(const std::vector<std::string>& vec)
 {
     for (const auto& value : vec)
         std::cout << value << " ";
 
     std::cout << "\n";
+}
+
+void printVector(const std::map<int, std::string>& vec)
+{
+    for (const auto& value : vec) {
+        std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
+        std::cout << "\n";
+    }
+
 }
 
 int main(int argc, char **argv)
@@ -43,6 +60,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // here 
+
     const std::vector<ServerConfig>& servers = config.getServers();
 
     for (size_t i = 0; i < servers.size(); ++i)
@@ -60,6 +79,15 @@ int main(int argc, char **argv)
 
         std::cout << "Indexes: ";
         printVector(servers[i].getIndex());
+
+        std::cout << "Client max body size: ";
+        printVector(servers[i].getClientMaxBodySize());
+
+        std::cout << "Error page: ";
+        printVector(servers[i].getErrorPage());
+
+        std::cout << "Location: ";
+        // printVector(servers[i].getLocation());
 
         std::cout << "-----------------\n";
     }

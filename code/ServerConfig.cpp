@@ -5,7 +5,7 @@
 
 //  SERVER CONFIG 
 
-ServerConfig::ServerConfig() : _port({8080}), _server_name({"localhost"}), _root({"./www"}), _index({"index.html"}) {};
+ServerConfig::ServerConfig() : _port({8080}), _server_name({"localhost"}), _root({"./www"}), _index({"index.html"}), _client_max_body_size({1000000}) {};
 
 ServerConfig::~ServerConfig() {};
 
@@ -99,6 +99,50 @@ void ServerConfig::setIndex(const std::vector<std::string>& index_name) {
 
 };
 
+void ServerConfig::setClientMaxBodySize(const std::vector<std::string>& client_max_body_size) {
+
+	// char *end;
+	errno = 0;
+
+	if (client_max_body_size.size() != 1)
+		throw std::runtime_error("client_max_body_size expects exactly one value");
+	
+	if (!check_num(client_max_body_size[0])) {
+		throw std::runtime_error("Invalid client_max_body_size");
+	}
+
+	unsigned long long int value = std::strtoull(client_max_body_size[0].c_str(), NULL, 10);
+
+	if (errno == ERANGE || value > UINT_MAX)
+		throw std::runtime_error("Invalid client_max_body_size number");
+
+	_client_max_body_size.push_back(static_cast<unsigned>(value));
+};
+
+void ServerConfig::setErrorPage(const std::vector<std::string>& error_page) {
+
+	if (error_page.size() < 2)
+		throw std::runtime_error("error_page expects code(s) and path");
+
+		std::string path = error_page.back();
+		std::cout << "path -> " << path << std::endl;
+
+		for (size_t i = 0; i + 1 < error_page.size(); i++)
+		{
+			if (!check_num(error_page[i]))
+				throw std::runtime_error("Invalid error_page code");
+
+			int code = std::atoi(error_page[i].c_str());
+
+			if (code < 300 || code > 599)
+				throw std::runtime_error("Invalid error_page code");
+
+			_error_pages[code] = path;
+		}
+
+};
+
+
 
 
 const std::vector<int>& ServerConfig::getPort() const { return _port; };
@@ -108,6 +152,11 @@ const std::vector<std::string>& ServerConfig::getServerName() const { return _se
 const std::vector<std::string>& ServerConfig::getRoot() const { return _root; };
 
 const std::vector<std::string>& ServerConfig::getIndex() const { return _index; };
+
+const std::vector<unsigned int>& ServerConfig::getClientMaxBodySize() const { return _client_max_body_size; };
+
+const std::map<int, std::string>& ServerConfig::getErrorPage() const { return _error_pages; };
+
 
 
 // Added by Alina for Location block
