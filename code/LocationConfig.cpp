@@ -1,8 +1,6 @@
 #include "./hpp/LocationConfig.hpp"
 #include "./hpp/client.hpp"
 
-#include <cctype>
-
 LocationConfig::LocationConfig()
     : _uriPath(), _methods(), _upload_store()
 {
@@ -15,31 +13,7 @@ LocationConfig::~LocationConfig()
 {
 }
 
-bool LocationConfig::checkUriPath(const std::string& uripath)
-{
-    if (uripath.empty() || uripath[0] != '/')
-        return false;
 
-    for (std::string::size_type i = 0; i < uripath.size(); ++i) {
-        unsigned char ch = static_cast<unsigned char>(uripath[i]);
-        if (std::isspace(ch) || std::iscntrl(ch))
-            return false;
-    }
-    return true;
-}
-
-bool LocationConfig::checkFSPath(const std::string &fspath)
-{
-    if (fspath.empty())
-        return false;
-
-    for (std::string::size_type i = 0; i < fspath.size(); ++i) {
-        unsigned char ch = static_cast<unsigned char>(fspath[i]);
-        if (std::isspace(ch) || std::iscntrl(ch))
-            return false;
-    }
-    return true;
-}
 
 void LocationConfig::setUriPath(std::string uripath)
 {
@@ -48,25 +22,53 @@ void LocationConfig::setUriPath(std::string uripath)
     _uriPath = uripath;
 }
 
-// void LocationConfig::setAllowMethods(const std::vector<std::string>& methods){
+void LocationConfig::setAllowMethods(const std::vector<std::string>& methods){
 
-// };
+	if (methods.size() == 0)
+		throw std::runtime_error("Incorrect Allow methods in configuration file");
+	
+	for (size_t i = 0; i < methods.size(); ++i)
+	{
+	    if (methods[i] == "GET")
+	        _methods.get = true;
+	    else if (methods[i] == "POST")
+	        _methods.post = true;
+	    else if (methods[i] == "DELETE")
+	        _methods.del = true;
+	    else
+	        throw std::runtime_error("Unknown Allow methods in configuration file");
+}
 
-// void LocationConfig::setUploadStore(const std::vector<std::string>& fspath){
+};
 
-// };
 
-// void LocationConfig::setAutoIndex(const std::vector<std::string>& indexes){
+void LocationConfig::setUploadStore(const std::vector<std::string>& fspath){
+	
+	if (fspath.size() != 1 || checkFSPath(fspath[0]))
+		throw std::runtime_error("Incorrect Upload store in configuration file");
+		
+	_upload_store = fspath[0];
+};
 
-// };
+void LocationConfig::setAutoIndex(const std::vector<std::string>& indexes){
 
-// void LocationConfig::setRoot(const std::vector<std::string>& fspath){
+	if (indexes.size() != 1 || checkFSPath(indexes[0]))
+		throw std::runtime_error("Incorrect AutoIndex in configuration file");
+		
+	_autoIndex = indexes[0] == "on";
+};
 
-// };
+void LocationConfig::setRoot(const std::vector<std::string>& fspath){
 
-// void LocationConfig::setIndex(const std::vector<std::string>& indpaths){
+		if (fspath.size() != 1 || checkFSPath(fspath[0]))
+		throw std::runtime_error("Incorrect root in location");
+		
+	_rootPath = fspath[0];
+};
 
-// };
+void LocationConfig::setIndex(const std::vector<std::string>& indpaths){
+
+};
 
 // void LocationConfig::setCgiExtension(const std::vector<std::string>& cgiexs){
 

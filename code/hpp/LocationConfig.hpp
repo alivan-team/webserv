@@ -6,6 +6,8 @@
 #include <exception>
 #include <string>
 #include <map>
+#include <cctype>
+#include <algorithm>
 
 struct Method{
 	bool get;
@@ -14,7 +16,7 @@ struct Method{
 };
 
 struct Redirection{
-	int	_number; // status - error
+	int	_number; // status 
 	std::string _redirPath; // - redirect for this error
 };
 class LocationConfig {
@@ -25,6 +27,7 @@ class LocationConfig {
         std::string _upload_store;
 		// bool _autoIndex;
 		std::string _rootPath;
+		bool _autoIndex;
 		std::vector<std::string> _indpaths;
 		std::vector<std::string> _cgi_extensions;
 		std::vector<std::string> _cgi_paths;
@@ -40,11 +43,11 @@ class LocationConfig {
 
 		// settings Location parameters
         void setUriPath(std::string uripath);
-		// void setAllowMethods(const std::vector<std::string>& methods);
-		// void setUploadStore(const std::vector<std::string>& fspath);
-		// void setAutoIndex(const std::vector<std::string>& indexes); // Index from Location can override Index from server
-		// void setRoot(const std::vector<std::string>& fspath);
-		// void setIndex(const std::vector<std::string>& indpaths);
+		void setAllowMethods(const std::vector<std::string>& methods);
+		void setUploadStore(const std::vector<std::string>& fspath);
+		void setAutoIndex(const std::vector<std::string>& indexes); // Index from Location can override Index from server
+		void setRoot(const std::vector<std::string>& fspath);
+		void setIndex(const std::vector<std::string>& indpaths);
 		// void setCgiExtension(const std::vector<std::string>& cgiexs);
 		// void setCgiPath(const std::vector<std::string>& cgipath);
 		void setRedirect(const std::vector<std::string>& redirpath);
