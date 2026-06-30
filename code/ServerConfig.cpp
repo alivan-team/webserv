@@ -99,6 +99,18 @@ void ServerConfig::setIndex(const std::vector<std::string>& index_name) {
 
 };
 
+void ServerConfig::setClientMaxBodySize(const std::vector<std::string>& client_max_body_size) {
+
+	if (client_max_body_size.size() != 1)
+		throw std::runtime_error("client_max_body_size expects exactly one value");
+	
+	if (!check_num(client_max_body_size[0]) && std::atoi(client_max_body_size[0].c_str()) > 0) {
+		throw std::runtime_error("Invalid client_max_body_size");
+	}
+
+	_client_max_body_size.push_back(std::atoi(client_max_body_size[0].c_str()));
+};
+
 
 
 const std::vector<int>& ServerConfig::getPort() const { return _port; };
@@ -108,6 +120,9 @@ const std::vector<std::string>& ServerConfig::getServerName() const { return _se
 const std::vector<std::string>& ServerConfig::getRoot() const { return _root; };
 
 const std::vector<std::string>& ServerConfig::getIndex() const { return _index; };
+
+const std::vector<unsigned int>& ServerConfig::getClientMaxBodySize() const { return _client_max_body_size; };
+
 
 
 // Added by Alina for Location block

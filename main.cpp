@@ -12,6 +12,14 @@ void printVector(const std::vector<int>& vec)
     std::cout << "\n";
 }
 
+void printVector(const std::vector<unsigned int>& vec)
+{
+    for (int value : vec)
+        std::cout << value << " ";
+
+    std::cout << "\n";
+}
+
 void printVector(const std::vector<std::string>& vec)
 {
     for (const auto& value : vec)
@@ -60,6 +68,9 @@ int main(int argc, char **argv)
 
         std::cout << "Indexes: ";
         printVector(servers[i].getIndex());
+
+        std::cout << "Client max body size: ";
+        printVector(servers[i].getClientMaxBodySize());
 
         std::cout << "-----------------\n";
     }
