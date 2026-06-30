@@ -40,7 +40,7 @@ class ServerConfig {
         const std::map<int, std::string>& getErrorPage() const;
 
 
-        bool parsePort(const std::string& port);
+        // bool parsePort(const std::string& port);
 
 		void addLocation(const LocationConfig &locations);
 

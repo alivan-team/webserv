@@ -25,7 +25,6 @@ const std::vector<ServerConfig>& ConfigParser::getServers() const {
     return servers;
 };
 
-
 std::vector<std::string> tokenize(std::ifstream& file)
 {
     std::vector<std::string> tokens;
@@ -83,7 +82,6 @@ void ConfigParser::parse(const std::string& filename)
     // MAP -> asdad array [1,1] =  ([]"listen", *setPort], ["server_name", *setServerName])
     // for (auto t : configTokens) {
     //     std::cout << "configTokens[i] -> " << t << std::endl;
-
     // }
 
     for (size_t i = 0; i < configTokens.size(); i++) {
@@ -95,11 +93,10 @@ void ConfigParser::parse(const std::string& filename)
             // std::cout << "configTokens[i] " << configTokens[i] << std::endl;
             while (i < configTokens.size() && configTokens[i] != "}") {
 
-                if (configTokens[i] == "location") {
-                    std::cout << "location -> HI " << std::endl;
 
-                    // while (i  < configTokens.size() && configTokens[i] == "location" ) {
-                    
+                if (configTokens[i] == "location") {
+                    // std::cout << "location -> HI " << std::endl;
+
                     i++;
                     std::string uripath = configTokens[i];
                     LocationConfig location;
@@ -110,73 +107,13 @@ void ConfigParser::parse(const std::string& filename)
 
                     i++;
                     while (i  < configTokens.size() && configTokens[i] != "}"){
-
-                        std::string key = configTokens[i];
-
-                        std::map<std::string, LocationSetter>::iterator it = locationSetters.find(key);
-
-                        if (it == locationSetters.end()) {
-                            // throw std::runtime_error("Unknown server directive: " + key);
-                            break ;
-                        }
-
-                        i++;
-
-                        std::vector<std::string> values;     
-
-                        while (i  < configTokens.size() && configTokens[i] != ";") {
-                            values.push_back(configTokens[i]);
-                            ++i;
-                        }
-                        if (i >= configTokens.size())
-                            throw std::runtime_error("Missing ; after " + key);
-
-                        if (values.empty())
-                            throw std::runtime_error("Missing value after " + key);
-
-                        LocationSetter fun = it->second; // just Setter in ConfigParser is an alias to = void (ServerConfig::*)(const std::string&)
-                        (location.*fun)(values); // = we can call directly (server.*(it->second))(value);
-                        i++;
+                        findKey(location, locationSetters, configTokens, i);
                     }
                     location.setUriPath(uripath);
                     server.addLocation(location);
                     i++;
-                    // }
                 } else { // process server information and error_pages
-                    // std::cout << "Hi rest " << std::endl;
-    
-                    std::string key = configTokens[i];
-    
-                    std::map<std::string, Setter>::iterator it = setters.find(key);
-                    // std::cout << "key -> " << key << "  <>  setters.find(key) -> " << it->first << std::endl;
-
-                    if (it == setters.end()) {
-                        // throw std::runtime_error("Unknown server directive123: " + key);
-                        break;
-                    }
-
-                    i++;
-
-                    std::vector<std::string> values;     
-
-                    while (configTokens[i] != ";") {
-                        values.push_back(configTokens[i]);
-                        ++i;
-                    }
-
-                    if (i >= configTokens.size())
-                        throw std::runtime_error("Missing ; after " + key);
-
-                    if (values.empty())
-                        throw std::runtime_error("Missing value after " + key);
-                        
-                        
-                    Setter fun = it->second; // just Setter in ConfigParser is an alias to = void (ServerConfig::*)(const std::string&)
-                    (server.*fun)(values); // = we can call directly (server.*(it->second))(value);
-                    i++;
-                    // }
-                    
-                    
+                    findKey(server, setters, configTokens, i);
                 }
 
             }
