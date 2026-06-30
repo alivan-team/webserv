@@ -32,6 +32,11 @@ std::vector<std::string> tokenize(std::ifstream& file)
 
     while (file.get(c))
     {
+        if (c == '#')
+        {
+            while (file.get(c) && c != '\n' && c != '\r') {};
+            continue;
+        }
         if (std::isspace(static_cast<unsigned char>(c)))
         {
             if (!current.empty())
@@ -74,6 +79,7 @@ void ConfigParser::parse(const std::string& filename)
 	std::vector<std::string> configTokens = tokenize(file);
     //check the brakets
     // MAP -> asdad array [1,1] =  ([]"listen", *setPort], ["server_name", *setServerName])
+
     for (size_t i = 0; i < configTokens.size(); i++) {
 
         if (configTokens[i] == "server" && i + 1 < configTokens.size() && configTokens[i + 1] == "{") {
@@ -112,6 +118,7 @@ void ConfigParser::parse(const std::string& filename)
                 i++;
                     
             }
+
 			
 			while (i  < configTokens.size() && configTokens[i] == "location" ) {
 				
