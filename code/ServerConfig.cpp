@@ -125,7 +125,6 @@ void ServerConfig::setErrorPage(const std::vector<std::string>& error_page) {
 		throw std::runtime_error("error_page expects code(s) and path");
 
 		std::string path = error_page.back();
-		std::cout << "path -> " << path << std::endl;
 
 		for (size_t i = 0; i + 1 < error_page.size(); i++)
 		{
