@@ -87,7 +87,7 @@ int main(int argc, char **argv)
         printVector(servers[i].getErrorPage());
 
         std::cout << "Location: ";
-        printVector(servers[i].getLocation());
+        // printVector(servers[i].getLocation());
 
         std::cout << "-----------------\n";
     }
