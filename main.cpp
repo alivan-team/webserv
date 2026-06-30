@@ -28,6 +28,15 @@ void printVector(const std::vector<std::string>& vec)
     std::cout << "\n";
 }
 
+void printVector(const std::map<int, std::string>& vec)
+{
+    for (const auto& value : vec) {
+        std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
+        std::cout << "\n";
+    }
+
+}
+
 int main(int argc, char **argv)
 {
 
@@ -71,6 +80,9 @@ int main(int argc, char **argv)
 
         std::cout << "Client max body size: ";
         printVector(servers[i].getClientMaxBodySize());
+
+        std::cout << "Error page: ";
+        printVector(servers[i].getErrorPage());
 
         std::cout << "-----------------\n";
     }
