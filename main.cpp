@@ -60,6 +60,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // here 
+
     const std::vector<ServerConfig>& servers = config.getServers();
 
     for (size_t i = 0; i < servers.size(); ++i)
@@ -83,6 +85,9 @@ int main(int argc, char **argv)
 
         std::cout << "Error page: ";
         printVector(servers[i].getErrorPage());
+
+        std::cout << "Location: ";
+        printVector(servers[i].getLocation());
 
         std::cout << "-----------------\n";
     }
