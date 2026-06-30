@@ -95,7 +95,6 @@ void ConfigParser::parse(const std::string& filename)
             // std::cout << "configTokens[i] " << configTokens[i] << std::endl;
             while (i < configTokens.size() && configTokens[i] != "}") {
 
-
                 if (configTokens[i] == "location") {
                     std::cout << "location -> HI " << std::endl;
 
