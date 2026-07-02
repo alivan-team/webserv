@@ -66,6 +66,8 @@ int main(int argc, char **argv)
 
     for (size_t i = 0; i < servers.size(); ++i)
     {
+        std::cout << "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-\n";
+
         std::cout << "Server " << i << "\n";
 
         std::cout << "Ports: ";
