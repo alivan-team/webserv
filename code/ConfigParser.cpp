@@ -10,12 +10,12 @@ ConfigParser::ConfigParser() {
     setters["client_max_body_size"] = &ServerConfig::setClientMaxBodySize;
     setters["error_page"] = &ServerConfig::setErrorPage;
 
-	// locationSetters["allow_methods"] = &LocationConfig::setAllowMethods;
-	// locationSetters["upload_store"] = &LocationConfig::setUploadStore;
-	// locationSetters["autoindex"] = &LocationConfig::setAutoIndex;
-	// locationSetters["root"] = &LocationConfig::setRoot;
-	// locationSetters["index"] = &LocationConfig::setIndex;
-	// locationSetters["cgi_extension"] = &LocationConfig::setCgiExtension;
+	locationSetters["allow_methods"] = &LocationConfig::setAllowMethods;
+	locationSetters["upload_store"] = &LocationConfig::setUploadStore;
+	locationSetters["autoindex"] = &LocationConfig::setAutoIndex;
+	locationSetters["root"] = &LocationConfig::setRoot;
+	locationSetters["index"] = &LocationConfig::setIndex;
+	locationSetters["cgi_extension"] = &LocationConfig::setCgiExtension;
 	// locationSetters["cgi_path"] = &LocationConfig::setCgiPath;
 	locationSetters["return"] = &LocationConfig::setRedirect;
 }

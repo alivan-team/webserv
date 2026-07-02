@@ -34,8 +34,8 @@ class LocationConfig {
 		Redirection _redir;
 
 		// evaluations for Location config
-		bool checkUriPath(const std::string &uripath);
-		bool checkFSPath(const std::string &fspath);
+		// bool checkUriPath(const std::string &uripath);
+		// bool checkFSPath(const std::string &fspath);
 
     public:
         LocationConfig();
@@ -48,20 +48,25 @@ class LocationConfig {
 		void setAutoIndex(const std::vector<std::string>& indexes); // Index from Location can override Index from server
 		void setRoot(const std::vector<std::string>& fspath);
 		void setIndex(const std::vector<std::string>& indpaths);
-		// void setCgiExtension(const std::vector<std::string>& cgiexs);
-		// void setCgiPath(const std::vector<std::string>& cgipath);
+		void setCgiExtension(const std::vector<std::string>& cgiexs);
+		void setCgiPath(const std::vector<std::string>& cgipath);
 		void setRedirect(const std::vector<std::string>& redirpath);
 		
 		// gettings Location parameters
-		// bool getAllowMethods();
-		// bool getAutoIndex();
-        std::string getUriPath();
-		// std::string getUploadStore();
-		// std::string getRoot();
-		// std::string getIndex();
-		// std::string getCgiExtension();
-		// std::string getCgiPath();
-		// std::string getRedirect();
+		Method getAllowMethods() const;
+		bool getAutoIndex() const;
+		bool hasRedirect() const;
+        const std::string& getUriPath() const;
+		const std::string& getUploadStore() const;
+		const std::string& getRoot() const;
+		const std::vector<std::string>& getIndex() const;
+		const std::vector<std::string>& getCgiExtension() const;
+		Redirection getRedirect() const;
+		bool isGetAllowed() const;
+		bool isPostAllowed() const;
+		bool isDeleteAllowed() const;
+
+		void setCgiPath(const std::vector<std::string>& cgipath);
 };
 
 #endif
