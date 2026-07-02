@@ -16,7 +16,7 @@ ConfigParser::ConfigParser() {
 	locationSetters["root"] = &LocationConfig::setRoot;
 	locationSetters["index"] = &LocationConfig::setIndex;
 	locationSetters["cgi_extension"] = &LocationConfig::setCgiExtension;
-	// locationSetters["cgi_path"] = &LocationConfig::setCgiPath;
+	locationSetters["cgi_path"] = &LocationConfig::setCgiPath;
 	locationSetters["return"] = &LocationConfig::setRedirect;
 }
 
