@@ -9,15 +9,6 @@ ServerConfig::ServerConfig() : _port({8080}), _server_name({"localhost"}), _root
 
 ServerConfig::~ServerConfig() {};
 
-static bool hasControlChar(const std::string& s)
-{
-    for (char ch : s) {
-        if (std::iscntrl(static_cast<unsigned char>(ch)))
-            return true;
-    }
-    return false;
-}
-
 static bool validServerNameChar(char ch)
 {
     unsigned char c = static_cast<unsigned char>(ch);
@@ -126,18 +117,18 @@ void ServerConfig::setErrorPage(const std::vector<std::string>& error_page) {
 
 		std::string path = error_page.back();
 
-		for (size_t i = 0; i + 1 < error_page.size(); i++)
-		{
-			if (!check_num(error_page[i]))
-				throw std::runtime_error("Invalid error_page code");
+	for (size_t i = 0; i + 1 < error_page.size(); i++)
+	{
+		if (!check_num(error_page[i]))
+			throw std::runtime_error("Invalid error_page code");
 
-			int code = std::atoi(error_page[i].c_str());
+		int code = std::atoi(error_page[i].c_str());
 
-			if (code < 300 || code > 599)
-				throw std::runtime_error("Invalid error_page code");
+		if (code < 300 || code > 599)
+			throw std::runtime_error("Invalid error_page code");
 
-			_error_pages[code] = path;
-		}
+		_error_pages[code] = path;
+	}
 
 };
 
@@ -163,3 +154,8 @@ void ServerConfig::addLocation(const LocationConfig &locations) {
 		
 	_locations.push_back(locations);
 };
+
+const std::vector<LocationConfig>& ServerConfig::getLocation() const
+{
+	return _locations;
+}
