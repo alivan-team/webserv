@@ -43,6 +43,7 @@ class ServerConfig {
         bool parsePort(const std::string& port);
 
 		void addLocation(const LocationConfig &locations);
+		const std::vector<LocationConfig>& getLocation() const;
 
 };
 
