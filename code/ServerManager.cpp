@@ -7,6 +7,77 @@ const std::vector<ServerConfig>& ServerManager::getServerManager() const {
     return _servers;
 };
 
+void ServerManager::acceptNewClient(int serverFd) {
+
+    int newClient_fd = accept(serverFd, NULL, NULL);
+
+    if (newClient_fd < 0)
+        return ;
+
+    setNonBlocking(newClient_fd);
+
+    pollfd client_poll;
+    client_poll.fd = newClient_fd;
+    client_poll.events = POLLIN;
+    client_poll.revents = 0;
+
+    _pollfds.push_back(client_poll);
+
+    std::cout << "New client: fd " << newClient_fd << "\n";
+};
+
+void ServerManager::readClinetData(size_t index) {
+    // here were we call the recieve client class
+
+    // Clinet class
+    // HTTPrequestParser?
+    // Response 
+
+    
+    int clientFd = _pollfds[index].fd;
+
+    char buffer[4096];
+    std::memset(buffer, 0, sizeof(buffer));
+
+    int bytes = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
+
+    if (bytes <= 0)
+    {
+        std::cout << "Client disconnected fd: " << clientFd << std::endl;
+
+        close(clientFd);
+        _pollfds.erase(_pollfds.begin() + index);
+        return;
+    }
+
+    std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t -- from fd : " << clientFd << " -- \n";
+    std::cout << buffer << std::endl;
+
+    std::string body = "<h1>Hello from ServerManager</h1>\n";
+
+    std::string response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+        "\r\n" +
+        body;
+
+    send(clientFd, response.c_str(), response.size(), 0);
+
+    close(clientFd);
+    _pollfds.erase(_pollfds.begin() + index);
+};
+
+bool ServerManager::isServerSocket(int fd) const
+{
+    for (size_t i = 0; i < _serverSockets.size(); ++i)
+    {
+        if (_serverSockets[i] == fd)
+            return true;
+    }
+    return false;
+}
+
 void ServerManager::initialize() {
 
     if(_servers.empty())
@@ -18,7 +89,25 @@ void ServerManager::initialize() {
 };
 
 void ServerManager::run() {
-    
+
+    while (true) {
+        
+        int ready = poll(_pollfds.data(), _pollfds.size(), -1);
+        if (ready < 0)
+            throw std::runtime_error("poll() failed");
+
+        for (size_t i = 0; i < _pollfds.size(); i++) {
+
+            if (_pollfds[i].revents & POLLIN) {
+
+                if (isServerSocket(_pollfds[i].fd)) {
+                    acceptNewClient(_pollfds[i].fd);
+                } else {
+                    readClinetData(i);
+                }
+            }
+        }
+    }
 };
 
 void ServerManager::setNonBlocking(int fd)
@@ -69,12 +158,12 @@ void ServerManager::createListeningSockets(const ServerConfig& servers) {
 
     _serverSockets.push_back(server_fd);
 
-    pollfd pfd;
-    pfd.fd = server_fd;
-    pfd.events = POLLIN;
-    pfd.revents = 0;
+    pollfd server_poll;
+    server_poll.fd = server_fd;
+    server_poll.events = POLLIN;
+    server_poll.revents = 0;
 
-    _pollfds.push_back(pfd);
+    _pollfds.push_back(server_poll);
 
     std::cout << "Listening on port: " << port << std::endl;
 
