@@ -9,6 +9,9 @@
 #include <cctype>
 #include <algorithm>
 
+#include "printDebug.hpp"
+
+
 struct Method{
 	bool get;
 	bool post;

@@ -14,7 +14,8 @@ SRCS		:= main.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
 			   code/ErrorPages.cpp \
-			   code/client.cpp
+			   code/client.cpp \
+			   code/printDebug.cpp
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS		:= $(OBJS:.o=.d)
