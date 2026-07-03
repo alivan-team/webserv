@@ -9,31 +9,35 @@ const std::vector<ServerConfig>& ServerManager::getServerManager() const {
 
 void ServerManager::acceptNewClient(int serverFd) {
 
-    int newClient_fd = accept(serverFd, NULL, NULL);
+    int newClientFd = accept(serverFd, NULL, NULL);
 
-    if (newClient_fd < 0)
+    if (newClientFd < 0)
         return ;
 
-    setNonBlocking(newClient_fd);
+    setNonBlocking(newClientFd);
 
     pollfd client_poll;
-    client_poll.fd = newClient_fd;
+    client_poll.fd = newClientFd;
     client_poll.events = POLLIN;
     client_poll.revents = 0;
 
     _pollfds.push_back(client_poll);
+    _clients[newClientFd] = Client(newClientFd, serverFd);
 
-    std::cout << "New client: fd " << newClient_fd << "\n";
+    std::cout << "New client: fd " << newClientFd << "\n";
 };
 
-void ServerManager::readClinetData(size_t index) {
+void ServerManager::readClientData(size_t index) {
     // here were we call the recieve client class
 
-    // Clinet class
+    // Client class
+
     // HTTPrequestParser?
+        // if POST control length;
+    
     // Response 
 
-    
+
     int clientFd = _pollfds[index].fd;
 
     char buffer[4096];
@@ -50,8 +54,15 @@ void ServerManager::readClinetData(size_t index) {
         return;
     }
 
-    std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t -- from fd : " << clientFd << " -- \n";
-    std::cout << buffer << std::endl;
+    Client& client = _clients[clientFd];
+    client.appendToRequestBuffer(buffer, bytes);
+
+    // if (!client.hasCompleteRequest())
+        // return ;
+
+
+    std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
+    std::cout << client.getRequestBuffer() << std::endl;
 
     std::string body = "<h1>Hello from ServerManager</h1>\n";
 
@@ -103,7 +114,7 @@ void ServerManager::run() {
                 if (isServerSocket(_pollfds[i].fd)) {
                     acceptNewClient(_pollfds[i].fd);
                 } else {
-                    readClinetData(i);
+                    readClientData(i);
                 }
             }
         }
