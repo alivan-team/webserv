@@ -17,9 +17,12 @@ void ServerManager::initialize() {
     }
 };
 
-void ServerManager::run() {
-    
-};
+// void ServerManager::run() {
+
+//     while (true) {
+//         poll()
+//     }
+// };
 
 void ServerManager::setNonBlocking(int fd)
 {

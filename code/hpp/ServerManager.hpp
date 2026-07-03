@@ -17,6 +17,7 @@ class ServerManager {
         std::vector<ServerConfig> _servers;
         std::vector<int> _serverSockets;
         std::vector<pollfd> _pollfds;
+        // std::map<int, Client> _clients;
         void setNonBlocking(int fd);
         void createListeningSockets(const ServerConfig& servers);
         // void acceptClient(int serverFd);
