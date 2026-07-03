@@ -23,53 +23,44 @@ int main(int argc, char **argv) {
 
     try {
         config.parse(configPath);
+        ServerManager socketManager(config.getServers());
+        socketManager.initialize();
+
+
+        const std::vector<ServerConfig>& servers = socketManager.getServerManager();
+
+        for (size_t i = 0; i < servers.size(); ++i)
+        {
+            std::cout << "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-\n";
+
+            std::cout << "Server " << i << "\n";
+
+            printDebug("Ports: ", servers[i].getPort());
+
+            printDebug("Server names: ", servers[i].getServerName());
+
+            printDebug("Roots: ", servers[i].getRoot());
+
+            printDebug("Indexes: ", servers[i].getIndex());
+
+            printDebug("Client max body size: ", servers[i].getClientMaxBodySize());
+
+            printDebug("Error page: ", servers[i].getErrorPage());
+
+            std::cout << "Locations \n";
+            for (size_t j = 0; j < servers[i]._locations.size(); ++j) {
+
+                printDebug("(", j);
+                std::cout << ")\n";
+                printDebug("", servers[i]._locations[j]);
+            }
+
+            std::cout << "-----------------\n";
+        }
     } catch (const std::exception& e) {
-        std::cerr << "Config error: " << e.what() << "\n";
+        std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
-
-    // ServerManager object
-    ServerManager SocetManager(config.getServers());
-
-    const std::vector<ServerConfig>& servers = SocetManager.getServerManager();
-
-    for (size_t i = 0; i < servers.size(); ++i)
-    {
-        std::cout << "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-\n";
-
-        std::cout << "Server " << i << "\n";
-
-        printDebug("Ports: ", servers[i].getPort());
-
-        printDebug("Server names: ", servers[i].getServerName());
-
-        printDebug("Roots: ", servers[i].getRoot());
-
-        printDebug("Indexes: ", servers[i].getIndex());
-
-        printDebug("Client max body size: ", servers[i].getClientMaxBodySize());
-
-        printDebug("Error page: ", servers[i].getErrorPage());
-
-		std::cout << "Locations \n";
-		for (size_t j = 0; j < servers[i]._locations.size(); ++j) {
-
-			printDebug("(", j);
-			std::cout << ")\n";
-			printDebug("", servers[i]._locations[j]);
-		}
-
-        std::cout << "-----------------\n";
-    }
-
-
-
-
-    // std::cout << "Port: " << config.port << "\n";
-    // std::cout << "Server name: " << config.server_name << "\n";
-    // std::cout << "Root: " << config.root << "\n";
-    // std::cout << "Index: " << config.index << "\n";
-    // std::cout << "Locations: " << config.locations.size() << "\n";
 
     return 0;
 }
