@@ -1,35 +1,51 @@
 #include "./code/hpp/ServerConfig.hpp"
 #include "./code/hpp/ConfigParser.hpp"
+#include "./code/hpp/ServerManager.hpp"
 
 #include <iostream>
 #include <exception>
 
-void printVector(const std::vector<int>& vec)
-{
+void printVector(const bool& value) {
+
+    std::cout << value << " ";
+    std::cout << "\n";
+}
+
+void printVector(const int& value) {
+
+    std::cout << value << " ";
+    std::cout << "\n";
+}
+
+void printVector(const std::string& str) {
+    for (int value : str)
+        std::cout << value << " ";
+
+    std::cout << "\n";
+}
+
+void printVector(const std::vector<int>& vec) {
     for (int value : vec)
         std::cout << value << " ";
 
     std::cout << "\n";
 }
 
-void printVector(const std::vector<unsigned int>& vec)
-{
+void printVector(const std::vector<unsigned int>& vec) {
     for (int value : vec)
         std::cout << value << " ";
 
     std::cout << "\n";
 }
 
-void printVector(const std::vector<std::string>& vec)
-{
+void printVector(const std::vector<std::string>& vec) {
     for (const auto& value : vec)
         std::cout << value << " ";
 
     std::cout << "\n";
 }
 
-void printVector(const std::map<int, std::string>& vec)
-{
+void printVector(const std::map<int, std::string>& vec) {
     for (const auto& value : vec) {
         std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
         std::cout << "\n";
@@ -37,16 +53,14 @@ void printVector(const std::map<int, std::string>& vec)
 
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
     std::string configPath;
     if (argc == 1)
         configPath = "./config/default.conf";
     else if (argc == 2)
         configPath = argv[1];
-    else
-    {
+    else {
         std::cerr << "Usage: ./webserv [config_file]\n";
         return 1;
     }
@@ -60,9 +74,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // here 
+    // ServerManager object
+    ServerManager SocetManager(config.getServers());
 
-    const std::vector<ServerConfig>& servers = config.getServers();
+    const std::vector<ServerConfig>& servers = SocetManager.getServerManager();
 
     for (size_t i = 0; i < servers.size(); ++i)
     {
@@ -88,11 +103,48 @@ int main(int argc, char **argv)
         std::cout << "Error page: ";
         printVector(servers[i].getErrorPage());
 
-        std::cout << "Location: ";
-        // printVector(servers[i].getLocation());
+        for (size_t j = 0; j < servers[i]._locations.size(); ++i) {
+        
+            std::cout << "Location: \n";
+            std::cout << "\t getUriPath: ";
+            printVector(servers[i]._locations[j].getUriPath());
+            if (servers[i]._locations[j].isGetAllowed()) {
+                std::cout << "\tGET: ";
+                printVector(servers[i]._locations[j].isGetAllowed());
+            }
+            if (servers[i]._locations[j].isPostAllowed()) {
+                std::cout << "\tPOST: ";
+                printVector(servers[i]._locations[j].isPostAllowed());
+            }
+            if (servers[i]._locations[j].isDeleteAllowed()) {
+                std::cout << "\tDELETE: ";
+                printVector(servers[i]._locations[j].isDeleteAllowed());
+            }
+            std::cout << "\t getRedirect: \n\t\t Number: ";
+            printVector(servers[i]._locations[j].getRedirect()._number);
+            std::cout << "\t getRedirect: \n\t\t redirPath: ";
+            printVector(servers[i]._locations[j].getRedirect()._redirPath);
+            std::cout << "\t getCgiExtension: ";
+            printVector(servers[i]._locations[j].getCgiExtension());
+            std::cout << "\t getIndex: ";
+            printVector(servers[i]._locations[j].getIndex());
+            std::cout << "\t getRoot: ";
+            printVector(servers[i]._locations[j].getRoot());
+            std::cout << "\t getUploadStore: ";
+            printVector(servers[i]._locations[j].getUploadStore());
+            std::cout << "\t hasRedirect: ";
+            printVector(servers[i]._locations[j].hasRedirect());
+            std::cout << "\t getAutoIndex: ";
+            printVector(servers[i]._locations[j].getAutoIndex());
+
+
+        }
 
         std::cout << "-----------------\n";
     }
+
+
+
 
     // std::cout << "Port: " << config.port << "\n";
     // std::cout << "Server name: " << config.server_name << "\n";
