@@ -95,15 +95,13 @@ void ServerManager::run() {
 
             if (_pollfds[i].revents & POLLIN) {
 
-                if (isServerSocket(_pollfds[i].fd))
+                if (isServerSocket(_pollfds[i].fd)) {
                     acceptNewClient(_pollfds[i].fd);
-                else
+                } else {
                     receiveFromClient(i);
-
+                }
             }
         }
-
-        
     }
 };
 
