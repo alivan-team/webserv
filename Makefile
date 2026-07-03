@@ -10,6 +10,7 @@ OBJ_DIR		:= build
 # Keep test files out of SRCS when they define their own main().
 SRCS		:= main.cpp \
 			   code/ConfigParser.cpp \
+			   code/ServerManager.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
 			   code/ErrorPages.cpp \
