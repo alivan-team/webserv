@@ -1,7 +1,6 @@
 #ifndef HTTP_REQUEST_HPP
 #define HTTP_REQUEST_HPP
 
-#include <exception>
 #include <string>
 #include <map>
 #include <cctype>
@@ -22,7 +21,7 @@ class HTTPRequest{
 		HTTPRequest();
 		~HTTPRequest() = default;
 
-		const Method &getMethod() const;
+		Method getMethod() const;
 		const std::string &getUri() const;
 		const std::string &getPath() const;
 		const std::string &getQuery() const;

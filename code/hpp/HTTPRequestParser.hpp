@@ -6,8 +6,7 @@
 
 class HTTPRequestParser{
 	public:
-		HTTPRequest parseBuffer(std::string &buffer) const;
-
+		HTTPRequest parse(std::string &buffer) const;
 };
 
 #endif
