@@ -2,6 +2,7 @@
 #define SERVERMANAGER_HPP
 
 #include "ConfigParser.hpp"
+#include "ClientData.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -17,12 +18,12 @@ class ServerManager {
         std::vector<ServerConfig> _servers;
         std::vector<int> _serverSockets;
         std::vector<pollfd> _pollfds;
-        // std::map<int, Client> _clients;
+        std::map<int, Client> _clients;
         void setNonBlocking(int fd);
         void createListeningSockets(const ServerConfig& servers);
         bool isServerSocket(int fd) const;
         void acceptNewClient(int serverFd);
-        void readClinetData(size_t index);
+        void readClientData(size_t index);
 
         // void receiveRequest(int clientFd);
         // void sendResponse(int clientFd);
