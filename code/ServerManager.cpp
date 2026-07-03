@@ -17,6 +17,10 @@ void ServerManager::initialize() {
     }
 };
 
+void ServerManager::run() {
+    
+};
+
 void ServerManager::setNonBlocking(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
@@ -75,3 +79,4 @@ void ServerManager::createListeningSockets(const ServerConfig& servers) {
     std::cout << "Listening on port: " << port << std::endl;
 
 };
+

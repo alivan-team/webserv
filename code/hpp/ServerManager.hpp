@@ -28,7 +28,7 @@ class ServerManager {
         ServerManager(const std::vector<ServerConfig>& servers);
         const std::vector<ServerConfig>& getServerManager() const;
         void initialize();
-        // void run();
+        void run();
 };
 
 #endif
