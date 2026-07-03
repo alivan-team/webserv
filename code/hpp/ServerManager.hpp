@@ -22,7 +22,7 @@ class ServerManager {
         void createListeningSockets(const ServerConfig& servers);
         bool isServerSocket(int fd) const;
         void acceptNewClient(int serverFd);
-        void receiveFromClient(size_t index);
+        void readClinetData(size_t index);
 
         // void receiveRequest(int clientFd);
         // void sendResponse(int clientFd);

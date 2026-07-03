@@ -26,9 +26,14 @@ void ServerManager::acceptNewClient(int serverFd) {
     std::cout << "New client: fd " << newClient_fd << "\n";
 };
 
-void ServerManager::receiveFromClient(size_t index) {
+void ServerManager::readClinetData(size_t index) {
     // here were we call the recieve client class
 
+    // Clinet class
+    // HTTPrequestParser?
+    // Response 
+
+    
     int clientFd = _pollfds[index].fd;
 
     char buffer[4096];
@@ -45,10 +50,10 @@ void ServerManager::receiveFromClient(size_t index) {
         return;
     }
 
-    std::cout << "Request from fd " << clientFd << ":\n";
+    std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t -- from fd : " << clientFd << " -- \n";
     std::cout << buffer << std::endl;
 
-    std::string body = "Hello from ServerManager\n";
+    std::string body = "<h1>Hello from ServerManager</h1>\n";
 
     std::string response =
         "HTTP/1.1 200 OK\r\n"
@@ -98,7 +103,7 @@ void ServerManager::run() {
                 if (isServerSocket(_pollfds[i].fd)) {
                     acceptNewClient(_pollfds[i].fd);
                 } else {
-                    receiveFromClient(i);
+                    readClinetData(i);
                 }
             }
         }
