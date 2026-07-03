@@ -66,13 +66,13 @@ void printDebug(std::string title, const LocationConfig& location) {
 	std::cout << title << "\n";
 	printDebug("\t getUriPath: ", location.getUriPath());
 	if (location.isGetAllowed()) {
-		printDebug( "\tGET: ",location.isGetAllowed());
+		printDebug( "\t\tGET: ",location.isGetAllowed());
 	}
 	if (location.isPostAllowed()) {
-		printDebug( "\tPOST: ", location.isPostAllowed());
+		printDebug( "\t\tPOST: ", location.isPostAllowed());
 	}
 	if (location.isDeleteAllowed()) {
-		printDebug( "\tDELETE: ", location.isDeleteAllowed());
+		printDebug( "\t\tDELETE: ", location.isDeleteAllowed());
 	}
 	printDebug("\t getRedirect: \n\t\t Number: ", location.getRedirect()._number);
 	printDebug("\t getRedirect: \n\t\t redirPath: ", location.getRedirect()._redirPath);
