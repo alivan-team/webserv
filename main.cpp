@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
         config.parse(configPath);
         ServerManager socketManager(config.getServers());
         socketManager.initialize();
+        socketManager.run();
 
 
         const std::vector<ServerConfig>& servers = socketManager.getServerManager();

@@ -20,7 +20,10 @@ class ServerManager {
         // std::map<int, Client> _clients;
         void setNonBlocking(int fd);
         void createListeningSockets(const ServerConfig& servers);
-        // void acceptClient(int serverFd);
+        bool isServerSocket(int fd) const;
+        void acceptNewClient(int serverFd);
+        void receiveFromClient(size_t index);
+
         // void receiveRequest(int clientFd);
         // void sendResponse(int clientFd);
         // void removeClient(int clientFd);
