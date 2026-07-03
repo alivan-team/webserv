@@ -56,7 +56,7 @@ class LocationConfig {
 		Method getAllowMethods() const;
 		bool getAutoIndex() const;
 		bool hasRedirect() const;
-        const std::string& getUriPath() const;
+		const std::string& getUriPath() const;
 		const std::string& getUploadStore() const;
 		const std::string& getRoot() const;
 		const std::vector<std::string>& getIndex() const;
@@ -66,7 +66,7 @@ class LocationConfig {
 		bool isPostAllowed() const;
 		bool isDeleteAllowed() const;
 
-		void setCgiPath(const std::vector<std::string>& cgipath);
+		// void setCgiPath(const std::vector<std::string>& cgipath);
 };
 
 #endif

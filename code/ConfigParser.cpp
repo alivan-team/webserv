@@ -94,7 +94,7 @@ void ConfigParser::parse(const std::string& filename)
                         throw std::runtime_error("Missing location sectin");
                     }
 
-                    i++;
+                    i+=2;
                     while (i  < configTokens.size() && configTokens[i] != "}"){
                         findKey(location, locationSetters, configTokens, i);
                     }
