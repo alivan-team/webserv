@@ -22,3 +22,6 @@ webserv
 *.gcda
 *.gcno
 *.gcov
+
+# VSCode files
+.vscode/

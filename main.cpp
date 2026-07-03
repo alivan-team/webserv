@@ -1,57 +1,11 @@
 #include "./code/hpp/ServerConfig.hpp"
 #include "./code/hpp/ConfigParser.hpp"
 #include "./code/hpp/ServerManager.hpp"
+#include "./code/hpp/printDebug.hpp"
 
 #include <iostream>
 #include <exception>
 
-void printVector(const bool& value) {
-
-    std::cout << value << " ";
-    std::cout << "\n";
-}
-
-void printVector(const int& value) {
-
-    std::cout << value << " ";
-    std::cout << "\n";
-}
-
-void printVector(const std::string& str) {
-    for (int value : str)
-        std::cout << value << " ";
-
-    std::cout << "\n";
-}
-
-void printVector(const std::vector<int>& vec) {
-    for (int value : vec)
-        std::cout << value << " ";
-
-    std::cout << "\n";
-}
-
-void printVector(const std::vector<unsigned int>& vec) {
-    for (int value : vec)
-        std::cout << value << " ";
-
-    std::cout << "\n";
-}
-
-void printVector(const std::vector<std::string>& vec) {
-    for (const auto& value : vec)
-        std::cout << value << " ";
-
-    std::cout << "\n";
-}
-
-void printVector(const std::map<int, std::string>& vec) {
-    for (const auto& value : vec) {
-        std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
-        std::cout << "\n";
-    }
-
-}
 
 int main(int argc, char **argv) {
 
@@ -88,60 +42,25 @@ int main(int argc, char **argv) {
 
         std::cout << "Server " << i << "\n";
 
-        std::cout << "Ports: ";
-        printVector(servers[i].getPort());
+        printDebug("Ports: ", servers[i].getPort());
 
-        std::cout << "Server names: ";
-        printVector(servers[i].getServerName());
+        printDebug("Server names: ", servers[i].getServerName());
 
-        std::cout << "Roots: ";
-        printVector(servers[i].getRoot());
+        printDebug("Roots: ", servers[i].getRoot());
 
-        std::cout << "Indexes: ";
-        printVector(servers[i].getIndex());
+        printDebug("Indexes: ", servers[i].getIndex());
 
-        std::cout << "Client max body size: ";
-        printVector(servers[i].getClientMaxBodySize());
+        printDebug("Client max body size: ", servers[i].getClientMaxBodySize());
 
-        std::cout << "Error page: ";
-        printVector(servers[i].getErrorPage());
+        printDebug("Error page: ", servers[i].getErrorPage());
 
-        for (size_t j = 0; j < servers[i]._locations.size(); ++i) {
-        
-            std::cout << "Location: \n";
-            std::cout << "\t getUriPath: ";
-            printVector(servers[i]._locations[j].getUriPath());
-            if (servers[i]._locations[j].isGetAllowed()) {
-                std::cout << "\tGET: ";
-                printVector(servers[i]._locations[j].isGetAllowed());
-            }
-            if (servers[i]._locations[j].isPostAllowed()) {
-                std::cout << "\tPOST: ";
-                printVector(servers[i]._locations[j].isPostAllowed());
-            }
-            if (servers[i]._locations[j].isDeleteAllowed()) {
-                std::cout << "\tDELETE: ";
-                printVector(servers[i]._locations[j].isDeleteAllowed());
-            }
-            std::cout << "\t getRedirect: \n\t\t Number: ";
-            printVector(servers[i]._locations[j].getRedirect()._number);
-            std::cout << "\t getRedirect: \n\t\t redirPath: ";
-            printVector(servers[i]._locations[j].getRedirect()._redirPath);
-            std::cout << "\t getCgiExtension: ";
-            printVector(servers[i]._locations[j].getCgiExtension());
-            std::cout << "\t getIndex: ";
-            printVector(servers[i]._locations[j].getIndex());
-            std::cout << "\t getRoot: ";
-            printVector(servers[i]._locations[j].getRoot());
-            std::cout << "\t getUploadStore: ";
-            printVector(servers[i]._locations[j].getUploadStore());
-            std::cout << "\t hasRedirect: ";
-            printVector(servers[i]._locations[j].hasRedirect());
-            std::cout << "\t getAutoIndex: ";
-            printVector(servers[i]._locations[j].getAutoIndex());
+		std::cout << "Locations \n";
+		for (size_t j = 0; j < servers[i]._locations.size(); ++j) {
 
-
-        }
+			printDebug("(", j);
+			std::cout << ")\n";
+			printDebug("", servers[i]._locations[j]);
+		}
 
         std::cout << "-----------------\n";
     }
