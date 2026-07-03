@@ -69,15 +69,18 @@ int main(int argc, char **argv) {
 
     try {
         config.parse(configPath);
+        
     } catch (const std::exception& e) {
-        std::cerr << "Config error: " << e.what() << "\n";
+        std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
+    
+    // ServerManager object MOVE ServerManager in try ( LATER )
+    ServerManager socketManager(config.getServers());
+    socketManager.initialize();
 
-    // ServerManager object
-    ServerManager SocetManager(config.getServers());
 
-    const std::vector<ServerConfig>& servers = SocetManager.getServerManager();
+    const std::vector<ServerConfig>& servers = socketManager.getServerManager();
 
     for (size_t i = 0; i < servers.size(); ++i)
     {

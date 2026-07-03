@@ -20,10 +20,10 @@ class ServerConfig {
         std::vector<unsigned int> _client_max_body_size;
         std::map<int, std::string> _error_pages;
         
-    public:
+        public:
+        std::vector<LocationConfig> _locations;
         ServerConfig();
         ~ServerConfig();
-        std::vector<LocationConfig> _locations;
         
         void setPort(const std::vector<std::string>& port);
         void setServerName(const std::vector<std::string>& server_name);
@@ -32,7 +32,7 @@ class ServerConfig {
         void setClientMaxBodySize(const std::vector<std::string>& client_max_body_size);
         void setErrorPage(const std::vector<std::string>& error_page);
         
-        const std::vector<int>& getPort() const;
+        const int& getPort() const;
         const std::vector<std::string>& getServerName() const;
         const std::vector<std::string>& getRoot() const;
         const std::vector<std::string>& getIndex() const;

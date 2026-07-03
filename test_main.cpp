@@ -186,3 +186,125 @@ int main()
         }
     }
 }
+///////////////////////////////////////////////////////
+
+void ServerManager::setNonBlocking(int fd)
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+
+    if (flags < 0)
+        throw std::runtime_error("fcntl(F_GETFL) failed");
+
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+        throw std::runtime_error("fcntl(F_SETFL) failed");
+}
+
+void ServerManager::createListeningSocket(const ServerConfig& server)
+{
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    // internally the kernel creates a socket structure 
+    // Your process
+    // -----------
+    // server_fd = 3
+
+    // Kernel
+    // ------
+    // fd table:
+    // 3 -> socket object
+
+    // socket object:
+    //     address family: IPv4
+    //     type: TCP stream
+    //     local IP: not set yet
+    //     local port: not set yet
+    //     state: created, but not listening
+    //
+    // AF_INET - use IPv4
+    // SOCK_STREAM - use stream-based connection -> in practice with AF_INET this means TCP
+    //      TCP means byte stream, not separate messages
+    // 0 - Choose the default protocol for this family and type 
+    //      in this case that is TCP
+
+    if (server_fd < 0)
+        throw std::runtime_error("socket() failed");
+
+    int opt = 1;
+
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
+        close(server_fd);
+        throw std::runtime_error("setsockopt() failed");
+    }
+    // setsockopt() -> "Kernel, change one of the settings of this socket."
+    // setsockopt() has this prototype:
+
+    // int setsockopt(
+    //     int sockfd,
+            //  which socket;
+
+    //     int level,
+            // Which protocol layer owns this option.
+            // SOL_SOCKET -  meaning: This option belongs to the generic socket.
+            // some layers are owned by different options:
+                // Socket layer:
+                // TCP layer:
+                // IP layer
+    
+    //     int option_name,
+            //  This is the option I'm chaning : SO_REUSEADDR / Which option to chage;
+            //  this is not a value: just saying to the kernel find the name of this option: the option_value change is it.
+
+    //     const void *option_value,
+            // pointer to a new value for the option: 
+            // by default this option is 0 (disabled) -> so 1 (enable);
+    
+    //     socklen_t option_len
+            //  size of the option_value;
+    // );
+
+    sockaddr_in addr;
+    // preparing an address structure to tell the kernel more details about the struct socket.
+    std::memset(&addr, 0, sizeof(addr));
+
+    addr.sin_family = AF_INET;
+    // means this address is AF_INET = IPv4
+    addr.sin_addr.s_addr = INADDR_ANY;
+    // menas listen to all available local IP addresses;
+    // it will bind to all the available [network rooms... ( my analogy )] local addresses.
+
+    // adapt this depending on your getter
+    int port = server.getPort()[0];
+
+    addr.sin_port = htons(port);
+    // htons converts the host byte order to network byte order. bit small-> network must be Big Endian.
+
+
+    if (bind(server_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+        // bind takes the socket indentifier by server_fd and assigns it to this local address
+        // and associates it with the socket object that we have created earler;
+        close(server_fd);
+        throw std::runtime_error("bind() failed");
+    }
+
+    if (listen(server_fd, 128) < 0) {
+        // the second parameter of listen is how big the queue cna be... 129 queue is full ...
+        close(server_fd);
+        throw std::runtime_error("listen() failed");
+    }
+
+    setNonBlocking(server_fd);
+
+    _serverSockets.push_back(server_fd);
+
+    pollfd pfd;
+    // 
+    pfd.fd = server_fd;
+    pfd.events = POLLIN;
+    // Wake me up when this fd becomes readable.
+    pfd.revents = 0;
+    // 
+
+    _pollfds.push_back(pfd);
+
+    std::cout << "Listening on port " << port << std::endl;
+}
