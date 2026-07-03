@@ -10,18 +10,8 @@
 #include <algorithm>
 
 #include "printDebug.hpp"
+#include "externalStructures.hpp"
 
-
-struct Method{
-	bool get;
-	bool post;
-	bool del;
-};
-
-struct Redirection{
-	int	_number; // status 
-	std::string _redirPath; // - redirect for this error
-};
 class LocationConfig {
 
     private:

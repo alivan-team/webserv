@@ -16,7 +16,10 @@ SRCS		:= main.cpp \
 			   code/ErrorPages.cpp \
 			   code/client.cpp \
 			   code/printDebug.cpp \
-			   code/ClientData.cpp
+			   code/ClientData.cpp \
+			   code/HTTPRequest.cpp \
+			   code/HTTPRequestParser.cpp 
+
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS		:= $(OBJS:.o=.d)
