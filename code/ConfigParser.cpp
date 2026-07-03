@@ -31,23 +31,17 @@ std::vector<std::string> tokenize(std::ifstream& file)
     char c;
     std::string current;
 
-    while (file.get(c))
-    {
-        if (c == '#')
-        {
+    while (file.get(c)) {
+        if (c == '#') {
             while (file.get(c) && c != '\n' && c != '\r') {};
             continue;
-        }
-        if (std::isspace(static_cast<unsigned char>(c)))
-        {
+        } if (std::isspace(static_cast<unsigned char>(c))) {
             if (!current.empty())
             {
                 tokens.push_back(current);
                 current.clear();
             }
-        }
-        else if (c == '{' || c == '}' || c == ';')
-        {
+        } else if (c == '{' || c == '}' || c == ';') {
             if (!current.empty())
             {
                 tokens.push_back(current);
@@ -55,9 +49,7 @@ std::vector<std::string> tokenize(std::ifstream& file)
             }
 
             tokens.push_back(std::string(1, c));
-        }
-        else
-        {
+        } else {
             current += c;
         }
     }
@@ -78,11 +70,8 @@ void ConfigParser::parse(const std::string& filename)
         throw std::runtime_error("Cannot open config file");
 	}
 	std::vector<std::string> configTokens = tokenize(file);
-    //check the brakets
-    // MAP -> asdad array [1,1] =  ([]"listen", *setPort], ["server_name", *setServerName])
-    // for (auto t : configTokens) {
-    //     std::cout << "configTokens[i] -> " << t << std::endl;
-    // }
+    //check the brakets for currectly opena and close brackets ? 
+
 
     for (size_t i = 0; i < configTokens.size(); i++) {
 

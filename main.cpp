@@ -1,35 +1,32 @@
 #include "./code/hpp/ServerConfig.hpp"
 #include "./code/hpp/ConfigParser.hpp"
+#include "./code/hpp/ServerManager.hpp"
 
 #include <iostream>
 #include <exception>
 
-void printVector(const std::vector<int>& vec)
-{
+void printVector(const std::vector<int>& vec) {
     for (int value : vec)
         std::cout << value << " ";
 
     std::cout << "\n";
 }
 
-void printVector(const std::vector<unsigned int>& vec)
-{
+void printVector(const std::vector<unsigned int>& vec) {
     for (int value : vec)
         std::cout << value << " ";
 
     std::cout << "\n";
 }
 
-void printVector(const std::vector<std::string>& vec)
-{
+void printVector(const std::vector<std::string>& vec) {
     for (const auto& value : vec)
         std::cout << value << " ";
 
     std::cout << "\n";
 }
 
-void printVector(const std::map<int, std::string>& vec)
-{
+void printVector(const std::map<int, std::string>& vec) {
     for (const auto& value : vec) {
         std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
         std::cout << "\n";
@@ -37,16 +34,14 @@ void printVector(const std::map<int, std::string>& vec)
 
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
     std::string configPath;
     if (argc == 1)
         configPath = "./config/default.conf";
     else if (argc == 2)
         configPath = argv[1];
-    else
-    {
+    else {
         std::cerr << "Usage: ./webserv [config_file]\n";
         return 1;
     }
@@ -60,9 +55,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // here 
+    // ServerManager object
+    ServerManager SocetManager(config.getServers());
 
-    const std::vector<ServerConfig>& servers = config.getServers();
+    const std::vector<ServerConfig>& servers = SocetManager.getServerManager();
 
     for (size_t i = 0; i < servers.size(); ++i)
     {
