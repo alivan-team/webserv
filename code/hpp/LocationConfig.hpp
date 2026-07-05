@@ -16,7 +16,7 @@ class LocationConfig {
 
     private:
         std::string _uriPath;                  // "/upload" -> CGI
-        Method _methods;  // GET POST DELETE
+        AllowMethods _methods;  // GET POST DELETE
         std::string _upload_store;
 		// bool _autoIndex;
 		std::string _rootPath;
@@ -46,7 +46,7 @@ class LocationConfig {
 		void setRedirect(const std::vector<std::string>& redirpath);
 		
 		// gettings Location parameters
-		Method getAllowMethods() const;
+		AllowMethods getAllowMethods() const;
 		bool getAutoIndex() const;
 		bool hasRedirect() const;
 		const std::string& getUriPath() const;

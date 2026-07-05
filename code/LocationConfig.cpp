@@ -138,7 +138,7 @@ const std::string& LocationConfig::getUriPath() const
     return _uriPath;
 }
 
-Method LocationConfig::getAllowMethods() const
+AllowMethods LocationConfig::getAllowMethods() const
 {
 	return _methods;
 }
