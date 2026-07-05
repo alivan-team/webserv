@@ -32,6 +32,7 @@ bool Client::hasCompleteRequest() const {
 
     std::string value = _requestBuffer.substr(valueStart, valueEnd - valueStart);
     size_t contentLength = std::atoi(value.c_str());
+    // maybe validate if its a negative value? 
 
     size_t bodyStart = headerEnd + 4;
     size_t bodySize = _requestBuffer.size() - bodyStart;

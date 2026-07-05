@@ -37,7 +37,6 @@ void ServerManager::readClientData(size_t index) {
     
     // Response 
 
-
     int clientFd = _pollfds[index].fd;
 
     char buffer[4096];
@@ -50,6 +49,7 @@ void ServerManager::readClientData(size_t index) {
         std::cout << "Client disconnected fd: " << clientFd << std::endl;
 
         close(clientFd);
+        _clients.erase(clientFd);
         _pollfds.erase(_pollfds.begin() + index);
         return;
     }
@@ -57,14 +57,14 @@ void ServerManager::readClientData(size_t index) {
     Client& client = _clients[clientFd];
     client.appendToRequestBuffer(buffer, bytes);
 
-    // if (!client.hasCompleteRequest())
-        // return ;
+    if (!client.hasCompleteRequest())
+        return ;
 
 
     std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
     std::cout << client.getRequestBuffer() << std::endl;
 
-    std::string body = "<h1>Hello from ServerManager</h1>\n";
+    std::string body = "Hello from ServerManager\n";
 
     std::string response =
         "HTTP/1.1 200 OK\r\n"
@@ -76,6 +76,7 @@ void ServerManager::readClientData(size_t index) {
     send(clientFd, response.c_str(), response.size(), 0);
 
     close(clientFd);
+    _clients.erase(clientFd);
     _pollfds.erase(_pollfds.begin() + index);
 };
 
