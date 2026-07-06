@@ -90,3 +90,4 @@ bool hasControlChar(const std::string& s)
     }
     return false;
 }
+
