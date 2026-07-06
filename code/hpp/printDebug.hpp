@@ -4,6 +4,8 @@
 #include <iostream>
 #include <map>
 #include <exception>
+#include <string>
+#include <vector>
 
 class LocationConfig;
 

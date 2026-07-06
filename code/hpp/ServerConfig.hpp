@@ -8,6 +8,7 @@
 #include <map>
 #include <stdexcept>
 #include <cctype>
+#include <climits>
 #include "LocationConfig.hpp"
 
 class ServerConfig {

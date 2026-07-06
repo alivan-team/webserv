@@ -8,10 +8,9 @@ class HTTPRequestParser{
 	private:
 		void parseRequestLine();
 		void parseHeaders();
-		void parseBody(const std::string &body, HTTPRequest &request) const;
 		void parseUri();
 
-		Method parseMethod(...);
+		Method parseMethod(std::string methods);
 
 	public:
 		HTTPRequest parse(const std::string &buffer) const;
