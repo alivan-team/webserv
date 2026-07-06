@@ -72,7 +72,7 @@ void ServerManager::readClientData(size_t index) {
     // ServerConfig has multible servers and I need to connect the Client to the SC.
     // HTTP RESPONSE 
     // later ClassResponse will be changed to response
-    HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+    // HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
 
 
     // ALL under is default. 

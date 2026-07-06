@@ -15,7 +15,7 @@ class Client {
         int _server_fd; // server FD
         size_t _bodyPos;
         size_t _bodySize;
-        HTTPRequest _request;
+        // HTTPRequest _request;
         // HTTPResponse _response;
 
 
@@ -37,7 +37,7 @@ class Client {
         int getClientFd() const;
         int getServerFd() const;
         const std::string& getRequestBuffer() const;
-        const HTTPRequest& getRequest() const;
+        // const HTTPRequest& getRequest() const;
 
 
 };
