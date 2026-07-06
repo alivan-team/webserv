@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <stdexcept>
 #include <cctype>
 #include "externalStructures.hpp"
 
@@ -15,26 +16,23 @@ class HTTPRequest{
 		std::string _query;
 		std::string _version;
 		std::map<std::string, std::string> _headers;
-		// std::string _body;
 
 	public:
 		HTTPRequest();
 		~HTTPRequest() = default;
 
+		void setMethod(Method method);
 		void setUri(const std::string &uri);
 		void setPath(const std::string &path);
 		void setQuery(const std::string &query);
 		void setVersion(const std::string &version);
 		void addHeader(const std::string &name, const std::string &value);
-		void setBody(const std::string &body);
 		
-		AllowMethods getMethod() const;
-		void setMethod(AllowMethods method);
+		Method getMethod() const;
 		const std::string &getUri() const;
 		const std::string &getPath() const;
 		const std::string &getQuery() const;
 		const std::string &getVersion() const;
-		const std::string &getBody() const;
 
 		bool hasHeader(const std::string &name) const;
 		const std::string &getHeader(const std::string &name) const;
