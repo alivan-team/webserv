@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdlib>
 #include "HTTPRequest.hpp"
+#include "HTTPResponse.hpp"
 
 
 class Client {
@@ -11,10 +12,10 @@ class Client {
     private:
         std::string _requestBuffer;
         int _client_fd;
-        int _server_fd;
+        int _server_fd; // server FD
         size_t _bodyPos;
         size_t _bodySize;
-        // HTTPRequest _requestHeader;
+        HTTPRequest _request;
         // HTTPResponse _response;
 
 
@@ -36,6 +37,9 @@ class Client {
         int getClientFd() const;
         int getServerFd() const;
         const std::string& getRequestBuffer() const;
+        const HTTPRequest& getRequest() const;
+
+
 };
 
 #endif

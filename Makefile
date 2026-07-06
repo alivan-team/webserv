@@ -18,7 +18,9 @@ SRCS		:= main.cpp \
 			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/HTTPRequest.cpp \
-			   code/HTTPRequestParser.cpp 
+			   code/HTTPRequestParser.cpp \
+			   code/HTTPResponseBuild.cpp \
+			   code/HTTPResponse.cpp \
 
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
