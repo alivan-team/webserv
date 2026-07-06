@@ -21,7 +21,15 @@ class HTTPRequest{
 		HTTPRequest();
 		~HTTPRequest() = default;
 
-		Method getMethod() const;
+		void setUri(const std::string &uri);
+		void setPath(const std::string &path);
+		void setQuery(const std::string &query);
+		void setVersion(const std::string &version);
+		void addHeader(const std::string &name, const std::string &value);
+		void setBody(const std::string &body);
+		
+		AllowMethods getMethod() const;
+		void setMethod(AllowMethods method);
 		const std::string &getUri() const;
 		const std::string &getPath() const;
 		const std::string &getQuery() const;

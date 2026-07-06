@@ -5,7 +5,7 @@
 #include <string>
 
 
-struct Method{
+struct AllowMethods{
 	bool get;
 	bool post;
 	bool del;
@@ -14,6 +14,15 @@ struct Method{
 struct Redirection{
 	int	_number; // status 
 	std::string _redirPath; // - redirect for this error
+};
+
+enum class Method
+{
+    UNKNOWN,
+    GET,
+    POST,
+    DELETE,
+    HEAD
 };
 
 #endif
