@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include <exception>
+#include <string>
+#include <vector>
 
 class LocationConfig;
 
