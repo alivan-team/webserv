@@ -51,6 +51,10 @@ void ServerManager::readClientData(size_t index) {
         close(clientFd);
         _clients.erase(clientFd);
         _pollfds.erase(_pollfds.begin() + index);
+        // if (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        //     std::cout << "recv() failed" << std::endl;
+        //     return;
+        // }
         return;
     }
 
@@ -60,21 +64,25 @@ void ServerManager::readClientData(size_t index) {
     if (!client.hasCompleteRequest())
         return ;
 
+    // HTTP REQUST PARSER 
 
     std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
     std::cout << client.getRequestBuffer() << std::endl;
 
     std::string body = "Hello from ServerManager\n";
 
+    
     std::string response =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: " + std::to_string(body.size()) + "\r\n"
-        "\r\n" +
-        body;
-
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/plain\r\n"
+    "Content-Length: " + std::to_string(body.size()) + "\r\n"
+    "\r\n" +
+    body;
+    
     send(clientFd, response.c_str(), response.size(), 0);
-
+    
+    std::cout << "Starting send the request" << std::endl;
+    client.clearRequestBuffer();
     close(clientFd);
     _clients.erase(clientFd);
     _pollfds.erase(_pollfds.begin() + index);

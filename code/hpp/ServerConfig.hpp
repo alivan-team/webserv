@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <cctype>
 #include "LocationConfig.hpp"
+#include <limits.h> 
+#include <climits>
 
 class ServerConfig {
 

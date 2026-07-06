@@ -11,6 +11,11 @@ class Client {
         std::string _requestBuffer;
         int _client_fd;
         int _server_fd;
+        size_t _bodyPos;
+        size_t _bodySize;
+        // HTTPRequest _requestHeader;
+        // HTTPResponse _responseText;
+
 
     public:
         Client();
@@ -18,9 +23,14 @@ class Client {
 
         void appendToRequestBuffer(const char* buffer, size_t bytes);
         bool hasCompleteHeaders() const;
-        bool hasCompleteRequest() const;
+        bool hasCompleteRequest() ;
 
         void clearRequestBuffer();
+
+        std::string getFullBodyRequest() const;
+        std::string getPartBodyRequest(size_t start, size_t length) const;
+        size_t getBodyPos() const;
+        size_t getBodySize() const;
 
         int getClientFd() const;
         int getServerFd() const;
