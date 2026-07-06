@@ -132,6 +132,11 @@ void ServerConfig::setErrorPage(const std::vector<std::string>& error_page) {
 
 };
 
+ void ServerConfig::setServerConfFD(const int fd) {
+	
+	_serverConf_fd = fd;
+ };
+
 
 
 
@@ -153,7 +158,7 @@ const std::vector<unsigned int>& ServerConfig::getClientMaxBodySize() const { re
 
 const std::map<int, std::string>& ServerConfig::getErrorPage() const { return _error_pages; };
 
-
+const int& ServerConfig::getServerConfFD() const { return _serverConf_fd; };
 
 // Added by Alina for Location block
 void ServerConfig::addLocation(const LocationConfig &locations) {

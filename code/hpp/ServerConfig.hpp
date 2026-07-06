@@ -16,6 +16,7 @@
 class ServerConfig {
 
     private:
+        int _serverConf_fd;
         std::vector<int> _port;
         std::vector<std::string> _server_name;
         std::vector<std::string>  _root;
@@ -28,6 +29,7 @@ class ServerConfig {
         ServerConfig();
         ~ServerConfig();
         
+        void setServerConfFD(const int fd);
         void setPort(const std::vector<std::string>& port);
         void setServerName(const std::vector<std::string>& server_name);
         void setRoot(const std::vector<std::string>& root);
@@ -36,6 +38,7 @@ class ServerConfig {
         void setErrorPage(const std::vector<std::string>& error_page);
         
         const int& getPort() const;
+        const int& getServerConfFD() const;
         const std::vector<std::string>& getServerName() const;
         const std::vector<std::string>& getRoot() const;
         const std::vector<std::string>& getIndex() const;

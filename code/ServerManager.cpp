@@ -1,10 +1,11 @@
 
 #include "./hpp/ServerManager.hpp"
+#include "./hpp/HTTPResponseBuild.hpp"
 
-ServerManager::ServerManager(const std::vector<ServerConfig>& servers) : _servers(servers) {};
+// ServerManager::ServerManager() {};
 
-const std::vector<ServerConfig>& ServerManager::getServerManager() const {
-    return _servers;
+const std::map<int, ServerConfig>& ServerManager::getServerManager() const {
+    return _serversMap;
 };
 
 void ServerManager::acceptNewClient(int serverFd) {
@@ -65,7 +66,16 @@ void ServerManager::readClientData(size_t index) {
         return ;
 
     // HTTP REQUST PARSER 
+    // request = HTTP REQUST
 
+    // HTTP RESPONSE BUILD 
+    // ServerConfig has multible servers and I need to connect the Client to the SC.
+    // HTTP RESPONSE 
+    // later ClassResponse will be changed to response
+    // HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+
+
+    // ALL under is default. 
     std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
     std::cout << client.getRequestBuffer() << std::endl;
 
@@ -81,7 +91,23 @@ void ServerManager::readClientData(size_t index) {
     
     send(clientFd, response.c_str(), response.size(), 0);
     
-    std::cout << "Starting send the request" << std::endl;
+    // TODO: IMPORTANT TO CHECK LATER !!!!!!!!!!!!!!!!!!!
+    // Connection: keep-alive
+    // It means:
+    // After sending the response, do not close the client socket yet.
+    // The browser may send another request on the same connection.
+    // if response has Connection: keep-alive
+    //     keep client fd inside poll()
+    //     clear request buffer after complete request
+    // else
+    //     close(client_fd)
+    //     remove from poll()
+    // Important: after one full request is handled, clear only the processed request from the client buffer.
+    // For HTTP/1.1, keep-alive is the default unless the client sends:
+    // Connection: close
+    // bool keepAlive = request.getVersion() == "HTTP/1.1"
+    //           && request.getHeader("Connection") != "close";
+
     client.clearRequestBuffer();
     close(clientFd);
     _clients.erase(clientFd);
@@ -98,13 +124,14 @@ bool ServerManager::isServerSocket(int fd) const
     return false;
 }
 
-void ServerManager::initialize() {
+void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 
-    if(_servers.empty())
+    if(servers.empty())
         throw std::runtime_error("No servers configured");
     
-    for (size_t i = 0; i < _servers.size(); i++) {
-        createListeningSockets(_servers[i]);
+    for (size_t i = 0; i < servers.size(); i++) {
+        int serverFd = createListeningSockets(servers[i]);
+        _serversMap[serverFd] = servers[i];
     }
 };
 
@@ -141,7 +168,7 @@ void ServerManager::setNonBlocking(int fd)
         throw std::runtime_error("fcntl(F_SETFL) failed");
 }
 
-void ServerManager::createListeningSockets(const ServerConfig& servers) {
+int ServerManager::createListeningSockets(const ServerConfig& server) {
 
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -160,7 +187,7 @@ void ServerManager::createListeningSockets(const ServerConfig& servers) {
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
 
-    int port = servers.getPort();
+    int port = server.getPort();
 
     addr.sin_port = htons(port);
 
@@ -176,6 +203,8 @@ void ServerManager::createListeningSockets(const ServerConfig& servers) {
 
     setNonBlocking(server_fd);
 
+    // server.setServerConfFD(server_fd);
+
     _serverSockets.push_back(server_fd);
 
     pollfd server_poll;
@@ -187,5 +216,15 @@ void ServerManager::createListeningSockets(const ServerConfig& servers) {
 
     std::cout << "Listening on port: " << port << std::endl;
 
+    return server_fd;
 };
 
+const ServerConfig& ServerManager::getClientServerManager(int serverIndex) const {
+
+    std::map<int, ServerConfig>::const_iterator it = _serversMap.find(serverIndex);
+
+    if (it == _serversMap.end())
+        throw std::runtime_error("Server configuration not found.");
+
+    return it->second;
+};

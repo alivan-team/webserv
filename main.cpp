@@ -23,37 +23,37 @@ int main(int argc, char **argv) {
 
     try {
         config.parse(configPath);
-        ServerManager socketManager(config.getServers());
-        socketManager.initialize();
+        ServerManager socketManager;
+        socketManager.initialize(config.getServers());
         socketManager.run();
 
 
-        const std::vector<ServerConfig>& servers = socketManager.getServerManager();
+        const std::map<int, ServerConfig>& servers = socketManager.getServerManager();
 
-        for (size_t i = 0; i < servers.size(); ++i)
+        for (auto serv : servers)
         {
             std::cout << "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-\n";
 
-            std::cout << "Server " << i << "\n";
+            std::cout << "Server " << serv.second.getServerConfFD() << "\n";
 
-            printDebug("Ports: ", servers[i].getPort());
+            printDebug("Ports: ", serv.second.getPort());
 
-            printDebug("Server names: ", servers[i].getServerName());
+            printDebug("Server names: ", serv.second.getServerName());
 
-            printDebug("Roots: ", servers[i].getRoot());
+            printDebug("Roots: ", serv.second.getRoot());
 
-            printDebug("Indexes: ", servers[i].getIndex());
+            printDebug("Indexes: ", serv.second.getIndex());
 
-            printDebug("Client max body size: ", servers[i].getClientMaxBodySize());
+            printDebug("Client max body size: ", serv.second.getClientMaxBodySize());
 
-            printDebug("Error page: ", servers[i].getErrorPage());
+            printDebug("Error page: ", serv.second.getErrorPage());
 
             std::cout << "Locations \n";
-            for (size_t j = 0; j < servers[i]._locations.size(); ++j) {
+            for (size_t j = 0; j < serv.second._locations.size(); ++j) {
 
                 printDebug("(", j);
                 std::cout << ")\n";
-                printDebug("", servers[i]._locations[j]);
+                printDebug("", serv.second._locations[j]);
             }
 
             std::cout << "-----------------\n";
