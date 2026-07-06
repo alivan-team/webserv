@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cstdlib>
+#include "HTTPRequest.hpp"
 
 
 class Client {
@@ -14,7 +15,7 @@ class Client {
         size_t _bodyPos;
         size_t _bodySize;
         // HTTPRequest _requestHeader;
-        // HTTPResponse _responseText;
+        // HTTPResponse _response;
 
 
     public:

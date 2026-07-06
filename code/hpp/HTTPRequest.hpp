@@ -15,7 +15,7 @@ class HTTPRequest{
 		std::string _query;
 		std::string _version;
 		std::map<std::string, std::string> _headers;
-		std::string _body;
+		// std::string _body;
 
 	public:
 		HTTPRequest();

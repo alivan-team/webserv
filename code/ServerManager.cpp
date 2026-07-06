@@ -65,6 +65,7 @@ void ServerManager::readClientData(size_t index) {
         return ;
 
     // HTTP REQUST PARSER 
+    // HTTP RESPONSE 
 
     std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
     std::cout << client.getRequestBuffer() << std::endl;
