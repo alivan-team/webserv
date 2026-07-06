@@ -137,9 +137,6 @@ void ServerConfig::setErrorPage(const std::vector<std::string>& error_page) {
 	_serverConf_fd = fd;
  };
 
-
-
-
 const int& ServerConfig::getPort() const { 
 
 	if (_port.size() == 2) {
