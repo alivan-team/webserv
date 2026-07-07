@@ -14,8 +14,8 @@ class HTTPRequest{
 		std::string _uri;
 		std::string _path;
 		std::string _query;
-		std::string _version;
-		std::map<std::string, std::string> _headers;
+		std::string _version = "1.5";
+		std::map<std::string, std::string> _headers; // "key" -> "value";
 
 	public:
 		HTTPRequest();

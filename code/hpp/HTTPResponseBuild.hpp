@@ -5,15 +5,24 @@
 #include "./HTTPRequest.hpp"
 #include "./ServerConfig.hpp"
 #include "./LocationConfig.hpp"
+#include <fstream>
 
 class HTTPResponseBuild {
 
     private: 
-        static HTTPResponse makeErrorResponse(int code);
+        static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
 
         static HTTPResponse handleGet(const HTTPRequest& request,
                                     const ServerConfig& servConf);
 
+        static std::string getStatusText(int code);
+        static std::string decideConnection(const HTTPRequest& request);
+        static std::string  buildErrorBody(int code, const ServerConfig& servConf);
+        static std::string joinPath(const std::string& root, const std::string& path);
+        static bool fileExists(std::string file);
+        static bool canReadFile(std::string file);
+        static std::string readReadFile(std::string file);
+        
         // static bool fileExists(const std::string& path);
         // static bool canRead(const std::string& path);
         // static std::string readFile(const std::string& path);

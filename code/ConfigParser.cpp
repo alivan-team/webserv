@@ -3,6 +3,7 @@
 #include "./hpp/LocationConfig.hpp"
 
 ConfigParser::ConfigParser() {
+    // Dispatch table or setter map
     setters["listen"] = &ServerConfig::setPort;
     setters["server_name"] = &ServerConfig::setServerName;
     setters["root"] = &ServerConfig::setRoot;

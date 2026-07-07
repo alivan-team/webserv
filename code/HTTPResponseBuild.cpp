@@ -14,25 +14,32 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
     std::string path = request.getPath();
     std::string version = request.getVersion();
 
+    // std::cout << "REQUEST: " << version << std::endl;
+    // printDebug("\t _uri: ", request.getUri());
+    // printDebug("\t _path: ", request.getPath());
+    // printDebug("\t _query: ", request.getQuery());
+    // printDebug("\t _version: ", request.getVersion());
+
     if (version != "HTTP/1.0" && version != "HTTP/1.1")
-        return makeErrorResponse(505);
+        return makeErrorResponse(505, request, servConf);
 
     switch (method)
     {
-        case Method::GET:
-            return handleGet(request, servConf);
+        // case Method::GET:
+        //     return handleGet(request, servConf);
 
-        case Method::POST:
-            return handlePost(request, servConf);
+        // case Method::POST:
+        //     return handlePost(request, servConf);
 
-        case Method::DELETE:
-            return handleDelete(request, servConf);
+        // case Method::DELETE:
+        //     return handleDelete(request, servConf);
 
-        case Method::HEAD:
-            return handleHead(request, servConf);
+        // investigate: decide later 
+        // case Method::HEAD:
+        //     return handleHead(request, servConf);
 
         default:
-            return makeErrorResponse(400);
+            return makeErrorResponse(400, request, servConf);
     }
 
 
@@ -76,42 +83,126 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
     return {};
 };
 
-HTTPResponse HTTPResponseBuild::makeErrorResponse(int code) {
+HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf) {
 
     HTTPResponse res;
 
-    
+    std::string text = getStatusText(code);
+    std::string body = buildErrorBody(code, servConf);
 
     res.setStatusCode(code);
-    res.setHeader();
+    res.setStatus(text);
+    res.setHeader("Content-Type", "text.html");
+    res.setHeader("Content-Length", std::to_string(body.size()));
+    res.setHeader("Connection", decideConnection(request));
+    res.setBody(body);
+
+    return res;
+};
+
+// HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
+
+    
+// };
+
+// ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR 
+
+std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& servConf) {
+
+
+    // std::cout << "Code: " << code << std::endl;
+    // std::cout << "servConf.hasErrorPage(code): " << servConf.hasErrorPage(code) << std::endl;
+    // std::cout << "error_path from servConf: " << servConf.getOneErrorPage(code) << std::endl;
+    // std::cout << "ROOT from servConf: " << servConf.getRoot().back() << std::endl;
+    if (servConf.hasErrorPage(code)) {
+
+        std::string error_path = servConf.getOneErrorPage(code);
+        std::string root = servConf.getRoot().back();
+        std::string fullPath = joinPath(root, error_path);
+
+        if (fileExists(fullPath) && canReadFile(fullPath)) {
+            return readReadFile(fullPath);
+        }
+        // std::cout << "FULL PATH : " << fullPath << std::endl;
+    }
+
+
+    std::string text = getStatusText(code);
+
+    return "<html><body><h1>" +
+           std::to_string(code) + " " + text +
+           "</h1></body></html>";
+};
+
+std::string HTTPResponseBuild::getStatusText(int code)
+{
+    switch (code)
+    {
+        case 400: return "Bad Request";
+        case 403: return "Forbidden";
+        case 404: return "Not Found";
+        case 405: return "Method Not Allowed";
+        case 500: return "Internal Server Error";
+        case 501: return "Not Implemented";
+        case 505: return "HTTP Version Not Supported";
+        default:  return "Error";
+    }
+}
+
+std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
+    std::string version = request.getVersion();
+
+    if (version == "1.0")
+    {
+        if (request.hasHeader("Connection") &&
+            request.getHeader("Connection") == "keep-alive")
+            return "keep-alive";
+
+        return "close";
+    }
+
+    if (version == "1.1")
+    {
+        if (request.hasHeader("Connection") &&
+            request.getHeader("Connection") == "close")
+            return "close";
+
+        return "keep-alive";
+    }
+
+    return "close";
+};
+
+// HELPER ERROR Functions that maybe I will use later for other requests ??
+
+std::string HTTPResponseBuild::joinPath(const std::string& root, const std::string& path) {
+    
+    if (root.empty())
+        return path;
+
+    if (path.empty())
+        return root;
+
+    bool rootEndsWithSlash = root[root.size() - 1] == '/';
+    bool pathStartsWithSlash = path[0] == '/';
+
+    if (rootEndsWithSlash && pathStartsWithSlash)
+        return root + path.substr(1);
+
+    if (!rootEndsWithSlash && !pathStartsWithSlash)
+        return root + "/" + path;
+
+    return root + path;
+};
+
+bool HTTPResponseBuild::fileExists(std::string file) {
 
 };
 
-HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
-
+bool HTTPResponseBuild::canReadFile(std::string file) {
+    
 };
 
-// std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request)
-// {
-//     std::string version = request.getVersion();
+std::string HTTPResponseBuild::readReadFile(std::string file) {
 
-//     if (version == "HTTP/1.0")
-//     {
-//         if (request.hasHeader("Connection") &&
-//             request.getHeader("Connection") == "keep-alive")
-//             return "keep-alive";
-
-//         return "close";
-//     }
-
-//     if (version == "HTTP/1.1")
-//     {
-//         if (request.hasHeader("Connection") &&
-//             request.getHeader("Connection") == "close")
-//             return "close";
-
-//         return "keep-alive";
-//     }
-
-//     return "close";
-// }
+};

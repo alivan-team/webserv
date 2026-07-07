@@ -44,6 +44,8 @@ class ServerConfig {
         const std::vector<std::string>& getIndex() const;
         const std::vector<unsigned int>& getClientMaxBodySize() const;
         const std::map<int, std::string>& getErrorPage() const;
+        bool hasErrorPage(int code) const;
+        std::string getOneErrorPage(int code) const;
 
         // bool parsePort(const std::string& port);
 
