@@ -1,6 +1,9 @@
 
 #include "./hpp/ServerManager.hpp"
 #include "./hpp/HTTPResponseBuild.hpp"
+#include "./hpp/HTTPRequestParser.hpp"
+
+#include "./hpp/printDebug.hpp"
 
 // ServerManager::ServerManager() {};
 
@@ -66,7 +69,11 @@ void ServerManager::readClientData(size_t index) {
         return ;
 
     // HTTP REQUST PARSER 
-    // request = HTTP REQUST
+	std::cout << "HTTPParser ============================\n";
+    HTTPRequest request = HTTPRequestParser().parse(client.getRequestBuffer());
+	printDebug("HTTPRequestParser", request);
+	std::cout << "~HTTPParser ============================\n";
+	// client._request = 
 
     // HTTP RESPONSE BUILD 
     // ServerConfig has multible servers and I need to connect the Client to the SC.

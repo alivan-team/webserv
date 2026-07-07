@@ -23,6 +23,7 @@
 		const std::string& HTTPRequest::getPath() const{ return _path; };
 		const std::string& HTTPRequest::getQuery() const{ return _query; };
 		const std::string& HTTPRequest::getVersion() const{ return _version; };
+		const std::map<std::string, std::string>& HTTPRequest::getHeaders() const{ return _headers; };
 
 		bool HTTPRequest::hasHeader(const std::string &name) const{ return (_headers.find(name) != _headers.end()); };
 		const std::string& HTTPRequest::getHeader(const std::string &name) const{

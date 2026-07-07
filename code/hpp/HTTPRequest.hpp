@@ -33,6 +33,7 @@ class HTTPRequest{
 		const std::string &getPath() const;
 		const std::string &getQuery() const;
 		const std::string &getVersion() const;
+		const std::map<std::string, std::string> &getHeaders() const;
 
 		bool hasHeader(const std::string &name) const;
 		const std::string &getHeader(const std::string &name) const;
