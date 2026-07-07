@@ -8,6 +8,18 @@
 
 class HTTPResponseBuild {
 
+    private: 
+        static HTTPResponse makeErrorResponse(int code);
+
+        static HTTPResponse handleGet(const HTTPRequest& request,
+                                    const ServerConfig& servConf);
+
+        // static bool fileExists(const std::string& path);
+        // static bool canRead(const std::string& path);
+        // static std::string readFile(const std::string& path);
+        // static std::string getMimeType(const std::string& path);
+        // static std::string toString(size_t value);
+
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
 };

@@ -13,7 +13,7 @@ class HTTPRequestParser{
 		Method parseMethod(std::string methods);
 
 	public:
-		HTTPRequest parse(const std::string &buffer) const;
+		// HTTPRequest parse(const std::string &buffer) const;
 };
 
 #endif

@@ -12,7 +12,7 @@ class Client {
     private:
         std::string _requestBuffer;
         int _client_fd;
-        int _server_fd; // server FD
+        int _server_fd;
         size_t _bodyPos;
         size_t _bodySize;
         // HTTPRequest _request;

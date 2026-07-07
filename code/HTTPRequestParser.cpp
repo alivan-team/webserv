@@ -24,6 +24,6 @@
 			return Method::UNKNOWN;
 	};
 
-	HTTPRequest HTTPRequestParser::parse(const std::string &buffer) const{
+	// HTTPRequest HTTPRequestParser::parse(const std::string &buffer) const{
 
-	};
+	// };
