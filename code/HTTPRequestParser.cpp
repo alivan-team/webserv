@@ -45,7 +45,10 @@ void HTTPRequestParser::parseRequestLine(
 	request.setUri(strUri);
 
 	std::string strVer = line.substr(secondSpace + 1);
-	request.setVersion(strVer);
+	if (strVer == "HTTP/1.1")
+		request.setVersion("1.1");
+	if (strVer == "HTTP/1.0")
+		request.setVersion("1.0");
 
 	parseUri(strUri, request);
 };
