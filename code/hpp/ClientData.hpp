@@ -20,7 +20,6 @@ class Client {
 		
 		
 	public:
-        HTTPRequest _request;
 		
         Client();
         Client(int clinet_fd, int server_fd);
@@ -30,6 +29,8 @@ class Client {
         bool hasCompleteRequest() ;
 
         void clearRequestBuffer();
+
+        void setClientRequest(const HTTPRequest& req);
 
         std::string getFullBodyRequest() const;
         std::string getPartBodyRequest(size_t start, size_t length) const;

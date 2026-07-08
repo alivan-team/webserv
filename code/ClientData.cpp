@@ -49,6 +49,10 @@ void Client::clearRequestBuffer() {
     _requestBuffer.clear();
 };
 
+void Client::setClientRequest(const HTTPRequest& req) {
+    _request = req;
+};
+
 std::string Client::getFullBodyRequest() const {
     return _requestBuffer.substr(_bodyPos, _bodySize);
 };
