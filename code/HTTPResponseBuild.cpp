@@ -25,6 +25,7 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
 
     switch (method)
     {
+        // CGI function 
         // case Method::GET:
         //     return handleGet(request, servConf);
 
@@ -41,6 +42,8 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
         default:
             return makeErrorResponse(400, request, servConf);
     }
+
+    // detect SGI
 
 
 
@@ -129,8 +132,13 @@ std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& ser
         if (fileExists(fullPath) && canReadFile(fullPath)) {
             
             // std::cout << "\tFULL PATH : " << fullPath << std::endl;
+            
+            // cgi -> child -> execute that file with query -> return result -> we put that result in body -> and send it  
+            
             return readReadFile(fullPath);
         }
+
+    
     }
 
 
