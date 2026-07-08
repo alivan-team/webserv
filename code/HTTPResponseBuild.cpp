@@ -26,8 +26,8 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
     switch (method)
     {
         // CGI function 
-        // case Method::GET:
-        //     return handleGet(request, servConf);
+        case Method::GET:
+            return handleGet(request, servConf);
 
         // case Method::POST:
         //     return handlePost(request, servConf);
@@ -106,12 +106,17 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& r
     return res;
 };
 
-// HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
+
+// GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
+HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
 
     
-// };
+};
 
-// ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR 
+// POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
+// DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
+
+// ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR 
 
 std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& servConf) {
 
