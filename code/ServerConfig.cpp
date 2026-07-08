@@ -5,7 +5,7 @@
 
 //  SERVER CONFIG 
 
-ServerConfig::ServerConfig() : _port({8080}), _server_name({"localhost"}), _root({"./www"}), _index({"index.html"}), _client_max_body_size({1000000}) {};
+ServerConfig::ServerConfig() : _port({8080}), _server_name({"localhost"}), _root({"./site/www"}), _index({"index.html"}), _client_max_body_size({1000000}) {};
 
 ServerConfig::~ServerConfig() {};
 
@@ -71,6 +71,7 @@ void ServerConfig::setRoot(const std::vector<std::string>& root) {
 			throw std::runtime_error("Invalid root");
 		}
 	}
+	_root.clear();
 	_root.insert(_root.end(), root.begin(), root.end());
 
 };
@@ -137,9 +138,6 @@ void ServerConfig::setErrorPage(const std::vector<std::string>& error_page) {
 	_serverConf_fd = fd;
  };
 
-
-
-
 const int& ServerConfig::getPort() const { 
 
 	if (_port.size() == 2) {
@@ -157,6 +155,21 @@ const std::vector<std::string>& ServerConfig::getIndex() const { return _index; 
 const std::vector<unsigned int>& ServerConfig::getClientMaxBodySize() const { return _client_max_body_size; };
 
 const std::map<int, std::string>& ServerConfig::getErrorPage() const { return _error_pages; };
+
+bool ServerConfig::hasErrorPage(int code) const {
+
+	return _error_pages.find(code) != _error_pages.end();
+};
+
+std::string ServerConfig::getOneErrorPage(int code) const {
+
+	std::map<int, std::string>::const_iterator it = _error_pages.find(code);
+
+	if(it == _error_pages.end())
+		return "";
+	
+	return it->second;
+};
 
 const int& ServerConfig::getServerConfFD() const { return _serverConf_fd; };
 

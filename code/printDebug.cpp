@@ -1,5 +1,6 @@
 #include "./hpp/printDebug.hpp"
 #include "./hpp/LocationConfig.hpp"
+#include "./hpp/HTTPRequest.hpp"
 
 
 void printDebug(std::string title, const bool& value) {
@@ -15,6 +16,7 @@ void printDebug(std::string title, const int& value) {
     std::cout << value << " ";
     std::cout << "\n";
 }
+
 void printDebug(std::string title, const size_t& value) {
 
 	std::cout << title;
@@ -62,6 +64,15 @@ void printDebug(std::string title, const std::map<int, std::string>& vec) {
 
 }
 
+void printDebug(std::string title, const std::map<std::string, std::string>& vec) {
+	std::cout << title;
+    for (const auto& value : vec) {
+        std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
+        std::cout << "\n";
+    }
+
+}
+
 void printDebug(std::string title, const LocationConfig& location) {
 	std::cout << title << "\n";
 	printDebug("\t getUriPath: ", location.getUriPath());
@@ -84,4 +95,28 @@ void printDebug(std::string title, const LocationConfig& location) {
 		printDebug("\t hasRedirect: ", location.hasRedirect());
 	}
 	printDebug("\t getAutoIndex: ", location.getAutoIndex());
+}
+
+void printDebug(std::string title, const HTTPRequest &request) {
+	std::cout << title << "\n";
+	std::cout << "Method: ";
+	if (request.getMethod() == Method::GET) {
+		std::cout << "\t\tGET: \n";
+	}
+	if (request.getMethod() == Method::POST) {
+		std::cout << "\t\tPOST: \n";
+	}
+	if (request.getMethod() == Method::DELETE) {
+		std::cout << "\t\tDELETE: \n";
+	}
+	if (request.getMethod() == Method::UNKNOWN) {
+		std::cout << "\t\tUNKNOWN: \n";
+	}
+
+	std::cout << "Path:\t\t" << request.getUri() << "\n";
+	std::cout << "Query:\t\t" << request.getQuery() << "\n";
+	std::cout << "Version:\t\t" << request.getVersion() << "\n";
+
+	std::map<std::string, std::string> headers = request.getHeaders();
+	printDebug("Headers:\n", headers);
 }

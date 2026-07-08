@@ -1,6 +1,9 @@
 
 #include "./hpp/ServerManager.hpp"
 #include "./hpp/HTTPResponseBuild.hpp"
+#include "./hpp/HTTPRequestParser.hpp"
+
+#include "./hpp/printDebug.hpp"
 
 // ServerManager::ServerManager() {};
 
@@ -66,28 +69,33 @@ void ServerManager::readClientData(size_t index) {
         return ;
 
     // HTTP REQUST PARSER 
-    // request = HTTP REQUST
+	// std::cout << "HTTPParser ============================\n";
+    // HTTPRequest request = HTTPRequestParser().parse(client.getRequestBuffer());
+	// printDebug("HTTPRequestParser", request);
+	// std::cout << "~HTTPParser ============================\n";
+	client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
 
     // HTTP RESPONSE BUILD 
     // ServerConfig has multible servers and I need to connect the Client to the SC.
     // HTTP RESPONSE 
     // later ClassResponse will be changed to response
-    // HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+    HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
 
 
     // ALL under is default. 
-    std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
-    std::cout << client.getRequestBuffer() << std::endl;
+    // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
+    // std::cout << "~~~~~~ BODY FROM MANAGER ~~~~~~ " << std::endl;
+    // std::cout << ClassResponse.getBody() << std::endl;
 
-    std::string body = "Hello from ServerManager\n";
+    // std::string body = "Hello from ServerManager\n";
 
     
-    std::string response =
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: text/plain\r\n"
-    "Content-Length: " + std::to_string(body.size()) + "\r\n"
-    "\r\n" +
-    body;
+    std::string response = ClassResponse.toString();
+    // "HTTP/1.1 200 OK\r\n"
+    // "Content-Type: text/plain\r\n"
+    // "Content-Length: " + std::to_string(body.size()) + "\r\n"
+    // "\r\n" +
+    // body;
     
     send(clientFd, response.c_str(), response.size(), 0);
     

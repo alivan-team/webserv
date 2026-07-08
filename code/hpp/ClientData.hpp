@@ -12,14 +12,15 @@ class Client {
     private:
         std::string _requestBuffer;
         int _client_fd;
-        int _server_fd; // server FD
+        int _server_fd;
         size_t _bodyPos;
         size_t _bodySize;
-        // HTTPRequest _request;
+        HTTPRequest _request;
         // HTTPResponse _response;
-
-
-    public:
+		
+		
+	public:
+		
         Client();
         Client(int clinet_fd, int server_fd);
 
@@ -29,6 +30,8 @@ class Client {
 
         void clearRequestBuffer();
 
+        void setClientRequest(const HTTPRequest& req);
+
         std::string getFullBodyRequest() const;
         std::string getPartBodyRequest(size_t start, size_t length) const;
         size_t getBodyPos() const;
@@ -37,7 +40,7 @@ class Client {
         int getClientFd() const;
         int getServerFd() const;
         const std::string& getRequestBuffer() const;
-        // const HTTPRequest& getRequest() const;
+        const HTTPRequest& getRequest() const;
 
 
 };
