@@ -17,9 +17,11 @@ class Client {
         size_t _bodySize;
         HTTPRequest _request;
         // HTTPResponse _response;
-
-
-    public:
+		
+		
+	public:
+        HTTPRequest _request;
+		
         Client();
         Client(int clinet_fd, int server_fd);
 

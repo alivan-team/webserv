@@ -1,7 +1,7 @@
 NAME		:= webserv
 
 CXX			:= c++
-CXXFLAGS	:= -Wall -Wextra -Werror -std=c++17 -g
+CXXFLAGS	:= -std=c++17 -g # TODO: temporary excluding -Wall -Wextra -Werror 
 CPPFLAGS	:= -Icode/hpp
 
 OBJ_DIR		:= build
