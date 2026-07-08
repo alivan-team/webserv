@@ -14,13 +14,13 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
     std::string path = request.getPath();
     std::string version = request.getVersion();
 
-    // std::cout << "REQUEST: " << version << std::endl;
-    // printDebug("\t _uri: ", request.getUri());
-    // printDebug("\t _path: ", request.getPath());
-    // printDebug("\t _query: ", request.getQuery());
-    // printDebug("\t _version: ", request.getVersion());
+    std::cout << "REQUEST: " << version << std::endl;
+    printDebug("\t _uri: ", request.getUri());
+    printDebug("\t _path: ", request.getPath());
+    printDebug("\t _query: ", request.getQuery());
+    printDebug("\t _version: ", request.getVersion());
 
-    if (version != "HTTP/1.0" && version != "HTTP/1.1")
+    if (version != "1.0" && version != "1.1")
         return makeErrorResponse(505, request, servConf);
 
     switch (method)
@@ -90,6 +90,9 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& r
     std::string text = getStatusText(code);
     std::string body = buildErrorBody(code, servConf);
 
+    // std::cout << "    :    BODY    : \n" << "code:  "<<  code << std::endl;
+    // std::cout << "Code: " << code << std::endl;
+
     res.setStatusCode(code);
     res.setStatus(text);
     res.setHeader("Content-Type", "text.html");
@@ -110,7 +113,7 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& r
 std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& servConf) {
 
 
-    // std::cout << "Code: " << code << std::endl;
+    // std::cout << "\nCode: " << code << std::endl;
     // std::cout << "servConf.hasErrorPage(code): " << servConf.hasErrorPage(code) << std::endl;
     // std::cout << "error_path from servConf: " << servConf.getOneErrorPage(code) << std::endl;
     // std::cout << "ROOT from servConf: " << servConf.getRoot().back() << std::endl;
@@ -120,10 +123,14 @@ std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& ser
         std::string root = servConf.getRoot().back();
         std::string fullPath = joinPath(root, error_path);
 
+        // std::cout << "\tfileExists(fullPath) : " << fileExists(fullPath) 
+        // << "\n\t canReadFile(fullPath) : " <<  canReadFile(fullPath) << std::endl;
+        
         if (fileExists(fullPath) && canReadFile(fullPath)) {
+            
+            // std::cout << "\tFULL PATH : " << fullPath << std::endl;
             return readReadFile(fullPath);
         }
-        // std::cout << "FULL PATH : " << fullPath << std::endl;
     }
 
 
@@ -195,14 +202,44 @@ std::string HTTPResponseBuild::joinPath(const std::string& root, const std::stri
     return root + path;
 };
 
-bool HTTPResponseBuild::fileExists(std::string file) {
+bool HTTPResponseBuild::fileExists(const std::string& file) {
 
+    struct stat st;
+    return stat(file.c_str(), &st) == 0;
 };
 
-bool HTTPResponseBuild::canReadFile(std::string file) {
+bool HTTPResponseBuild::canReadFile(const std::string& file) {
+
+    return access(file.c_str(), R_OK) == 0;
+};
+
+std::string HTTPResponseBuild::readReadFile(const std::string& file) {
+
+    std::ifstream inputFile(file);
     
-};
+    if (!inputFile.is_open())
+        return "";
+    
+    std::string line;
+    std::string body;
 
-std::string HTTPResponseBuild::readReadFile(std::string file) {
+    while (std::getline(inputFile, line)) {
+        // std::cout << "read file: " << line << std::endl;
+        body += line;
+        body += "\n";
+    }
+    inputFile.close();
 
+    return body;
+
+// Chat suggestion ????
+    // std::ifstream inputFile(file.c_str());
+
+    // if (!inputFile.is_open())
+    //     return "";
+
+    // std::stringstream buffer;
+    // buffer << inputFile.rdbuf();
+
+    // return buffer.str();
 };

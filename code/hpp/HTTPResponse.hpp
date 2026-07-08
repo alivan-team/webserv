@@ -19,8 +19,9 @@ class HTTPResponse {
 		void setStatus(const std::string& text);
 		void setBody(const std::string& body);
 		
-	
 		std::string toString() const;
+
+		const std::string& getBody() const;
 
 };
 

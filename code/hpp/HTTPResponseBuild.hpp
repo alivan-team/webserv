@@ -6,6 +6,15 @@
 #include "./ServerConfig.hpp"
 #include "./LocationConfig.hpp"
 #include <fstream>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <iostream>
+#include <vector>
+#include <map>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
 
 class HTTPResponseBuild {
 
@@ -19,9 +28,9 @@ class HTTPResponseBuild {
         static std::string decideConnection(const HTTPRequest& request);
         static std::string  buildErrorBody(int code, const ServerConfig& servConf);
         static std::string joinPath(const std::string& root, const std::string& path);
-        static bool fileExists(std::string file);
-        static bool canReadFile(std::string file);
-        static std::string readReadFile(std::string file);
+        static bool fileExists(const std::string& file);
+        static bool canReadFile(const std::string& file);
+        static std::string readReadFile(const std::string& file);
         
         // static bool fileExists(const std::string& path);
         // static bool canRead(const std::string& path);

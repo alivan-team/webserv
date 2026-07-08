@@ -77,17 +77,18 @@ void ServerManager::readClientData(size_t index) {
 
     // ALL under is default. 
     // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
-    // std::cout << client.getRequestBuffer() << std::endl;
+    // std::cout << "~~~~~~ BODY FROM MANAGER ~~~~~~ " << std::endl;
+    // std::cout << ClassResponse.getBody() << std::endl;
 
-    std::string body = "Hello from ServerManager\n";
+    // std::string body = "Hello from ServerManager\n";
 
     
-    std::string response =
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: text/plain\r\n"
-    "Content-Length: " + std::to_string(body.size()) + "\r\n"
-    "\r\n" +
-    body;
+    std::string response = ClassResponse.toString();
+    // "HTTP/1.1 200 OK\r\n"
+    // "Content-Type: text/plain\r\n"
+    // "Content-Length: " + std::to_string(body.size()) + "\r\n"
+    // "\r\n" +
+    // body;
     
     send(clientFd, response.c_str(), response.size(), 0);
     

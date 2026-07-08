@@ -19,7 +19,8 @@ void HTTPResponse::setStatus(const std::string& text) {
 };
 
 std::string HTTPResponse::toString() const {
-     std::string response;
+    
+    std::string response;
 
     response += "HTTP/1.1 ";
     response += std::to_string(_statusCode);
@@ -39,3 +40,7 @@ std::string HTTPResponse::toString() const {
 
     return response;
 }
+
+const std::string& HTTPResponse::getBody() const {
+    return _body;
+};
