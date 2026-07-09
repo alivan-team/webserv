@@ -355,7 +355,6 @@ std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const Locatio
     return "";
 };
 
-
 std::string HTTPResponseBuild::readReadFile(const std::string& file) {
 
     std::ifstream inputFile(file);
