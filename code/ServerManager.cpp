@@ -90,12 +90,16 @@ void ServerManager::readClientData(size_t index) {
     // std::string body = "Hello from ServerManager\n";
 
     
-    std::string response = ClassResponse.toString();
+    std::string response = ClassResponse.toString(ClassResponse);
     // "HTTP/1.1 200 OK\r\n"
     // "Content-Type: text/plain\r\n"
     // "Content-Length: " + std::to_string(body.size()) + "\r\n"
     // "\r\n" +
     // body;
+
+    // std::string res = response;
+    // std::cout << "~~~~~~ RESPONSE ~~~~~~ \n\t" << res << " ----- \n";
+
     
     send(clientFd, response.c_str(), response.size(), 0);
     

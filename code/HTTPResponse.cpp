@@ -18,11 +18,16 @@ void HTTPResponse::setStatus(const std::string& text) {
     _statusText = text;
 };
 
-std::string HTTPResponse::toString() const {
+void HTTPResponse::setVersion(const std::string& version) {
+    _version = version;
+};
+
+
+std::string HTTPResponse::toString(HTTPResponse& ClassResponse) const {
     
     std::string response;
 
-    response += "HTTP/1.1 ";
+    response += "HTTP/" + ClassResponse.getVersion() + " ";
     response += std::to_string(_statusCode);
     response += ": ";
     response += _statusText;
@@ -43,4 +48,8 @@ std::string HTTPResponse::toString() const {
 
 const std::string& HTTPResponse::getBody() const {
     return _body;
+};
+
+const std::string& HTTPResponse::getVersion() const {
+    return _version;
 };

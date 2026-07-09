@@ -23,9 +23,9 @@ class ServerConfig {
         std::vector<std::string>  _index;
         std::vector<unsigned int> _client_max_body_size;
         std::map<int, std::string> _error_pages;
+        std::vector<LocationConfig> _locations;
         
         public:
-        std::vector<LocationConfig> _locations;
         ServerConfig();
         ~ServerConfig();
         
@@ -50,7 +50,7 @@ class ServerConfig {
         // bool parsePort(const std::string& port);
 
 		void addLocation(const LocationConfig &locations);
-		const std::vector<LocationConfig>& getLocation() const;
+		const std::vector<LocationConfig>& getLocations() const;
 
 };
 

@@ -21,8 +21,7 @@ class HTTPResponseBuild {
     private: 
         static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
 
-        static HTTPResponse handleGet(const HTTPRequest& request,
-                                    const ServerConfig& servConf);
+        static HTTPResponse handleGet(const HTTPRequest& request, const ServerConfig& servConf);
 
         static std::string getStatusText(int code);
         static std::string decideConnection(const HTTPRequest& request);
@@ -31,12 +30,10 @@ class HTTPResponseBuild {
         static bool fileExists(const std::string& file);
         static bool canReadFile(const std::string& file);
         static std::string readReadFile(const std::string& file);
+        static bool isDirectory(const std::string& path);
         
-        // static bool fileExists(const std::string& path);
-        // static bool canRead(const std::string& path);
-        // static std::string readFile(const std::string& path);
-        // static std::string getMimeType(const std::string& path);
-        // static std::string toString(size_t value);
+        static LocationConfig findBestLocation (const std::string& path,  const ServerConfig& servConf);
+        static std::string findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf);
 
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);

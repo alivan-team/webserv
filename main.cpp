@@ -49,11 +49,11 @@ int main(int argc, char **argv) {
             printDebug("Error page: ", serv.second.getErrorPage());
 
             std::cout << "Locations \n";
-            for (size_t j = 0; j < serv.second._locations.size(); ++j) {
+            for (size_t j = 0; j < serv.second.getLocations().size(); ++j) {
 
                 printDebug("(", j);
                 std::cout << ")\n";
-                printDebug("", serv.second._locations[j]);
+                printDebug("", serv.second.getLocations()[j]);
             }
 
             std::cout << "-----------------\n";
