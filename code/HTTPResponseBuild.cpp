@@ -7,6 +7,26 @@
 	// Content-Length
 	// Connection
 
+    // Client requests /images/
+    //         ↓
+    // Is it a directory?
+    //         ↓
+    // Yes
+    //         ↓
+    // Find index file
+    //         ↓
+    // Found?
+    //     /    \
+    //     yes    no
+    //     |       |
+    // serve      autoindex?
+    // index        /   \
+    //             on   off
+    //             |     |
+    // read directory   403
+    // generate HTML
+    // return HTML
+
 HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerConfig& servConf) {
 	
 
@@ -31,6 +51,7 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
 
         // case Method::POST:
         //     return handlePost(request, servConf);
+        // -> IMPORTANT Check for POST:  Transfer-Encoding: chunked + Content-length
 
         // case Method::DELETE:
         //     return handleDelete(request, servConf);
@@ -55,17 +76,23 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     std::string path = request.getPath();
     // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "path:  "<<  path << std::endl;
 
-    LocationConfig location = findBestLocation(path ,servConf);
+    const LocationConfig* location = findBestLocation(path ,servConf);
     // std::cout << "location:  " <<  location.getUriPath() << std::endl;
 
-    if (!location.isGetAllowed())
+    if (location == NULL)
+        return makeErrorResponse(404, request, servConf);
+
+    if (!location->isGetAllowed())
         return makeErrorResponse(405, request, servConf);
 
+
+
+        
     std::string fullPath;
-    if (location.getRoot().empty())
+    if (location->getRoot().empty())
         fullPath = joinPath(servConf.getRoot()[0], path);
     else 
-        fullPath = joinPath(location.getRoot(), path);
+        fullPath = joinPath(location->getRoot(), path);
 
     // std::cout << "fullPath :  " <<  fullPath << std::endl;
 
@@ -74,13 +101,28 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
     if (isDirectory(fullPath)) {
 
-        std::string indexPath = findIndexFile(fullPath, location, servConf);
+        std::string indexPath = findIndexFile(fullPath, *location, servConf);
 
         if (!indexPath.empty()) {
             fullPath = indexPath;
+        } else if (location->getAutoIndex()) {
+            // return the buildAutoIndexPage -> because there is no 
+            return makeErrorResponse(403, request, servConf); // buildAutoIndexPage( const std::string& directoryPath, const std::string& requestPath, const HTTPRequest& request, const ServerConfig& servConf);
         } else {
             return makeErrorResponse(403, request, servConf);
         }
+
+//  AUTO INDEX
+        // This is for autoIndex in Location
+        // std::string indexPath = findIndexFile(fullPath, *location, servConf);
+
+        // if (!indexPath.empty()) {
+        //     fullPath = indexPath;
+        // } else if (location->getAutoIndex()) {
+        //     return buildAutoIndexPage( const std::string& directoryPath, const std::string& requestPath, const HTTPRequest& request, const ServerConfig& servConf);
+        // } else {
+        //     return makeErrorResponse(403, request, servConf);
+        // }
 
     }
     // std::cout << "canReadFile(fullPath) : " << canReadFile(fullPath) << std::endl;
@@ -213,7 +255,75 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
 
 // HELPER ERROR Functions that maybe I will use later for other requests ??
 
-LocationConfig HTTPResponseBuild::findBestLocation (const std::string& path,  const ServerConfig& servConf) {
+//  AUTO INDEX
+// This is for autoIndex in Location
+
+// HTTPResponse HTTPResponseBuild::buildAutoIndexPage(
+//     const std::string& directoryPath,
+//     const std::string& requestPath,
+//     const HTTPRequest& request)
+// {
+//     HTTPResponse res;
+//     DIR* dir = opendir(directoryPath.c_str());
+
+//     if (dir == NULL)
+//         return makeErrorResponse(403, request, /* servConf needed here */);
+
+//     std::string body;
+
+//     body += "<!DOCTYPE html>\n";
+//     body += "<html>\n";
+//     body += "<head>\n";
+//     body += "    <meta charset=\"UTF-8\">\n";
+//     body += "    <title>Index of " + requestPath + "</title>\n";
+//     body += "</head>\n";
+//     body += "<body>\n";
+//     body += "    <h1>Index of " + requestPath + "</h1>\n";
+//     body += "    <hr>\n";
+//     body += "    <ul>\n";
+
+//     struct dirent* entry;
+
+//     while ((entry = readdir(dir)) != NULL)
+//     {
+//         std::string name = entry->d_name;
+
+//         if (name == "." || name == "..")
+//             continue;
+
+//         std::string href = requestPath;
+
+//         if (href.empty() || href[href.size() - 1] != '/')
+//             href += "/";
+
+//         href += name;
+
+//         body += "        <li><a href=\"";
+//         body += href;
+//         body += "\">";
+//         body += name;
+//         body += "</a></li>\n";
+//     }
+
+//     body += "    </ul>\n";
+//     body += "    <hr>\n";
+//     body += "</body>\n";
+//     body += "</html>\n";
+
+//     closedir(dir);
+
+//     res.setStatusCode(200);
+//     res.setStatus(getStatusText(200));
+//     res.setVersion(request.getVersion());
+//     res.setHeader("Content-Type", "text/html");
+//     res.setHeader("Content-Length", std::to_string(body.size()));
+//     res.setHeader("Connection", decideConnection(request));
+//     res.setBody(body);
+
+//     return res;
+// }
+
+const LocationConfig* HTTPResponseBuild::findBestLocation (const std::string& path,  const ServerConfig& servConf) {
 
     const std::vector<LocationConfig>& locations = servConf.getLocations();
     // /////////////////////////////////////////
@@ -221,31 +331,40 @@ LocationConfig HTTPResponseBuild::findBestLocation (const std::string& path,  co
 
     const LocationConfig* bestLoc = NULL;
 
-    for (const auto& loc : locations) {
-        // std::cout << "loc : " << loc.getUriPath() << std::endl;
-        
-        std::string locPath = loc.getUriPath();
-
-        bool matches = path.compare(0, locPath.size(), locPath) == 0;
-        // std::cout << "matches : " << matches << "\n" << std::endl;
-        
-        if (matches) {
-            // std::cout << "locPath.size() : " << locPath.size() << "\n" << std::endl;
-            // std::cout << "loc.getUriPath().size() : " << loc.getUriPath().size() << "\n" << std::endl;
-            if (bestLoc == NULL || locPath.size() > bestLoc->getUriPath().size()) {
+    for (const auto& loc : locations)
+    {
+        if (startsWithLocation(path, loc.getUriPath()))
+        {
+            if (!bestLoc || loc.getUriPath().size() > bestLoc->getUriPath().size())
                 bestLoc = &loc;
-            }
         }
-        
     }
+
     // dunno yet ??
     if (bestLoc == NULL)
-       throw std::runtime_error("No matching location");
+       return NULL;
     // // /////////////////////////////////////////
 
-    return *bestLoc;
+    return bestLoc;
 
 };
+
+bool HTTPResponseBuild::startsWithLocation(const std::string& path, const std::string& loc) {
+
+    if (loc.empty())
+        return false;
+
+    if (path.compare(0, loc.size(), loc) != 0)
+        return false;
+
+    if (path.size() == loc.size())
+        return true;
+
+    if (loc.back() == '/')
+        return true;
+
+    return path[loc.size()] == '/';
+}
 
 std::string HTTPResponseBuild::joinPath(const std::string& root, const std::string& path) {
     
@@ -335,13 +454,18 @@ std::string HTTPResponseBuild::readReadFile(const std::string& file) {
     return body;
 
 // Chat suggestion ????
-    // std::ifstream inputFile(file.c_str());
+//  Check the throw error... 
+
+    // std::ifstream inputFile(file.c_str(), std::ios::binary);
 
     // if (!inputFile.is_open())
-    //     return "";
+    //     throw std::runtime_error("Could not open file: " + file);
 
-    // std::stringstream buffer;
+    // std::ostringstream buffer;
     // buffer << inputFile.rdbuf();
+
+    // if (inputFile.bad())
+    //     throw std::runtime_error("Could not read file: " + file);
 
     // return buffer.str();
 };

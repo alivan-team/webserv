@@ -32,8 +32,12 @@ class HTTPResponseBuild {
         static std::string readReadFile(const std::string& file);
         static bool isDirectory(const std::string& path);
         
-        static LocationConfig findBestLocation (const std::string& path,  const ServerConfig& servConf);
+        static const LocationConfig* findBestLocation (const std::string& path,  const ServerConfig& servConf);
         static std::string findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf);
+        static bool startsWithLocation(const std::string& path, const std::string& loc);
+
+        // static HTTPResponse buildAutoIndexPage( const std::string& directoryPath, const std::string& requestPath, const HTTPRequest& request, const ServerConfig& servConf);
+
 
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);

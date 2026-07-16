@@ -65,6 +65,9 @@ void ServerManager::readClientData(size_t index) {
     Client& client = _clients[clientFd];
     client.appendToRequestBuffer(buffer, bytes);
 
+    // -> IMPORTANT Check for POST:  Transfer-Encoding: chunked + Content-length
+    // in the recieveing we can NOT have Content-length and have Transfer-Encoding... so the 
+    // hasCompleteRequest() must be addapted to this... otherwise 411 Length Requierd.
     if (!client.hasCompleteRequest())
         return ;
 
