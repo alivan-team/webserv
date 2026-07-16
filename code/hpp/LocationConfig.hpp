@@ -21,7 +21,7 @@ class LocationConfig {
 		// bool _autoIndex;
 		std::string _rootPath;
 		bool _autoIndex;
-		std::vector<std::string> _indpaths;
+		std::vector<std::string> _indpaths; // index files;
 		std::vector<std::string> _cgi_extensions;
 		std::vector<std::string> _cgi_paths;
 		Redirection _redir;

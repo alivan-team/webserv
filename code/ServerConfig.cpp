@@ -146,6 +146,8 @@ const int& ServerConfig::getPort() const {
 	return _port[0]; 
 };
 
+// const std::vector<LocationConfig>& ServerConfig::getLocations() const { return _locations; };
+
 const std::vector<std::string>& ServerConfig::getServerName() const { return _server_name; };
 
 const std::vector<std::string>& ServerConfig::getRoot() const { return _root; };
@@ -179,7 +181,4 @@ void ServerConfig::addLocation(const LocationConfig &locations) {
 	_locations.push_back(locations);
 };
 
-const std::vector<LocationConfig>& ServerConfig::getLocation() const
-{
-	return _locations;
-}
+const std::vector<LocationConfig>& ServerConfig::getLocations() const { return _locations; }

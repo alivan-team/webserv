@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alternative Upload Page</title>
+    <style>
+        body {
+            margin: 0;
+            background: #1e293b;
+            color: #f8fafc;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+        }
+
+        .wrapper {
+            max-width: 600px;
+            margin: 80px auto;
+            background: #334155;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #38bdf8;
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #22c55e;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        input[type="file"] {
+            margin: 25px 0;
+            width: 100%;
+            color: white;
+        }
+
+        button {
+            background: #38bdf8;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0ea5e9;
+        }
+
+        .footer {
+            margin-top: 35px;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        a {
+            color: #7dd3fc;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            background: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="badge">Upload Page #2</div>
+
+        <h1>Alternative Upload Test</h1>
+        <h2>./site/www/upload/loc_index</h2>
+
+
+        <p>
+            If you're seeing this page, your server selected the
+            <code>second index.html</code> successfully.
+        </p>
+
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <br>
+            <button type="submit">Upload File</button>
+        </form>
+
+        <div class="footer">
+            Testing location priorities in <strong>webserv</strong><br><br>
+            <a href="/">Return to Home</a>
+        </div>
+    </div>
+</body>
+</html>

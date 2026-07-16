@@ -11,6 +11,7 @@ class HTTPResponse {
 		std::string _statusText;
 		std::map<std::string, std::string> _headers;
 		std::string _body;
+		std::string _version;
 
 	public:
 
@@ -18,10 +19,12 @@ class HTTPResponse {
 		void setHeader(const std::string& key, const std::string& value);
 		void setStatus(const std::string& text);
 		void setBody(const std::string& body);
+		void setVersion(const std::string& version);
 		
-		std::string toString() const;
+		std::string toString(HTTPResponse& ClassResponse) const;
 
 		const std::string& getBody() const;
+		const std::string& getVersion() const;
 
 };
 

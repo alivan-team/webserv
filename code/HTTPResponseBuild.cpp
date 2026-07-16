@@ -43,48 +43,75 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
             return makeErrorResponse(400, request, servConf);
     }
 
-    // detect SGI
-
-
-
-    //// HTTPRequest req = request; ////
-    //// ServerConfig ser = servConf; ////
-	
-	// // 1. Find matching location
-    // LocationConfig location = findBestLocation(req.getPath(), servConf);
-
-    // // 2. Check if method is allowed
-    // if (!location.allowsMethod(req.getMethod()))
-    //     return makeErrorResponse(405, servConf);
-
-    // // 3. Build real filesystem path
-    // std::string filePath = servConf.getRoot() + req.getPath();
-
-    // // 4. If path is directory, use index
-    // if (isDirectory(filePath))
-    //     filePath += "/" + servConf.getIndex();
-
-    // // 5. If file does not exist
-    // if (!fileExists(filePath))
-    //     return makeErrorResponse(404, servConf);
-
-    // // 6. If no permission
-    // if (!canRead(filePath))
-    //     return makeErrorResponse(403, servConf);
-
-    // // 7. Read file into body
-    // std::string body = readFile(filePath);
-
-    // // 8. Build 200 response
-    // HTTPResponse res;
-    // res.setStatus(200, "OK");
-    // res.setHeader("Content-Type", getMimeType(filePath));
-    // res.setHeader("Content-Length", toString(body.size()));
-    // res.setHeader("Connection", "keep-alive");
-    // res.setBody(body);
-
     return {};
 };
+
+// GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
+HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
+
+    HTTPResponse res;
+    // std::cout << "    :    Request    : \n" << "code:  "<<  request.getUri() << std::endl;
+    
+    std::string path = request.getPath();
+    // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "path:  "<<  path << std::endl;
+
+    LocationConfig location = findBestLocation(path ,servConf);
+    // std::cout << "location:  " <<  location.getUriPath() << std::endl;
+
+    if (!location.isGetAllowed())
+        return makeErrorResponse(405, request, servConf);
+
+    std::string fullPath;
+    if (location.getRoot().empty())
+        fullPath = joinPath(servConf.getRoot()[0], path);
+    else 
+        fullPath = joinPath(location.getRoot(), path);
+
+    // std::cout << "fullPath :  " <<  fullPath << std::endl;
+
+    if (!fileExists(fullPath))
+        return makeErrorResponse(404, request, servConf);
+
+    if (isDirectory(fullPath)) {
+
+        std::string indexPath = findIndexFile(fullPath, location, servConf);
+
+        if (!indexPath.empty()) {
+            fullPath = indexPath;
+        } else {
+            return makeErrorResponse(403, request, servConf);
+        }
+
+    }
+    // std::cout << "canReadFile(fullPath) : " << canReadFile(fullPath) << std::endl;
+
+    if (!canReadFile(fullPath))
+        return makeErrorResponse(403, request, servConf);
+
+    // CGI Function -> this one was suggested from ChatGPT :D 
+    // if (isCgiFile(fullPath, location))
+    //     return handleCgi(request, servConf, location, fullPath);
+
+        
+    std::string body = readReadFile(fullPath);
+
+    res.setStatusCode(200);
+    res.setStatus(getStatusText(200));
+    res.setHeader("Content-Type", "text/html");
+    res.setHeader("Content-Length", std::to_string(body.size()));
+    res.setHeader("Connection", decideConnection(request));
+    res.setVersion(request.getVersion());
+    res.setBody(body);
+
+
+    return res;
+    
+};
+
+// POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
+// DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
+
+// ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR 
 
 HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf) {
 
@@ -97,6 +124,7 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& r
     // std::cout << "Code: " << code << std::endl;
 
     res.setStatusCode(code);
+    res.setVersion(request.getVersion());
     res.setStatus(text);
     res.setHeader("Content-Type", "text.html");
     res.setHeader("Content-Length", std::to_string(body.size()));
@@ -105,18 +133,6 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& r
 
     return res;
 };
-
-
-// GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
-HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
-
-    
-};
-
-// POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
-// DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
-
-// ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR 
 
 std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& servConf) {
 
@@ -149,15 +165,17 @@ std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& ser
 
     std::string text = getStatusText(code);
 
-    return "<html><body><h1>" +
-           std::to_string(code) + " " + text +
-           "</h1></body></html>";
+    return readReadFile("./site/www/error_pages/index.html");
+        //     "<html><body><h1>" +
+        //    std::to_string(code) + " " + text +
+        //    "</h1></body></html>";
 };
 
 std::string HTTPResponseBuild::getStatusText(int code)
 {
     switch (code)
     {
+        case 200: return "OK";
         case 400: return "Bad Request";
         case 403: return "Forbidden";
         case 404: return "Not Found";
@@ -195,6 +213,40 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
 
 // HELPER ERROR Functions that maybe I will use later for other requests ??
 
+LocationConfig HTTPResponseBuild::findBestLocation (const std::string& path,  const ServerConfig& servConf) {
+
+    const std::vector<LocationConfig>& locations = servConf.getLocations();
+    // /////////////////////////////////////////
+    // std::cout << "LOCATIONS " << "\n" << std::endl;
+
+    const LocationConfig* bestLoc = NULL;
+
+    for (const auto& loc : locations) {
+        // std::cout << "loc : " << loc.getUriPath() << std::endl;
+        
+        std::string locPath = loc.getUriPath();
+
+        bool matches = path.compare(0, locPath.size(), locPath) == 0;
+        // std::cout << "matches : " << matches << "\n" << std::endl;
+        
+        if (matches) {
+            // std::cout << "locPath.size() : " << locPath.size() << "\n" << std::endl;
+            // std::cout << "loc.getUriPath().size() : " << loc.getUriPath().size() << "\n" << std::endl;
+            if (bestLoc == NULL || locPath.size() > bestLoc->getUriPath().size()) {
+                bestLoc = &loc;
+            }
+        }
+        
+    }
+    // dunno yet ??
+    if (bestLoc == NULL)
+       throw std::runtime_error("No matching location");
+    // // /////////////////////////////////////////
+
+    return *bestLoc;
+
+};
+
 std::string HTTPResponseBuild::joinPath(const std::string& root, const std::string& path) {
     
     if (root.empty())
@@ -222,8 +274,45 @@ bool HTTPResponseBuild::fileExists(const std::string& file) {
 };
 
 bool HTTPResponseBuild::canReadFile(const std::string& file) {
+    // std::cout << "file -> canReadFile : " << file << std::endl;
 
     return access(file.c_str(), R_OK) == 0;
+};
+
+bool HTTPResponseBuild::isDirectory(const std::string& path)
+{
+    struct stat st;
+
+    if (stat(path.c_str(), &st) != 0)
+        return false;
+
+    return S_ISDIR(st.st_mode); // S_ISDIR(st.st_mode) asks -> "Do the type bits inside st_mode indicate a directory?"
+}
+
+std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf) {
+
+    // std::cout << "location.getIndex().empty() : " << location.getIndex().empty() << std::endl;
+    // std::cout << "servConf.getIndex()[0] : " << servConf.getIndex()[0] << std::endl;
+
+    const std::vector<std::string>* indexes;
+
+    if (!location.getIndex().empty()) {
+        indexes = &location.getIndex();
+    } else {
+        indexes = &servConf.getIndex();
+    }
+
+    for (size_t i = 0; i < indexes->size(); i++) {
+        std::string indexCandidate = joinPath(fullPath, (*indexes)[i]);
+
+        // std::cout << "Trying index: " << indexCandidate << std::endl;
+        // std::cout << "exists: " << fileExists(indexCandidate) << " readable: " << canReadFile(indexCandidate) << std::endl;
+
+        if (fileExists(indexCandidate) && canReadFile(indexCandidate))
+            return indexCandidate;
+    }
+
+    return "";
 };
 
 std::string HTTPResponseBuild::readReadFile(const std::string& file) {

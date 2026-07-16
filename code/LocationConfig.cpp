@@ -70,7 +70,7 @@ void LocationConfig::setAutoIndex(const std::vector<std::string>& indexes){
 
 void LocationConfig::setRoot(const std::vector<std::string>& fspath){
 
-		if (fspath.size() != 1 || !checkFSPath(fspath[0]))
+	if (fspath.size() != 1 || !checkFSPath(fspath[0]))
 		throw std::runtime_error("Incorrect root in location");
 		
 	_rootPath = fspath[0];
