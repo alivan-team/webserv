@@ -34,11 +34,11 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
     std::string path = request.getPath();
     std::string version = request.getVersion();
 
-    std::cout << "REQUEST: " << version << std::endl;
-    printDebug("\t _uri: ", request.getUri());
-    printDebug("\t _path: ", request.getPath());
-    printDebug("\t _query: ", request.getQuery());
-    printDebug("\t _version: ", request.getVersion());
+    // std::cout << "REQUEST: " << version << std::endl;
+    // printDebug("\t _uri: ", request.getUri());
+    // printDebug("\t _path: ", request.getPath());
+    // printDebug("\t _query: ", request.getQuery());
+    // printDebug("\t _version: ", request.getVersion());
 
     if (version != "1.0" && version != "1.1")
         return makeErrorResponse(505, request, servConf);
@@ -85,9 +85,6 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     if (!location->isGetAllowed())
         return makeErrorResponse(405, request, servConf);
 
-
-
-
     std::string fullPath;
     if (location->getRoot().empty())
         fullPath = joinPath(servConf.getRoot()[0], path);
@@ -103,29 +100,15 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
         std::string indexPath = findIndexFile(fullPath, *location, servConf);
 
-        std::cout << "\t -> indexPath: " << indexPath << "\n\t -> fullPath: " << fullPath << "\n\t -> request.getPath(): " << request.getPath() << std::endl;
+        // std::cout << "\t -> indexPath: " << indexPath << "\n\t -> fullPath: " << fullPath << "\n\t -> request.getPath(): " << request.getPath() << std::endl;
 
         if (!indexPath.empty()) {
             fullPath = indexPath;
         } else if (location->getAutoIndex()) {
-            // return the buildAutoIndexPage -> because there is no 
-            // return makeErrorResponse(404, request, servConf);
             return buildAutoIndexPage(request, servConf, fullPath, request.getPath());
         } else {
             return makeErrorResponse(403, request, servConf);
         }
-
-//  AUTO INDEX
-        // This is for autoIndex in Location
-        // std::string indexPath = findIndexFile(fullPath, *location, servConf);
-
-        // if (!indexPath.empty()) {
-        //     fullPath = indexPath;
-        // } else if (location->getAutoIndex()) {
-        //     return buildAutoIndexPage( const std::string& directoryPath, const std::string& requestPath, const HTTPRequest& request, const ServerConfig& servConf);
-        // } else {
-        //     return makeErrorResponse(403, request, servConf);
-        // }
 
     }
     // std::cout << "canReadFile(fullPath) : " << canReadFile(fullPath) << std::endl;
@@ -133,24 +116,34 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     if (!canReadFile(fullPath))
         return makeErrorResponse(403, request, servConf);
 
-    // CGI Function -> this one was suggested from ChatGPT :D 
+    // CGI FUNCTION and QUESTIONS -> this one was suggested from ChatGPT :D 
+    // if the path end on .py -> we search in out Locations for cgi-bin ->
     // if (isCgiFile(fullPath, location))
     //     return handleCgi(request, servConf, location, fullPath);
 
+    try {
+
+        // throw std::runtime_error("Testing catch");
+
+        std::string body = readReadFile(fullPath);
         
-    std::string body = readReadFile(fullPath);
-
-    res.setStatusCode(200);
-    res.setStatus(getStatusText(200));
-    res.setHeader("Content-Type", "text/html");
-    res.setHeader("Content-Length", std::to_string(body.size()));
-    res.setHeader("Connection", decideConnection(request));
-    res.setVersion(request.getVersion());
-    res.setBody(body);
-
-
-    return res;
+        res.setStatusCode(200);
+        res.setStatus(getStatusText(200));
+        // std::cout << "Final fullPath: " << fullPath << std::endl;
+        // std::cout << "Content-Type: " << getContentType(fullPath) << std::endl;
+        res.setHeader("Content-Type", getContentType(fullPath));
+        res.setHeader("Content-Length", std::to_string(body.size()));
+        res.setHeader("Connection", decideConnection(request));
+        res.setVersion(request.getVersion());
+        res.setBody(body);
     
+        return res;    
+    } catch (const std::exception& e) {
+
+        std::cerr << "Failed to serve file: " << fullPath << ": " << e.what() << std::endl;
+        return makeErrorResponse(500, request, servConf);
+    }
+
 };
 
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
@@ -171,7 +164,7 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest& r
     res.setStatusCode(code);
     res.setVersion(request.getVersion());
     res.setStatus(text);
-    res.setHeader("Content-Type", "text.html");
+    res.setHeader("Content-Type", "text/html");
     res.setHeader("Content-Length", std::to_string(body.size()));
     res.setHeader("Connection", decideConnection(request));
     res.setBody(body);
@@ -186,6 +179,8 @@ std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& ser
     // std::cout << "servConf.hasErrorPage(code): " << servConf.hasErrorPage(code) << std::endl;
     // std::cout << "error_path from servConf: " << servConf.getOneErrorPage(code) << std::endl;
     // std::cout << "ROOT from servConf: " << servConf.getRoot().back() << std::endl;
+    std::string error_message = getStatusText(code);
+
     if (servConf.hasErrorPage(code)) {
 
         std::string error_path = servConf.getOneErrorPage(code);
@@ -194,17 +189,28 @@ std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& ser
 
         // std::cout << "\tfileExists(fullPath) : " << fileExists(fullPath) 
         // << "\n\t canReadFile(fullPath) : " <<  canReadFile(fullPath) << std::endl;
+        try {
+
+            throw std::runtime_error("Forced error");
+            if (fileExists(fullPath) && canReadFile(fullPath)) {
+                // std::cout << "\tFULL PATH : " << fullPath << std::endl;
         
-        if (fileExists(fullPath) && canReadFile(fullPath)) {
-            
-            // std::cout << "\tFULL PATH : " << fullPath << std::endl;
-            
-            // cgi -> child -> execute that file with query -> return result -> we put that result in body -> and send it  
-            
-            return readReadFile(fullPath);
+                // cgi -> child -> execute that file with query -> return result -> we put that result in body -> and send it          
+                return readReadFile(fullPath);
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Could not read custom error page " << error_path << ": " << e.what() << std::endl;
         }
 
-    
+        return "<!DOCTYPE html>\n"
+                "<html>\n"
+                "<head><title>" + std::to_string(code) + " " + error_message +
+                "</title></head>\n"
+                "<body>\n"
+                "<h1>" + std::to_string(code) + " " + error_message + "</h1>\n"
+                "</body>\n"
+                "</html>\n";
+
     }
 
 
@@ -265,10 +271,10 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
 // This is for autoIndex in Location
 
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& fullPath, const std::string& requestPath) {
+    
     HTTPResponse res;
-    
     // std::cout << " Hello from HTTPResponseBuild " << std::endl;
-    
+
     DIR* dir = opendir(fullPath.c_str());
 
     if (dir == NULL)
@@ -311,11 +317,11 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest& request, c
 
         href += name;
 
-        if (checkExtensionOfFile(extension)) {
-            body += "        <li><img src=\"" + href + "\" width=\"200\"><br></li>\n";
-        } else {
-            body += "        <li><a href=\"" + href + "\">" + name + "</a><br>";
-        }
+        // if (checkExtensionOfFile(extension)) {
+        //     body += "        <li><img src=\"" + href + "\" width=\"200\"><br></li>\n";
+        // } else {
+        body += "        <li><a href=\"" + href + "\">" + name + "</a><br>";
+        // }
         // std::cout << "\t\t body --> " << body << std::endl;
     }
 
@@ -380,6 +386,10 @@ bool HTTPResponseBuild::startsWithLocation(const std::string& path, const std::s
 
 std::string HTTPResponseBuild::joinPath(const std::string& root, const std::string& path) {
     
+
+    std::cout << "root: " << root << std::endl;
+    std::cout << "path: " << path << std::endl;
+
     if (root.empty())
         return path;
 
@@ -422,8 +432,8 @@ bool HTTPResponseBuild::isDirectory(const std::string& path)
 
 std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf) {
 
-    std::cout << "location.getIndex().empty() : " << location.getIndex().empty() << std::endl;
-    std::cout << "servConf.getIndex()[0] : " << servConf.getIndex()[0] << std::endl;
+    // std::cout << "location.getIndex().empty() : " << location.getIndex().empty() << std::endl;
+    // std::cout << "servConf.getIndex()[0] : " << servConf.getIndex()[0] << std::endl;
 
     const std::vector<std::string>* indexes;
 
@@ -448,43 +458,63 @@ std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const Locatio
 
 std::string HTTPResponseBuild::readReadFile(const std::string& file) {
 
-    std::ifstream inputFile(file);
-    
-    if (!inputFile.is_open())
-        return "";
-    
-    std::string line;
-    std::string body;
+    std::ifstream inputFile(file.c_str(), std::ios::binary);
 
-    while (std::getline(inputFile, line)) {
-        // std::cout << "read file: " << line << std::endl;
-        body += line;
-        body += "\n";
-    }
-    inputFile.close();
+    ////////////////////// HERE ////////////////////////////////
 
-    return body;
+    if (!inputFile)
+        throw std::runtime_error("Could not open file: " + file);
 
-// Chat suggestion ????
-//  Check the throw error... 
+    std::ostringstream buffer;
+    buffer << inputFile.rdbuf();
 
-    // std::ifstream inputFile(file.c_str(), std::ios::binary);
+    if (inputFile.bad())
+        throw std::runtime_error("Could not read file: " + file);
 
-    // if (!inputFile.is_open())
-    //     throw std::runtime_error("Could not open file: " + file);
-
-    // std::ostringstream buffer;
-    // buffer << inputFile.rdbuf();
-
-    // if (inputFile.bad())
-    //     throw std::runtime_error("Could not read file: " + file);
-
-    // return buffer.str();
+    return buffer.str();
 };
 
 bool HTTPResponseBuild::checkExtensionOfFile(const std::string& extension) {
+
     if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || 
         extension == ".gif" || extension == ".webp")
         return true;
+
     return false;
+}
+
+std::string HTTPResponseBuild::getContentType(const std::string& contenPath) {
+
+    size_t dot = contenPath.rfind('.');
+
+    if (dot == std::string::npos)
+        return "application/octet-stream";
+
+    std::string extension = contenPath.substr(dot + 1);
+    // std::cout << " extension: --> " << extension << std::endl;
+
+    if (extension == "html" || extension == "htm")
+        return "text/html";
+    if (extension == "css")
+        return "text/css";
+    if (extension == "js")
+        return "application/javascript";
+    if (extension == "json")
+        return "application/json";
+    if (extension == "txt")
+        return "text/plain";
+    if (extension == "png")
+        return "image/png";
+    if (extension == "jpg" || extension == "jpeg")
+        return "image/jpeg";
+    if (extension == "gif")
+        return "image/gif";
+    if (extension == "ico")
+        return "image/x-icon";
+    if (extension == "pdf")
+        return "application/pdf";
+    if (extension == "webp")
+        return "image/webp";
+
+    return "application/octet-stream";
 }

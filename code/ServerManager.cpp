@@ -88,7 +88,7 @@ void ServerManager::readClientData(size_t index) {
     // ALL under is default. 
     // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
     // std::cout << "~~~~~~ BODY FROM MANAGER ~~~~~~ " << std::endl;
-    // std::cout << ClassResponse.getBody() << std::endl;
+    // std::cout << ClassResponse.getHeader() << std::endl;
 
     // std::string body = "Hello from ServerManager\n";
 
