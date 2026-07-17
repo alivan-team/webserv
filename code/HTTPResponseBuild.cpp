@@ -258,8 +258,8 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
 
 
 
-// HELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPER
-// HELPER ERROR Functions that maybe I will use later for other requests ??
+// HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER
+// HELPER ERROR Functions that maybe we can use later for other requests ??
 
 //  AUTO INDEX
 // This is for autoIndex in Location
