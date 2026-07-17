@@ -87,7 +87,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
 
 
-        
+
     std::string fullPath;
     if (location->getRoot().empty())
         fullPath = joinPath(servConf.getRoot()[0], path);
@@ -103,11 +103,14 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
         std::string indexPath = findIndexFile(fullPath, *location, servConf);
 
+        std::cout << "\t -> indexPath: " << indexPath << "\n\t -> fullPath: " << fullPath << "\n\t -> request.getPath(): " << request.getPath() << std::endl;
+
         if (!indexPath.empty()) {
             fullPath = indexPath;
         } else if (location->getAutoIndex()) {
             // return the buildAutoIndexPage -> because there is no 
-            return makeErrorResponse(403, request, servConf); // buildAutoIndexPage( const std::string& directoryPath, const std::string& requestPath, const HTTPRequest& request, const ServerConfig& servConf);
+            // return makeErrorResponse(404, request, servConf);
+            return buildAutoIndexPage(request, servConf, fullPath, request.getPath());
         } else {
             return makeErrorResponse(403, request, servConf);
         }
@@ -253,75 +256,86 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
     return "close";
 };
 
+
+
+// HELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPERHELPER
 // HELPER ERROR Functions that maybe I will use later for other requests ??
 
 //  AUTO INDEX
 // This is for autoIndex in Location
 
-// HTTPResponse HTTPResponseBuild::buildAutoIndexPage(
-//     const std::string& directoryPath,
-//     const std::string& requestPath,
-//     const HTTPRequest& request)
-// {
-//     HTTPResponse res;
-//     DIR* dir = opendir(directoryPath.c_str());
+HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& fullPath, const std::string& requestPath) {
+    HTTPResponse res;
+    
+    // std::cout << " Hello from HTTPResponseBuild " << std::endl;
+    
+    DIR* dir = opendir(fullPath.c_str());
 
-//     if (dir == NULL)
-//         return makeErrorResponse(403, request, /* servConf needed here */);
+    if (dir == NULL)
+        return makeErrorResponse(403, request, servConf);
 
-//     std::string body;
+    std::string body;
 
-//     body += "<!DOCTYPE html>\n";
-//     body += "<html>\n";
-//     body += "<head>\n";
-//     body += "    <meta charset=\"UTF-8\">\n";
-//     body += "    <title>Index of " + requestPath + "</title>\n";
-//     body += "</head>\n";
-//     body += "<body>\n";
-//     body += "    <h1>Index of " + requestPath + "</h1>\n";
-//     body += "    <hr>\n";
-//     body += "    <ul>\n";
+    body += "<!DOCTYPE html>\n";
+    body += "<html>\n";
+    body += "<head>\n";
+    body += "    <meta charset=\"UTF-8\">\n";
+    body += "    <title>Index of " + requestPath + "</title>\n";
+    body += "</head>\n";
+    body += "<body>\n";
+    body += "    <h1>Index of " + requestPath + "</h1>\n";
+    body += "    <hr>\n";
+    body += "    <ul>\n";
 
-//     struct dirent* entry;
+    struct dirent* entry;
 
-//     while ((entry = readdir(dir)) != NULL)
-//     {
-//         std::string name = entry->d_name;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        std::string name = entry->d_name;
+        // std::cout << "\t\t name --> " << name << std::endl;
 
-//         if (name == "." || name == "..")
-//             continue;
+        if (name == "." || name == ".." || name.front() == '.')
+            continue;
 
-//         std::string href = requestPath;
+        std::string extension;
+        size_t dot = name.rfind('.');
 
-//         if (href.empty() || href[href.size() - 1] != '/')
-//             href += "/";
+        if (dot != std::string::npos)
+            extension = name.substr(dot);
+    
+        std::string href = requestPath;
+        // std::cout << "\t\thref --> " << href << std::endl;
 
-//         href += name;
+        if (href.empty() || href[href.size() - 1] != '/')
+            href += "/";
 
-//         body += "        <li><a href=\"";
-//         body += href;
-//         body += "\">";
-//         body += name;
-//         body += "</a></li>\n";
-//     }
+        href += name;
 
-//     body += "    </ul>\n";
-//     body += "    <hr>\n";
-//     body += "</body>\n";
-//     body += "</html>\n";
+        if (checkExtensionOfFile(extension)) {
+            body += "        <li><img src=\"" + href + "\" width=\"200\"><br></li>\n";
+        } else {
+            body += "        <li><a href=\"" + href + "\">" + name + "</a><br>";
+        }
+        // std::cout << "\t\t body --> " << body << std::endl;
+    }
 
-//     closedir(dir);
+    body += "    </ul>\n";
+    body += "    <hr>\n";
+    body += "</body>\n";
+    body += "</html>\n";
 
-//     res.setStatusCode(200);
-//     res.setStatus(getStatusText(200));
-//     res.setVersion(request.getVersion());
-//     res.setHeader("Content-Type", "text/html");
-//     res.setHeader("Content-Length", std::to_string(body.size()));
-//     res.setHeader("Connection", decideConnection(request));
-//     res.setBody(body);
+    closedir(dir);
 
-//     return res;
-// }
+    res.setStatusCode(200);
+    res.setStatus(getStatusText(200));
+    res.setVersion(request.getVersion());
+    res.setHeader("Content-Type", "text/html");
+    res.setHeader("Content-Length", std::to_string(body.size()));
+    res.setHeader("Connection", decideConnection(request));
+    res.setBody(body);
+
+    return res;
+}
 
 const LocationConfig* HTTPResponseBuild::findBestLocation (const std::string& path,  const ServerConfig& servConf) {
 
@@ -340,10 +354,8 @@ const LocationConfig* HTTPResponseBuild::findBestLocation (const std::string& pa
         }
     }
 
-    // dunno yet ??
     if (bestLoc == NULL)
        return NULL;
-    // // /////////////////////////////////////////
 
     return bestLoc;
 
@@ -410,8 +422,8 @@ bool HTTPResponseBuild::isDirectory(const std::string& path)
 
 std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf) {
 
-    // std::cout << "location.getIndex().empty() : " << location.getIndex().empty() << std::endl;
-    // std::cout << "servConf.getIndex()[0] : " << servConf.getIndex()[0] << std::endl;
+    std::cout << "location.getIndex().empty() : " << location.getIndex().empty() << std::endl;
+    std::cout << "servConf.getIndex()[0] : " << servConf.getIndex()[0] << std::endl;
 
     const std::vector<std::string>* indexes;
 
@@ -469,3 +481,10 @@ std::string HTTPResponseBuild::readReadFile(const std::string& file) {
 
     // return buffer.str();
 };
+
+bool HTTPResponseBuild::checkExtensionOfFile(const std::string& extension) {
+    if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || 
+        extension == ".gif" || extension == ".webp")
+        return true;
+    return false;
+}
