@@ -65,6 +65,9 @@ void ServerManager::readClientData(size_t index) {
     Client& client = _clients[clientFd];
     client.appendToRequestBuffer(buffer, bytes);
 
+    // -> IMPORTANT Check for POST:  Transfer-Encoding: chunked + Content-length
+    // in the recieveing we can NOT have Content-length and have Transfer-Encoding... so the 
+    // hasCompleteRequest() must be addapted to this... otherwise 411 Length Requierd.
     if (!client.hasCompleteRequest())
         return ;
 
@@ -85,7 +88,7 @@ void ServerManager::readClientData(size_t index) {
     // ALL under is default. 
     // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
     // std::cout << "~~~~~~ BODY FROM MANAGER ~~~~~~ " << std::endl;
-    // std::cout << ClassResponse.getBody() << std::endl;
+    // std::cout << ClassResponse.getHeader() << std::endl;
 
     // std::string body = "Hello from ServerManager\n";
 

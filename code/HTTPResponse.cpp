@@ -29,7 +29,7 @@ std::string HTTPResponse::toString(HTTPResponse& ClassResponse) const {
 
     response += "HTTP/" + ClassResponse.getVersion() + " ";
     response += std::to_string(_statusCode);
-    response += ": ";
+    response += " ";
     response += _statusText;
     response += "\r\n";
 
