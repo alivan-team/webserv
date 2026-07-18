@@ -1,7 +1,7 @@
 NAME		:= webserv
 TEST_NAME	:= webserv_tests
 
-CXX			:= c++
+CXX			:= g++-16
 CXXFLAGS	:= -Wall -Wextra -Werror -std=c++17
 CPPFLAGS	:= -Icode/hpp
 

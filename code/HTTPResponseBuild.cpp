@@ -16,11 +16,11 @@
     // Find index file
     //         ↓
     // Found?
-    //     /    \
+    //     /    |
     //     yes    no
     //     |       |
     // serve      autoindex?
-    // index        /   \
+    // index        /   |
     //             on   off
     //             |     |
     // read directory   403
