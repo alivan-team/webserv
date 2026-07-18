@@ -1,12 +1,15 @@
 #include "./hpp/ClientData.hpp"
 #include <iostream>
 
-Client::Client() : _client_fd(-1), _server_fd(-1) {
+// Client::Client() : _client_fd(-1), _server_fd(-1) {
+Client::Client() : _client_fd(-1), _server_fd(-1), _bodyPos(0), _bodySize(0) {
     std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
 
-Client::Client(int clinet_fd, int server_fd) : _client_fd(clinet_fd), _server_fd(server_fd) {
-    std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
+// Client::Client(int clinet_fd, int server_fd) : _client_fd(clinet_fd), _server_fd(server_fd) {
+Client::Client(int clinet_fd, int server_fd)
+    : _client_fd(clinet_fd), _server_fd(server_fd), _bodyPos(0), _bodySize(0) {
+	std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
 
 void Client::appendToRequestBuffer(const char* buffer, size_t bytes) {
@@ -126,6 +129,8 @@ bool Client::hasCompleteRequest()  {
         
 void Client::clearRequestBuffer() {
     _requestBuffer.clear();
+    _bodyPos = 0;
+    _bodySize = 0;
 };
 
 void Client::setClientRequest(const HTTPRequest& req) {
@@ -138,11 +143,19 @@ std::string Client::getFullBodyRequest() const {
 
 std::string Client::getPartBodyRequest(size_t start, size_t length) const {
     
-    if (start < 0 && start + length > _bodySize) {
+    // if (start < 0 && start + length > _bodySize) {
+    //     length = _bodySize - start;
+    // }
+    // return _requestBuffer.substr(start, length);
+    if (start >= _bodySize)
+        return "";
+
+    if (length > _bodySize - start) {
         length = _bodySize - start;
     }
-    return _requestBuffer.substr(start, length);
+    return _requestBuffer.substr(_bodyPos + start, length);
 
+	
 };
 
 size_t Client::getBodyPos() const { return _bodyPos; };
