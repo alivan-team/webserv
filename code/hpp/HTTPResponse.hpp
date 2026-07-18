@@ -3,6 +3,8 @@
 
 #include "./client.hpp"
 #include <map>
+#include <unistd.h>
+#include <iostream>
 
 class HTTPResponse {
 
@@ -25,6 +27,16 @@ class HTTPResponse {
 
 		const std::string& getBody() const;
 		const std::string& getVersion() const;
+
+		// remove in the end!!!
+		// const int& getHeader() const {
+			
+		// 	for(auto h : _headers) {
+		// 		std::cout << "\t h -> " << h.first 
+		// 		<< " : " << h.second << std::endl;
+		// 	}
+		// 	return _headers.size();
+		// };
 
 };
 

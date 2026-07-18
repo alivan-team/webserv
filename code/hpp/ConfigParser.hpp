@@ -23,6 +23,8 @@ class ConfigParser {
 		{
 			std::string key = configTokens[i];
 
+			// std::cout << "key -> HI " << key << std::endl;
+
 			typename std::map<std::string, SetterType>::iterator it = settersMap.find(key);
 
 			if (it == settersMap.end()) {

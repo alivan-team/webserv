@@ -15,6 +15,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <dirent.h>
 
 class HTTPResponseBuild {
 
@@ -31,9 +32,14 @@ class HTTPResponseBuild {
         static bool canReadFile(const std::string& file);
         static std::string readReadFile(const std::string& file);
         static bool isDirectory(const std::string& path);
+        static std::string getContentType(const std::string& contenPath);
         
-        static LocationConfig findBestLocation (const std::string& path,  const ServerConfig& servConf);
+        static const LocationConfig* findBestLocation (const std::string& path,  const ServerConfig& servConf);
         static std::string findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf);
+        static bool startsWithLocation(const std::string& path, const std::string& loc);
+
+        static HTTPResponse buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& directoryPath, const std::string& requestPath);
+        static bool checkExtensionOfFile(const std::string& extension);
 
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
