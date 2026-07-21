@@ -74,7 +74,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     // std::cout << "    :    Request    : \n" << "code:  "<<  request.getUri() << std::endl;
     
     std::string path = request.getPath();
-    // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "path:  "<<  path << std::endl;
+    std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "path:  "<<  path << std::endl;
 
     const LocationConfig* location = findBestLocation(path ,servConf);
     // std::cout << "location:  " <<  location.getUriPath() << std::endl;
