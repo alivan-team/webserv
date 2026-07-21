@@ -73,14 +73,21 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     HTTPResponse res;
     // std::cout << "    :    Request    : \n" << "code:  "<<  request.getUri() << std::endl;
     
-    std::string path = request.getPath();
-    // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "path:  "<<  path << std::endl;
+    std::string path = urlDecoder(request.getPath());
+    // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "-> path:  "<<  path << std::endl;
+
+    if (containsParentTraversal(path)) {
+        std::cout << "path in containsParentTraversal -> " << path << std::endl;
+        return makeErrorResponse(403, request, servConf);
+    }
 
     const LocationConfig* location = findBestLocation(path ,servConf);
     // std::cout << "location:  " <<  location.getUriPath() << std::endl;
 
-    if (location == NULL)
+    if (location == NULL) {
+        // std::cout << "fileExists1" << std::endl;
         return makeErrorResponse(404, request, servConf);
+    }
 
     if (!location->isGetAllowed())
         return makeErrorResponse(405, request, servConf);
@@ -93,8 +100,10 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
     // std::cout << "fullPath :  " <<  fullPath << std::endl;
 
-    if (!fileExists(fullPath))
+    if (!fileExists(fullPath)) {
+        std::cout << "fileExists2" << std::endl;
         return makeErrorResponse(404, request, servConf);
+    }
 
     if (isDirectory(fullPath)) {
 
@@ -191,7 +200,7 @@ std::string  HTTPResponseBuild::buildErrorBody(int code, const ServerConfig& ser
         // << "\n\t canReadFile(fullPath) : " <<  canReadFile(fullPath) << std::endl;
         try {
 
-            throw std::runtime_error("Forced error");
+            // throw std::runtime_error("Forced error");
             if (fileExists(fullPath) && canReadFile(fullPath)) {
                 // std::cout << "\tFULL PATH : " << fullPath << std::endl;
         
@@ -273,7 +282,7 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& fullPath, const std::string& requestPath) {
     
     HTTPResponse res;
-    // std::cout << " Hello from HTTPResponseBuild " << std::endl;
+    std::cout << " Hello from HTTPResponseBuild " << std::endl;
 
     DIR* dir = opendir(fullPath.c_str());
 
@@ -517,4 +526,57 @@ std::string HTTPResponseBuild::getContentType(const std::string& contenPath) {
         return "image/webp";
 
     return "application/octet-stream";
+}
+
+
+bool HTTPResponseBuild::containsParentTraversal(const std::string& path)
+{
+    std::stringstream stream(path);
+    std::string component;
+
+    while (std::getline(stream, component, '/'))
+    {
+        if (component == "..")
+            return true;
+    }
+
+    return false;
+}
+
+std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
+
+    std::string decodedUrl;
+
+    // std::cout << "urlDecoder HERE" << std::endl;
+
+    for (int i = 0; i < urlPath.length(); i++) {
+
+        if (urlPath[i] == '%') {
+            if (i + 2 >= urlPath.size())
+                throw std::runtime_error("Invalid percent encoding");
+
+            char first = urlPath[i + 1];
+            char second = urlPath[i + 2];
+
+            if (!std::isxdigit(static_cast<unsigned char>(first)) ||
+                !std::isxdigit(static_cast<unsigned char>(second)))
+            {
+                std::cout << "isxdigit " << std::endl;
+                throw std::runtime_error("Invalid percent encoding");
+            }
+
+            std::string hex;
+            hex += first;
+            hex += second;
+
+            char decodedChar =
+                static_cast<char>(std::strtol(hex.c_str(), NULL, 16));
+
+            decodedUrl += decodedChar;
+            i += 2;
+        } else {
+            decodedUrl += urlPath[i];
+        }
+    }
+    return decodedUrl;
 }

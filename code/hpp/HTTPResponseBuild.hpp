@@ -40,6 +40,8 @@ class HTTPResponseBuild {
 
         static HTTPResponse buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& directoryPath, const std::string& requestPath);
         static bool checkExtensionOfFile(const std::string& extension);
+        static bool containsParentTraversal(const std::string& path);
+        static std::string urlDecoder(std::string urlPath);
 
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
