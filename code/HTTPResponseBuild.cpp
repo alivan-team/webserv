@@ -71,9 +71,14 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
 HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
 
     HTTPResponse res;
+    std::string path;
     // std::cout << "    :    Request    : \n" << "code:  "<<  request.getUri() << std::endl;
     
-    std::string path = urlDecoder(request.getPath());
+    try { 
+        path = urlDecoder(request.getPath());
+    } catch (const std::exception& e) {
+        return makeErrorResponse(400, request, servConf);
+    }
     // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "-> path:  "<<  path << std::endl;
 
     if (containsParentTraversal(path)) {
@@ -559,9 +564,7 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
             char second = urlPath[i + 2];
 
             if (!std::isxdigit(static_cast<unsigned char>(first)) ||
-                !std::isxdigit(static_cast<unsigned char>(second)))
-            {
-                std::cout << "isxdigit " << std::endl;
+                !std::isxdigit(static_cast<unsigned char>(second))) {
                 throw std::runtime_error("Invalid percent encoding");
             }
 
