@@ -23,37 +23,27 @@ bool Client::hasCompleteRequest()  {
     // if value == -1 == 400 Bad request
     // Header names are case-insensitive -> 
     //  You search the entire buffer -> i should search only the header. and not the body too -> that is wrong
-// atoi() cannot validate the value -> make sure its currect
-                            //  atoi -> bool Client::parseContentLength(
-                            //     const std::string& value,
-                            //     size_t& result) const
-                            // {
-                            //     size_t start = 0;
-                            //     while (start < value.size() &&
-                            //            (value[start] == ' ' || value[start] == '\t'))
-                            //     {
-                            //         ++start;
-                            //     }
-                            //     size_t end = value.size();
-                            //     while (end > start &&
-                            //            (value[end - 1] == ' ' || value[end - 1] == '\t'))
-                            //     {
-                            //         --end;
-                            //     }
-                            //     if (start == end)
-                            //         return false;
-                            //     result = 0;
-                            //     for (size_t i = start; i < end; ++i)
-                            //     {
-                            //         if (!std::isdigit(static_cast<unsigned char>(value[i])))
-                            //             return false;
-                            //         size_t digit = static_cast<size_t>(value[i] - '0');
-                            //         if (result > (std::numeric_limits<size_t>::max() - digit) / 10)
-                            //             return false;
-                            //         result = result * 10 + digit;
-                            //     }
-                            //     return true;
-                            // }
+
+
+// bool Client::hasCompleteRequest()
+// {
+//     size_t headerEnd = _requestBuffer.find("\r\n\r\n");
+
+//     if (headerEnd == std::string::npos)
+//         return false;
+
+//     // Parse only:
+//     // _requestBuffer.substr(0, headerEnd + 2)
+
+//     // 1. Validate Transfer-Encoding
+//     // 2. Find and validate all Content-Length headers
+//     // 3. Reject Transfer-Encoding + Content-Length
+//     // 4. If chunked, check whether the terminating zero chunk arrived
+//     // 5. If Content-Length, wait for that many bytes
+//     // 6. Otherwise, body length is zero
+
+//     return true;
+// }
 
 
     size_t headerEnd = _requestBuffer.find("\r\n\r\n");
