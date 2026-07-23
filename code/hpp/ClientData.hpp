@@ -3,44 +3,66 @@
 
 #include <string>
 #include <cstdlib>
+#include <cstddef>
+#include <cctype>
+#include <sstream>
+#include <limits>
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 
+enum class RequestState
+{
+    Incomplete,
+    Complete,
+    BadRequest
+};
 
 class Client {
 
-    private:
-        std::string _requestBuffer;
-        int _client_fd;
-        int _server_fd;
-        size_t _bodyPos;
-        size_t _bodySize;
-        HTTPRequest _request;
-        // HTTPResponse _response;
-		
-		
-	public:
-		
-        Client();
-        Client(int clinet_fd, int server_fd);
+        private:
+                std::string _requestBuffer;
+                int _client_fd;
+                int _server_fd;
 
-        void appendToRequestBuffer(const char* buffer, size_t bytes);
-        bool hasCompleteHeaders() const;
-        bool hasCompleteRequest() ;
+                size_t _bodyPos;
+                size_t _bodySize;
+                size_t _requestEnd;
+                int _requestErrorCode;
 
-        void clearRequestBuffer();
+                HTTPRequest _request;
+                // HTTPResponse _response;
 
-        void setClientRequest(const HTTPRequest& req);
+                
 
-        std::string getFullBodyRequest() const;
-        std::string getPartBodyRequest(size_t start, size_t length) const;
-        size_t getBodyPos() const;
-        size_t getBodySize() const;
+                bool parseContentLength(const std::string& value, size_t& result) const;
+                // bool hasCompleteChunkedBody(size_t bodyStart, size_t& requestEnd) const;
 
-        int getClientFd() const;
-        int getServerFd() const;
-        const std::string& getRequestBuffer() const;
-        const HTTPRequest& getRequest() const;
+                std::string trim(const std::string& value) const;
+                std::string toLower(const std::string& value) const;
+
+        public:
+                        
+                Client();
+                Client(int clinet_fd, int server_fd);
+
+                void appendToRequestBuffer(const char* buffer, size_t bytes);
+                bool hasCompleteHeaders() const;
+                RequestState checkRequestState();
+
+                void clearRequestBuffer();
+
+                void setClientRequest(const HTTPRequest& req);
+
+                std::string getFullBodyRequest() const;
+                std::string getPartBodyRequest(size_t start, size_t length) const;
+                size_t getBodyPos() const;
+                size_t getBodySize() const;
+
+                int getClientFd() const;
+                int getServerFd() const;
+
+                const std::string& getRequestBuffer() const;
+                const HTTPRequest& getRequest() const;
 
 
 };

@@ -18,101 +18,122 @@ bool Client::hasCompleteHeaders() const {
     return _requestBuffer.find("\r\n\r\n") != std::string::npos;
 };
 
-bool Client::hasCompleteRequest()  {
-    // Multiple Content-Length headers need validation
-    // if value == -1 == 400 Bad request
-    // Header names are case-insensitive -> 
-    //  You search the entire buffer -> i should search only the header. and not the body too -> that is wrong
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-// bool Client::hasCompleteRequest()
-// {
-//     size_t headerEnd = _requestBuffer.find("\r\n\r\n");
+RequestState Client::checkRequestState()  {
 
-//     if (headerEnd == std::string::npos)
-//         return false;
-
-//     // Parse only:
-//     // _requestBuffer.substr(0, headerEnd + 2)
-
-//     // 1. Validate Transfer-Encoding
-//     // 2. Find and validate all Content-Length headers
-//     // 3. Reject Transfer-Encoding + Content-Length
-//     // 4. If chunked, check whether the terminating zero chunk arrived
-//     // 5. If Content-Length, wait for that many bytes
-//     // 6. Otherwise, body length is zero
-
-//     return true;
-// }
-
-
+    _bodyPos = 0;
+    _bodySize = 0;
+    _requestEnd = 0;
+    _requestErrorCode = 0;
+        
     size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 
-    if (headerEnd == std::string::npos)
-        return false;
-
-    size_t contentLengthPos = _requestBuffer.find("Content-Length:");
-
-    if (contentLengthPos == std::string::npos)
-        return true; // GET usually has no body
-
-    size_t valueStart = contentLengthPos + std::string("Content-Length:").size();
-    size_t valueEnd = _requestBuffer.find("\r\n", valueStart);
-
-    if (valueEnd == std::string::npos)
-        return false;
-
-    std::string value = _requestBuffer.substr(valueStart, valueEnd - valueStart);
-    size_t contentLength = std::atoi(value.c_str());
-    // maybe validate if its a negative value? 
+    if (headerEnd == std::string::npos) 
+        return RequestState::Incomplete;
 
     _bodyPos = headerEnd + 4;
-    _bodySize = _requestBuffer.size() - _bodyPos;
 
-    return _bodySize >= contentLength;
+    std::string headerSection = _requestBuffer.substr(0, headerEnd);
+
+
 };
 
-// Client::RequestState Client::getRequestState()
-// {
-//     const size_t headerEnd = _requestBuffer.find("\r\n\r\n");
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////// Helper Functions //////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
 
-//     if (headerEnd == std::string::npos)
-//         return RequestState::Incomplete;
+std::string Client::trim(const std::string& value) const
+{
+    size_t start = 0;
 
-//     const std::string headers =
-//         _requestBuffer.substr(0, headerEnd);
+    while (start < value.size() && (value[start] == ' ' || value[start] == '\t')) {
+        ++start;
+    }
 
-//     if (hasChunkedTransferEncoding(headers))
-//         return getChunkedRequestState(headerEnd + 4);
+    size_t end = value.size();
 
-//     size_t contentLength = 0;
-//     bool hasLength = false;
+    while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t')) {
+        --end;
+    }
 
-//     if (!extractContentLength(headers, contentLength, hasLength))
-//         return RequestState::BadRequest;
+    return value.substr(start, end - start);
+}
 
-//     _bodyPos = headerEnd + 4;
+std::string Client::toLower(const std::string& value) const
+{
+    std::string result = value;
 
-//     if (!hasLength)
-//     {
-//         _completeRequestSize = _bodyPos;
-//         return RequestState::Complete;
-//     }
+    for (size_t i = 0; i < result.size(); ++i) {
+        result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
+    }
 
-//     if (contentLength > _maximumBodySize)
-//         return RequestState::BodyTooLarge;
+    return result;
+}
 
-//     const size_t receivedBodySize =
-//         _requestBuffer.size() - _bodyPos;
+bool Client::parseContentLength(const std::string& value, size_t& result) const {
 
-//     if (receivedBodySize < contentLength)
-//         return RequestState::Incomplete;
+    std::string cleanValue = trim(value);
 
-//     _bodySize = contentLength;
-//     _completeRequestSize = _bodyPos + contentLength;
+    if (cleanValue.empty())
+        return false;
 
-//     return RequestState::Complete;
-// }
+    result = 0;
+
+    for (size_t i = 0; i < cleanValue.size(); ++i) {
+        unsigned char character = static_cast<unsigned char>(cleanValue[i]);
+
+        if (!std::isdigit(character))
+            return false;
+
+        size_t digit =
+            static_cast<size_t>(cleanValue[i] - '0');
+
+        if (result >
+            (std::numeric_limits<size_t>::max() - digit) / 10)
+        {
+            return false;
+        }
+
+        result = result * 10 + digit;
+    }
+
+    return true;
+}
+
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
         
 void Client::clearRequestBuffer() {
     _requestBuffer.clear();
@@ -134,6 +155,8 @@ std::string Client::getPartBodyRequest(size_t start, size_t length) const {
     return _requestBuffer.substr(start, length);
 
 };
+
+
 
 size_t Client::getBodyPos() const { return _bodyPos; };
 size_t Client::getBodySize() const { return _bodySize; };
