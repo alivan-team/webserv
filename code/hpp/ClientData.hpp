@@ -35,7 +35,7 @@ class Client {
                 
 
                 bool parseContentLength(const std::string& value, size_t& result) const;
-                // bool hasCompleteChunkedBody(size_t bodyStart, size_t& requestEnd) const;
+                bool hasCompleteChunkedBody(size_t bodyPos, size_t& requestEnd) const;
 
                 std::string trim(const std::string& value) const;
                 std::string toLower(const std::string& value) const;
@@ -47,6 +47,8 @@ class Client {
 
                 void appendToRequestBuffer(const char* buffer, size_t bytes);
                 bool hasCompleteHeaders() const;
+                bool parseHexSize(const std::string& value, size_t& result) const;
+                RequestState checkChunkedBody(size_t value, size_t& result) const;
                 RequestState checkRequestState();
 
                 void clearRequestBuffer();
@@ -63,7 +65,7 @@ class Client {
 
                 const std::string& getRequestBuffer() const;
                 const HTTPRequest& getRequest() const;
-
+                int     getRequestErrorCode() const;
 
 };
 

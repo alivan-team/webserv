@@ -75,8 +75,8 @@ void ServerManager::readClientData(size_t index) {
         return;
     }
 
-    Client& client = _clients[clientFd];
-    client.appendToRequestBuffer(buffer, bytes);
+    Client& client = _clients.at(clientFd);
+    client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
     // -> IMPORTANT Check for POST:  Transfer-Encoding: chunked + Content-length
     // in the recieveing we can NOT have Content-length and have Transfer-Encoding... so the 
@@ -88,8 +88,15 @@ void ServerManager::readClientData(size_t index) {
         return ;
     if (state == RequestState::BadRequest) {
 
+        std::cout << "\n\n BadRequest : " << std::endl;
+        
         const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
         
+        int errorCode = client.getRequestErrorCode();
+
+        if (errorCode == 0)
+            errorCode = 400;
+
         HTTPRequest errorRequest;
         errorRequest.setVersion("HTTP/1.1");
 
@@ -99,7 +106,7 @@ void ServerManager::readClientData(size_t index) {
 
         send(clientFd, response.c_str(), response.size(), 0);
         
-        client.clearRequestBuffer();
+        // client.clearRequestBuffer();
         close(clientFd);
         _clients.erase(clientFd);
         _pollfds.erase(_pollfds.begin() + index);
