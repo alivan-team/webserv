@@ -47,9 +47,10 @@ class Client {
 
                 void appendToRequestBuffer(const char* buffer, size_t bytes);
                 bool hasCompleteHeaders() const;
-                bool parseHexSize(const std::string& value, size_t& result) const;
-                RequestState checkChunkedBody(size_t value, size_t& result) const;
+
                 RequestState checkRequestState();
+                RequestState checkChunkedBody(size_t bodyStart, size_t& requestEnd) const;
+                bool parseHexSize(const std::string& value, size_t& result) const;
 
                 void clearRequestBuffer();
 

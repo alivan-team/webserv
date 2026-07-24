@@ -30,6 +30,8 @@ bool Client::hasCompleteHeaders() const {
 
 RequestState Client::checkRequestState()  {
 
+    // std::cout << "\t 1 : " << std::endl;
+
     _bodyPos = 0;
     _bodySize = 0;
     _requestEnd = 0;
@@ -60,7 +62,11 @@ RequestState Client::checkRequestState()  {
     bool hasTransferEncoding = false;
     bool isChunked = false;
 
+    // std::cout << "\t HEADER : " << std::endl;
     while (std::getline(headerStreamSection, line)) {
+
+        // std::cout << "\t\t line : " << line << std::endl;
+
 
         if (!line.empty() && line[line.size() - 1] == '\r')
             line.erase(line.size() - 1);
@@ -85,6 +91,10 @@ RequestState Client::checkRequestState()  {
             return RequestState::BadRequest;
         }
 
+        // std::cout << "\n\t\t hasContentLength : " << hasContentLength
+        //         << "\n\t\t hasTransferEncoding : " << hasTransferEncoding << std::endl;
+
+
         if (headerName == "content-length") {
 
             if (hasContentLength) {
@@ -106,6 +116,7 @@ RequestState Client::checkRequestState()  {
 
             if (hasTransferEncoding) {
                 _requestErrorCode = 400;
+                // std::cout << "\t\t\t\t _requestErrorCode : " << _requestErrorCode << std::endl;
                 return RequestState::BadRequest;
             }
 
@@ -120,8 +131,8 @@ RequestState Client::checkRequestState()  {
             }
         }
 
-        std::cout << "headerName : " << headerName << std::endl;
-        std::cout << "\t headerValue : " << headerValue << std::endl;
+        // std::cout << "-> headerName : " << headerName << std::endl;
+        // std::cout << "-> headerValue : " << headerValue << std::endl;
     }
     // <- parse only the HEADER from the request ||
 
@@ -152,6 +163,26 @@ RequestState Client::checkRequestState()  {
         return RequestState::Complete;
     }
 
+    if (hasContentLength) {
+        if (_requestBuffer.size() < _bodyPos)
+            return RequestState::Incomplete;
+
+        size_t receivedBodySize =
+            _requestBuffer.size() - _bodyPos;
+
+        if (receivedBodySize < contentLength)
+            return RequestState::Incomplete;
+
+        _bodySize = contentLength;
+        _requestEnd = _bodyPos + contentLength;
+
+        return RequestState::Complete;
+    }
+    
+    _bodySize = 0;
+    _requestEnd = _bodyPos;
+
+    return RequestState::Complete;
 };
 
 // 5\r\n
@@ -164,8 +195,90 @@ RequestState Client::checkRequestState()  {
 // 5;name=value\r\n
 
 
-RequestState Client::checkChunkedBody(size_t value, size_t& result) const {
+RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd) const {
 
+    size_t position = bodyStart;
+    // int i = 0;
+
+    while (true) {
+
+        // std::cout << "loop in chunked " << std::endl;
+
+        size_t sizeLineEnd = _requestBuffer.find("\r\n", position);
+        if (sizeLineEnd == std::string::npos) 
+            return RequestState::Incomplete;
+
+        std::string sizeLineStart = _requestBuffer.substr(position, sizeLineEnd - position);
+    
+        // std::cout << " --- sizeLineStart : " << sizeLineStart << std::endl;
+
+
+        size_t extentionPosition = sizeLineStart.find(";");
+        if (extentionPosition != std::string::npos)
+            sizeLineStart = sizeLineStart.substr(0, extentionPosition);
+
+        sizeLineStart = trim(sizeLineStart);
+        if(sizeLineStart.empty()) 
+            return RequestState::BadRequest;
+
+        // std::cout << " --- sizeLineStart after trim : " << sizeLineStart << std::endl;
+
+        size_t chunkHex = 0;
+
+        if (!parseHexSize(sizeLineStart, chunkHex))
+            return RequestState::BadRequest;
+
+        // std::cout << " --- Converted chunkHex to decimal -> " << chunkHex << std::endl;
+
+        position = sizeLineEnd + 2;
+
+        // std::cout << " --- position = sizeLineEnd + 2; -> " << position << std::endl;
+
+
+        if (chunkHex == 0) {
+
+            // std::cout << " Complete " << std::endl;
+
+            if(_requestBuffer.size() < position + 2)
+                return RequestState::Incomplete;
+
+            if(_requestBuffer.compare(position, 2, "\r\n") != 0)
+                return RequestState::BadRequest;
+
+            requestEnd = position + 2;
+
+            return RequestState::Complete;
+        
+        }
+
+        if(position > std::numeric_limits<size_t>::max() - chunkHex) {
+            // std::cout << " 1 "  << std::endl;
+            return RequestState::BadRequest;
+        }
+
+        size_t chunkEnd = position + chunkHex;
+
+        if (chunkEnd > std::numeric_limits<size_t>::max() - 2) {
+            // std::cout << " 2 "  << std::endl;
+            return RequestState::BadRequest;
+        }
+
+        if (_requestBuffer.size() < chunkEnd + 2) {
+            // std::cout << " 3 "  << std::endl;
+            return RequestState::Incomplete;
+        }
+
+        if (_requestBuffer.compare(chunkEnd, 2, "\r\n") != 0) {
+            // std::cout << " 4 "  << std::endl;
+            return RequestState::BadRequest;
+        }
+
+        position = chunkEnd + 2;
+        // if(i == 10)
+        //     return RequestState::Complete;
+        
+        // i++;
+    }
 }
 
 bool Client::parseHexSize(const std::string& value, size_t& result) const {

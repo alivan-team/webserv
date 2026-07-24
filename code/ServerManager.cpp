@@ -88,7 +88,7 @@ void ServerManager::readClientData(size_t index) {
         return ;
     if (state == RequestState::BadRequest) {
 
-        std::cout << "\n\n BadRequest : " << std::endl;
+        // std::cout << "\n\n BadRequest Here : " << std::endl;
         
         const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
         

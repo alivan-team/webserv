@@ -23,6 +23,8 @@ class HTTPResponseBuild {
         // static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
 
         static HTTPResponse handleGet(const HTTPRequest& request, const ServerConfig& servConf);
+        static HTTPResponse handlePost(const HTTPRequest& request, const ServerConfig& servConf);
+
 
         static std::string getStatusText(int code);
         static std::string decideConnection(const HTTPRequest& request);
