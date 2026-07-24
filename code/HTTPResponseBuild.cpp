@@ -49,8 +49,8 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
         case Method::GET:
             return handleGet(request, servConf);
 
-        case Method::POST:
-            return handlePost(request, servConf);
+        // case Method::POST:
+        //     return handlePost(request, servConf);
         // -> IMPORTANT Check for POST:  Transfer-Encoding: chunked + Content-length
 
         // case Method::DELETE:
@@ -161,10 +161,10 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 };
 
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
-HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const ServerConfig& servConf) {
+// HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const ServerConfig& servConf) {
 
-    std::cout << "handlePost" << std::endl;
-};
+//     std::cout << "handlePost" << std::endl;
+// };
 
 
 // DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE

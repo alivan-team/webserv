@@ -14,7 +14,7 @@ SRCS		:= main.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
 			   code/ErrorPages.cpp \
-			   code/client.cpp \
+			   code/HelperFunctions.cpp \
 			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/HTTPRequest.cpp \

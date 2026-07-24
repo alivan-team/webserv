@@ -3,6 +3,7 @@
 
 #include "ConfigParser.hpp"
 #include "ClientData.hpp"
+#include "HelperFunctions.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -40,18 +41,3 @@ class ServerManager {
 };
 
 #endif
-
-// class ServerManager
-// {
-// private:
-
-//     std::vector<ServerConfig> _servers;
-//     std::vector<int> _serverSockets;
-//     std::vector<pollfd> _pollfds;
-
-// public:
-
-//     ServerManager(const std::vector<ServerConfig>&);
-//     void initialize();
-//     void run();
-// };
