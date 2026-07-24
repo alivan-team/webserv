@@ -156,7 +156,6 @@ RequestState Client::checkContentLengthBody() {
     return RequestState::Complete;
 };
 
-
 RequestState Client::checkChunkedRequestBody() {
     
     size_t checkedRequestEnd = 0;
@@ -174,7 +173,6 @@ RequestState Client::checkChunkedRequestBody() {
 
     return RequestState::Complete;
 };
-
 
 RequestState Client::parseHeaders() {
 
