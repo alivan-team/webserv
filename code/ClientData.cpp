@@ -323,6 +323,8 @@ bool Client::parseContentLength(const std::string& value, size_t& result) const 
         
 void Client::clearRequestBuffer() {
     _requestBuffer.clear();
+    _bodyPos = 0;
+    _bodySize = 0;
 };
 
 void Client::setClientRequest(const HTTPRequest& req) {

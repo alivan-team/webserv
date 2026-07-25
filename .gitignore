@@ -13,7 +13,9 @@ obj/
 
 # Compiled binaries
 webserv
+webserv_tests
 ./webserv
+./webserv_tests
 *.out
 *.exe
 

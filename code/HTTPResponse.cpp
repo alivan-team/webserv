@@ -7,7 +7,8 @@ void HTTPResponse::setStatusCode(int code) {
 
 void HTTPResponse::setHeader(const std::string& key, const std::string& value) {
 
-    _headers.insert({key, value});
+    // _headers.insert({key, value});
+	_headers[key] = value;
 };
 
 void HTTPResponse::setBody(const std::string& body) {

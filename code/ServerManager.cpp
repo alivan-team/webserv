@@ -95,7 +95,8 @@ void ServerManager::readClientData(size_t index) {
     // HTTPRequest request = HTTPRequestParser().parse(client.getRequestBuffer());
 	// printDebug("HTTPRequestParser", request);
 	// std::cout << "~HTTPParser ============================\n";
-	client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
+	
+    client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
 
     // HTTP RESPONSE BUILD 
     // ServerConfig has multible servers and I need to connect the Client to the SC.
@@ -122,7 +123,7 @@ void ServerManager::readClientData(size_t index) {
     // std::string res = response;
     // std::cout << "~~~~~~ RESPONSE ~~~~~~ \n\t" << res << " ----- \n";
 
-    
+    std::cout << "Response: >>> " << response << "\n";
     send(clientFd, response.c_str(), response.size(), 0);
     
     // TODO: IMPORTANT TO CHECK LATER !!!!!!!!!!!!!!!!!!!

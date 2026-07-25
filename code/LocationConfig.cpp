@@ -61,7 +61,9 @@ void LocationConfig::setUploadStore(const std::vector<std::string>& fspath){
 
 void LocationConfig::setAutoIndex(const std::vector<std::string>& indexes){
 
-	if (indexes.size() != 1 || !checkFSPath(indexes[0]))
+	// if (indexes.size() != 1 || !checkFSPath(indexes[0]))
+	if (indexes.size() != 1 || (indexes[0] != "on" && indexes[0] != "off"))
+
 		throw std::runtime_error("Incorrect AutoIndex in configuration file");
 		
 	_autoIndex = indexes[0] == "on";
