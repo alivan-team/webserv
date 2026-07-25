@@ -127,6 +127,34 @@ RequestState Client::checkChunkedRequestBody() {
     return RequestState::Complete;
 };
 
+bool Client::parseContentLength(const std::string& value, size_t& result) const {
+
+    std::string cleanValue = trim(value);
+
+    if (cleanValue.empty())
+        return false;
+
+    result = 0;
+
+    for (size_t i = 0; i < cleanValue.size(); ++i) {
+
+        unsigned char character = static_cast<unsigned char>(cleanValue[i]);
+
+        if (!std::isdigit(character))
+            return false;
+
+        size_t digit = static_cast<size_t>(cleanValue[i] - '0');
+
+        if (result > (std::numeric_limits<size_t>::max() - digit) / 10) {
+            return false;
+        }
+
+        result = result * 10 + digit;
+    }
+
+    return true;
+}
+
 RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd) const {
 
     size_t position = bodyStart;
@@ -205,34 +233,6 @@ RequestState Client::checkRequestState()  {
 
     return RequestState::Complete;
 };
-
-bool Client::parseContentLength(const std::string& value, size_t& result) const {
-
-    std::string cleanValue = trim(value);
-
-    if (cleanValue.empty())
-        return false;
-
-    result = 0;
-
-    for (size_t i = 0; i < cleanValue.size(); ++i) {
-
-        unsigned char character = static_cast<unsigned char>(cleanValue[i]);
-
-        if (!std::isdigit(character))
-            return false;
-
-        size_t digit = static_cast<size_t>(cleanValue[i] - '0');
-
-        if (result > (std::numeric_limits<size_t>::max() - digit) / 10) {
-            return false;
-        }
-
-        result = result * 10 + digit;
-    }
-
-    return true;
-}
 
 bool Client::parseHexSize(const std::string& value, size_t& result) const {
 
