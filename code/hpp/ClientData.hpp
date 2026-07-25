@@ -6,9 +6,11 @@
 #include <cstddef>
 #include <cctype>
 #include <sstream>
+#include <iostream>
 #include <limits>
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
+#include "./hpp/HelperFunctions.hpp"
 
 enum class RequestState
 {
@@ -53,7 +55,7 @@ class Client {
         public:
                         
                 Client();
-                Client(int clinet_fd, int server_fd);
+                Client(int client_fd, int server_fd);
 
                 void appendToRequestBuffer(const char* buffer, size_t bytes);
                 RequestState checkRequestState();
