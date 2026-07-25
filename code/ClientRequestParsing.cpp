@@ -1,4 +1,5 @@
 #include "./hpp/ClientData.hpp"
+// #include "./hpp/HelperFunctions.hpp"
 
 RequestState Client::parseHeaders() {
 
@@ -25,7 +26,7 @@ RequestState Client::parseHeaders() {
 
     bool hasContentLength = false;
     bool hasTransferEncoding = false;
-    bool isChunked = false;
+    // bool isChunked = false;
 
     size_t parseContntLength = 0;
 

@@ -16,7 +16,7 @@ void Client::appendToRequestBuffer(const char* buffer, size_t bytes) {
 
     _requestBuffer.append(buffer, bytes);    
 };
-        
+
 void Client::clearRequestBuffer() {
     _requestBuffer.clear();
 

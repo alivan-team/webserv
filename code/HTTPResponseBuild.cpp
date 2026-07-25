@@ -560,7 +560,7 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 
     // std::cout << "urlDecoder HERE" << std::endl;
 
-    for (int i = 0; i < urlPath.length(); i++) {
+    for (size_t i = 0; i < urlPath.length(); i++) {
 
         if (urlPath[i] == '%') {
             if (i + 2 >= urlPath.size())

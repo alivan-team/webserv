@@ -10,7 +10,7 @@
 #include <limits>
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
-#include "./hpp/HelperFunctions.hpp"
+#include "./HelperFunctions.hpp"
 
 enum class RequestState
 {
