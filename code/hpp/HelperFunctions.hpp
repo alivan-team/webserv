@@ -1,5 +1,5 @@
-#ifndef CLIEN_HPP
-#define CLIEN_HPP
+#ifndef HELPERFUNCTIONS_HPP
+#define HELPERFUNCTIONS_HPP
 
 #include <string>
 
