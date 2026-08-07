@@ -1,5 +1,5 @@
 #include "./hpp/LocationConfig.hpp"
-#include "./hpp/client.hpp"
+#include "HelperFunctions.hpp"
 
 LocationConfig::LocationConfig()
     : _uriPath(),

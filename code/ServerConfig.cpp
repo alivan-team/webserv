@@ -1,5 +1,5 @@
 #include "./hpp/ServerConfig.hpp"
-#include "./hpp/client.hpp"
+#include "HelperFunctions.hpp"
 
 //	LOCATION CONFIG
 

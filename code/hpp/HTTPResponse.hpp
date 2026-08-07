@@ -1,7 +1,7 @@
 #ifndef HTTPRESPONSE_HPP
 #define HTTPRESPONSE_HPP
 
-#include "./client.hpp"
+#include "./HelperFunctions.hpp"
 #include <map>
 #include <unistd.h>
 #include <iostream>

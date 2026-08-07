@@ -1,9 +1,7 @@
 #include "./hpp/HTTPRequestParser.hpp"
 #include <iostream>
 
-std::string HTTPRequestParser::trim(const std::string &text) const
-
-{
+std::string HTTPRequestParser::trim(const std::string &text) const {
 
 	size_t begin = 0;
 
@@ -45,6 +43,10 @@ void HTTPRequestParser::parseRequestLine(
 	request.setUri(strUri);
 
 	std::string strVer = line.substr(secondSpace + 1);
+
+	// if (strVer != "HTTP/1.1" &&  strVer != "HTTP/1.0")
+	// 	throw ;
+	
 	if (strVer == "HTTP/1.1")
 		request.setVersion("1.1");
 	if (strVer == "HTTP/1.0")

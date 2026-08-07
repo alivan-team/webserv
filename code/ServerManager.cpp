@@ -2,7 +2,6 @@
 #include "./hpp/ServerManager.hpp"
 #include "./hpp/HTTPResponseBuild.hpp"
 #include "./hpp/HTTPRequestParser.hpp"
-
 #include "./hpp/printDebug.hpp"
 
 // ServerManager::ServerManager() {};
@@ -32,14 +31,6 @@ void ServerManager::acceptNewClient(int serverFd) {
 };
 
 void ServerManager::readClientData(size_t index) {
-    // here were we call the recieve client class
-
-    // Client class
-
-    // HTTPrequestParser?
-        // if POST control length;
-    
-    // Response 
 
     int clientFd = _pollfds[index].fd;
 
@@ -48,28 +39,52 @@ void ServerManager::readClientData(size_t index) {
 
     int bytes = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
 
-    if (bytes <= 0)
-    {
-        std::cout << "Client disconnected fd: " << clientFd << std::endl;
+    if (bytes == 0) {
 
+        std::cout << "client disconnected fd: " << std::endl;
         close(clientFd);
         _clients.erase(clientFd);
         _pollfds.erase(_pollfds.begin() + index);
-        // if (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-        //     std::cout << "recv() failed" << std::endl;
-        //     return;
-        // }
+        return ;
+
+    } else if (bytes < 0) {
+
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return;
+        }
+        std::cerr << "recv() failed" << std::endl;
+        close(clientFd);
+        _clients.erase(clientFd);
+        _pollfds.erase(_pollfds.begin() + index);
         return;
     }
 
-    Client& client = _clients[clientFd];
-    client.appendToRequestBuffer(buffer, bytes);
+    Client& client = _clients.at(clientFd);
+    client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
-    // -> IMPORTANT Check for POST:  Transfer-Encoding: chunked + Content-length
-    // in the recieveing we can NOT have Content-length and have Transfer-Encoding... so the 
-    // hasCompleteRequest() must be addapted to this... otherwise 411 Length Requierd.
-    if (!client.hasCompleteRequest())
+    RequestState state = client.checkRequestState();
+    if (state == RequestState::Incomplete)
         return ;
+    if (state == RequestState::BadRequest) {
+
+        const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
+        
+        int errorCode = client.getRequestErrorCode();
+        if (errorCode == 0)
+            errorCode = 400;
+
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
+
+        std::string response = errorResponse.toString(errorResponse);
+
+        send(clientFd, response.c_str(), response.size(), 0);
+        
+        // client.clearRequestBuffer(); // ?
+        close(clientFd);
+        _clients.erase(clientFd);
+        _pollfds.erase(_pollfds.begin() + index);
+        return ;
+    }
 
     // HTTP REQUST PARSER 
 	// std::cout << "HTTPParser ============================\n";
@@ -84,7 +99,6 @@ void ServerManager::readClientData(size_t index) {
     // HTTP RESPONSE 
     // later ClassResponse will be changed to response
     HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-
 
     // ALL under is default. 
     // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";

@@ -3,6 +3,7 @@
 
 #include "ConfigParser.hpp"
 #include "ClientData.hpp"
+#include "HelperFunctions.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -15,7 +16,6 @@
 class ServerManager {
 
     private:
-        // std::vector<ServerConfig> _servers;
         std::map<int, ServerConfig> _serversMap;
         std::vector<int> _serverSockets;
         std::vector<pollfd> _pollfds;
@@ -26,13 +26,7 @@ class ServerManager {
         void acceptNewClient(int serverFd);
         void readClientData(size_t index);
 
-        // void receiveRequest(int clientFd);
-        // void sendResponse(int clientFd);
-        // void removeClient(int clientFd);
-
     public: 
-        // ServerManager(const std::vector<ServerConfig>& servers);
-        // ServerManager();
         const std::map<int, ServerConfig>& getServerManager() const;
         const ServerConfig& getClientServerManager(int serverIndex) const;
         void initialize(const std::vector<ServerConfig>& servers);
@@ -40,18 +34,3 @@ class ServerManager {
 };
 
 #endif
-
-// class ServerManager
-// {
-// private:
-
-//     std::vector<ServerConfig> _servers;
-//     std::vector<int> _serverSockets;
-//     std::vector<pollfd> _pollfds;
-
-// public:
-
-//     ServerManager(const std::vector<ServerConfig>&);
-//     void initialize();
-//     void run();
-// };

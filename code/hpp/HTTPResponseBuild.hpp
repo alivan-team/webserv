@@ -23,7 +23,7 @@
 class HTTPResponseBuild {
 
     private: 
-        static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
+        // static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
 
         static HTTPResponse handleGet(const HTTPRequest& request, const ServerConfig& servConf);
         static HTTPResponse handlePost(const HTTPRequest& request, const ServerConfig& servConf);
@@ -37,16 +37,21 @@ class HTTPResponseBuild {
         static std::string readReadFile(const std::string& file);
         static bool isDirectory(const std::string& path);
         static std::string getContentType(const std::string& contenPath);
-        
         static const LocationConfig* findBestLocation (const std::string& path,  const ServerConfig& servConf);
         static std::string findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf);
         static bool startsWithLocation(const std::string& path, const std::string& loc);
-
         static HTTPResponse buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& directoryPath, const std::string& requestPath);
         static bool checkExtensionOfFile(const std::string& extension);
+        static bool containsParentTraversal(const std::string& path);
+        static std::string urlDecoder(std::string urlPath);
 
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
+        static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
+        // create another Error Response in order to handler earlier errors: 
+        //  such as in parsing ... 
+        static HTTPResponse makeEarlyErrorResponse(int code, const ServerConfig& servConf);
+
 };
 
 #endif
