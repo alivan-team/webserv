@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv POST demo</title>
+    <style>
+        body { max-width: 720px; margin: 3rem auto; padding: 0 1rem; font: 16px/1.5 Arial, sans-serif; color: #1f2937; }
+        main { padding: 2rem; border: 1px solid #d1d5db; border-radius: 12px; box-shadow: 0 4px 14px #00000012; }
+        label, input, button { display: block; width: 100%; box-sizing: border-box; }
+        label { margin-top: 1rem; font-weight: bold; }
+        input { margin-top: .4rem; padding: .6rem; }
+        button { margin-top: 1.25rem; padding: .75rem; border: 0; border-radius: 6px; background: #0078d4; color: white; font-size: 1rem; cursor: pointer; }
+        .hint { color: #4b5563; font-size: .92rem; }
+        code { overflow-wrap: anywhere; }
+    </style>
+</head>
+<body>
+    <main>
+        <p><a href="/">← Back to the home page</a></p>
+        <h1>POST upload check</h1>
+        <p>Choose a file and submit the standard HTML form. No JavaScript is used.</p>
+
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="file">File to upload</label>
+            <input id="file" name="file" type="file" required>
+            <button type="submit">Send POST /upload</button>
+        </form>
+
+        <p class="hint">
+            A browser sends a file form as <code>multipart/form-data</code>. The current server deliberately does not
+            parse multipart, so this test verifies only that POST accepts and stores the complete raw request body.
+            The saved file contains multipart boundaries and headers in addition to the selected file bytes.
+        </p>
+        <p><a href="/post-result.html">About the successful-response page</a></p>
+    </main>
+</body>
+</html>

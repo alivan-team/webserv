@@ -49,9 +49,8 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
         case Method::GET:
             return handleGet(request, servConf);
 
-        // case Method::POST:
-        //     return handlePost(request, servConf);
-        // -> IMPORTANT Check for POST:  Transfer-Encoding: chunked + Content-length
+        case Method::POST:
+            return handlePost(request, servConf);
 
         // case Method::DELETE:
         //     return handleDelete(request, servConf);
@@ -147,6 +146,62 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 };
 
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
+HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const ServerConfig& servConf) {
+	const LocationConfig* location = findBestLocation(request.getPath(), servConf);
+	if (location == NULL)
+		return makeErrorResponse(404, request, servConf);
+	if (!location->isPostAllowed())
+		return makeErrorResponse(405, request, servConf);
+
+	const std::string& uploadStore = location->getUploadStore();
+	if (uploadStore.empty() || !isDirectory(uploadStore) || access(uploadStore.c_str(), W_OK | X_OK) != 0)
+		return makeErrorResponse(500, request, servConf);
+
+	const std::string& requestBuffer = request.getRequestBuffer();
+	const size_t bodyOffset = request.getBodyOffset();
+	const size_t bodySize = request.getBodySize();
+	if (bodyOffset > requestBuffer.size() || bodySize > requestBuffer.size() - bodyOffset)
+		return makeErrorResponse(400, request, servConf);
+
+	std::string outputPath;
+	int outputFd = -1;
+	for (size_t attempt = 0; attempt < 100; ++attempt) {
+		std::ostringstream name;
+		name << "upload-" << std::time(NULL) << "-" << getpid() << "-" << attempt;
+		outputPath = joinPath(uploadStore, name.str());
+		outputFd = open(outputPath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+		if (outputFd >= 0)
+			break;
+		if (errno != EEXIST)
+			return makeErrorResponse(500, request, servConf);
+	}
+	if (outputFd < 0)
+		return makeErrorResponse(500, request, servConf);
+
+	size_t written = 0;
+	while (written < bodySize) {
+		ssize_t result = write(outputFd, requestBuffer.data() + bodyOffset + written, bodySize - written);
+		if (result < 0 && errno == EINTR)
+			continue;
+		if (result <= 0) {
+			close(outputFd);
+			unlink(outputPath.c_str());
+			return makeErrorResponse(500, request, servConf);
+		}
+		written += static_cast<size_t>(result);
+	}
+	close(outputFd);
+
+	HTTPResponse res;
+	res.setStatusCode(201);
+	res.setStatus(getStatusText(201));
+	res.setVersion(request.getVersion());
+	res.setHeader("Content-Length", "0");
+	res.setHeader("Connection", decideConnection(request));
+	res.setHeader("Location", joinPath(location->getUriPath(), outputPath.substr(uploadStore.size())));
+	return res;
+}
+
 // DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
 
 // ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR 
@@ -227,6 +282,7 @@ std::string HTTPResponseBuild::getStatusText(int code)
     switch (code)
     {
         case 200: return "OK";
+		case 201: return "Created";
         case 400: return "Bad Request";
         case 403: return "Forbidden";
         case 404: return "Not Found";

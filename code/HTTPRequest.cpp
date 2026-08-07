@@ -1,7 +1,7 @@
 #include "./hpp/HTTPRequest.hpp"
 
 		HTTPRequest::HTTPRequest()
-			: _method(Method::UNKNOWN) { };
+			: _method(Method::UNKNOWN), _requestBuffer(NULL), _bodyOffset(0), _bodySize(0) { };
 
 		void HTTPRequest::setMethod(Method method){ _method = method; };
 
@@ -17,6 +17,12 @@
 			_headers[name] = value;
 		};
 
+		void HTTPRequest::setBodyLocation(const std::string& requestBuffer, size_t offset, size_t size) {
+			_requestBuffer = &requestBuffer;
+			_bodyOffset = offset;
+			_bodySize = size;
+		};
+
 		Method HTTPRequest::getMethod() const { return _method; };
 
 		const std::string& HTTPRequest::getUri() const{ return _uri; };
@@ -24,6 +30,15 @@
 		const std::string& HTTPRequest::getQuery() const{ return _query; };
 		const std::string& HTTPRequest::getVersion() const{ return _version; };
 		const std::map<std::string, std::string>& HTTPRequest::getHeaders() const{ return _headers; };
+
+		const std::string& HTTPRequest::getRequestBuffer() const {
+			if (_requestBuffer == NULL)
+				throw std::runtime_error("Request buffer is not available");
+			return *_requestBuffer;
+		};
+
+		size_t HTTPRequest::getBodyOffset() const { return _bodyOffset; };
+		size_t HTTPRequest::getBodySize() const { return _bodySize; };
 
 		bool HTTPRequest::hasHeader(const std::string &name) const{ return (_headers.find(name) != _headers.end()); };
 

@@ -116,15 +116,20 @@ HTTPRequest HTTPRequestParser::parse(const std::string &buffer) const{
 	HTTPRequest httpparseresult;
 	
 	size_t endFirstLine = buffer.find("\r\n");
+	if (endFirstLine == std::string::npos)
+		throw std::runtime_error("Invalid HTTP request");
 	std::string firstLine = buffer.substr(0, endFirstLine);
 	parseRequestLine(firstLine, httpparseresult);
 
-	// size_t endSecondLine = buffer.find("\r\n", endFirstLine + 2);
-	// std::string secondLine = buffer.substr(endFirstLine + 2, endSecondLine - endFirstLine - 2);
-	// parseUri(secondLine, httpparseresult);	
+	size_t headersEnd = buffer.find("\r\n\r\n", endFirstLine + 2);
+	if (headersEnd == std::string::npos)
+		throw std::runtime_error("Invalid HTTP request");
 
-	std::string restLine = buffer.substr(endFirstLine + 2);
-	parseHeaders(restLine, httpparseresult);
+	std::string headers = buffer.substr(endFirstLine + 2, headersEnd - endFirstLine - 2);
+	parseHeaders(headers, httpparseresult);
+
+	size_t bodyOffset = headersEnd + 4;
+	httpparseresult.setBodyLocation(buffer, bodyOffset, buffer.size() - bodyOffset);
 
 	return httpparseresult;
 };
