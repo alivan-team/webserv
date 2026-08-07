@@ -49,9 +49,10 @@ void HTTPRequestParser::parseRequestLine(
 	
 	if (strVer == "HTTP/1.1")
 		request.setVersion("1.1");
-	if (strVer == "HTTP/1.0")
+	else if (strVer == "HTTP/1.0")
 		request.setVersion("1.0");
-
+	else
+		throw std::runtime_error("Invalid HTTP request");
 	parseUri(strUri, request);
 };
 
