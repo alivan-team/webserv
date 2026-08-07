@@ -73,11 +73,7 @@ void ServerManager::readClientData(size_t index) {
         if (errorCode == 0)
             errorCode = 400;
 
-        // when creating errorRequest check the version before hard coding it...
-        HTTPRequest errorRequest;
-        errorRequest.setVersion("HTTP/1.1");
-
-        HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(400, errorRequest, serverConfig);
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
 
         std::string response = errorResponse.toString(errorResponse);
 
@@ -103,7 +99,6 @@ void ServerManager::readClientData(size_t index) {
     // HTTP RESPONSE 
     // later ClassResponse will be changed to response
     HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-
 
     // ALL under is default. 
     // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";

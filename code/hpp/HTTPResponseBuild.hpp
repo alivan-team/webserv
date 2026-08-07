@@ -45,7 +45,9 @@ class HTTPResponseBuild {
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
         static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
-
+        // create another Error Response in order to handler earlier errors: 
+        //  such as in parsing ... 
+        static HTTPResponse makeEarlyErrorResponse(int code, const ServerConfig& servConf);
 
 };
 
