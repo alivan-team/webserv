@@ -1,4 +1,5 @@
 #include "./hpp/HTTPRequestParser.hpp"
+#include "./hpp/HTTPParseException.hpp"
 #include <iostream>
 
 std::string HTTPRequestParser::trim(const std::string &text) const {
@@ -24,35 +25,36 @@ void HTTPRequestParser::parseRequestLine(
 	size_t firstSpace = line.find(' ');
 
 	if (firstSpace == std::string::npos)
-		throw std::runtime_error("Invalid HTTP request");
+		throw HTTPParseException(400, "Missing space after method");
 	
 	size_t secondSpace = line.find(' ', firstSpace + 1);
 
 	if (secondSpace == std::string::npos)
-		throw std::runtime_error("Invalid HTTP request");
+		throw HTTPParseException(400, "Missing space after URI");
 
 	size_t thirdSpace = line.find(' ', secondSpace + 1);
 
 	if (thirdSpace != std::string::npos)
-		throw std::runtime_error("Invalid HTTP request");
+		throw HTTPParseException(400, "Too many spaces in request line");
 
 	std::string strMethod = line.substr(0, firstSpace);
+	if (strMethod.empty())
+        throw HTTPParseException(400, "Empty HTTP method");
 	request.setMethod(parseMethod(strMethod));
 
 	std::string strUri = line.substr(firstSpace + 1, secondSpace - firstSpace - 1);
+	if (strUri.empty())
+        throw HTTPParseException(400, "Empty request URI");
 	request.setUri(strUri);
 
 	std::string strVer = line.substr(secondSpace + 1);
 
-	// if (strVer != "HTTP/1.1" &&  strVer != "HTTP/1.0")
-	// 	throw ;
-	
 	if (strVer == "HTTP/1.1")
 		request.setVersion("1.1");
 	else if (strVer == "HTTP/1.0")
 		request.setVersion("1.0");
 	else
-		throw std::runtime_error("Invalid HTTP request");
+		throw HTTPParseException(505, "HTTP version not supported");
 	parseUri(strUri, request);
 };
 
@@ -120,13 +122,13 @@ HTTPRequest HTTPRequestParser::parse(const std::string &buffer) const{
 	
 	size_t endFirstLine = buffer.find("\r\n");
 	if (endFirstLine == std::string::npos)
-		throw std::runtime_error("Invalid HTTP request");
+		throw HTTPParseException(400, "Missing request-line terminator");
 	std::string firstLine = buffer.substr(0, endFirstLine);
 	parseRequestLine(firstLine, httpparseresult);
 
 	size_t headersEnd = buffer.find("\r\n\r\n", endFirstLine + 2);
 	if (headersEnd == std::string::npos)
-		throw std::runtime_error("Invalid HTTP request");
+		throw HTTPParseException(400, "Missing end of headers");
 
 	std::string headers = buffer.substr(endFirstLine + 2, headersEnd - endFirstLine - 2);
 	parseHeaders(headers, httpparseresult);
