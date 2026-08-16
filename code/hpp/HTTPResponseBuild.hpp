@@ -27,6 +27,7 @@ class HTTPResponseBuild {
 
         static HTTPResponse handleGet(const HTTPRequest& request, const ServerConfig& servConf);
         static HTTPResponse handlePost(const HTTPRequest& request, const ServerConfig& servConf);
+        static HTTPResponse handleDelete(const HTTPRequest& request, const ServerConfig& servConf);
 
         static std::string getStatusText(int code);
         static std::string decideConnection(const HTTPRequest& request);
@@ -44,6 +45,10 @@ class HTTPResponseBuild {
         static bool checkExtensionOfFile(const std::string& extension);
         static bool containsParentTraversal(const std::string& path);
         static std::string urlDecoder(std::string urlPath);
+
+        static std::string buildAllowHeader(const LocationConfig& location);
+        static std::string uploadStorePresent(const LocationConfig& location);
+        static bool deleteParentInsideBase(const std::string& base, const std::string& target);
 
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
