@@ -3,7 +3,7 @@
 
 
 HTTPRequest::HTTPRequest()
-	: _method(Method::UNKNOWN), _requestBuffer(NULL), _bodyOffset(0), _bodySize(0), _boundary(""), _bodytype(BODY_UNKNOWN){ };
+	: _method(Method::UNKNOWN), _requestBuffer(NULL), _bodyOffset(0), _bodySize(0), _boundary(""), _bodycontenttype(BODY_UNKNOWN){ };
 
 void HTTPRequest::setMethod(Method method){ _method = method; };
 
@@ -28,8 +28,8 @@ void HTTPRequest::setBodyLocation(const std::string& requestBuffer, size_t offse
 void HTTPRequest::setBoundary(std::string boundary){
 	_boundary = boundary;
 };
-void HTTPRequest::setBodyType(BodyType type){
-	_bodytype = type;
+void HTTPRequest::setBodyType(BodyContentType type){
+	_bodycontenttype = type;
 };
 
 Method HTTPRequest::getMethod() const { return _method; };
@@ -63,23 +63,8 @@ const std::string& HTTPRequest::getHeader(const std::string &name) const{
 	return (it->second); 
 };
 
-const BodyType HTTPRequest::getBodyType() const{
+const BodyContentType HTTPRequest::getBodyType() const{
 
-	std::string contentString;
 
-	try {
-		contentString =  toLower(this->getHeader("Content-Type2:"));
-		if (contentString == "multipart/form-data") {
-			return BODY_MULTIPART;
-		}
-		if (contentString == "application/octet-stream" || 
-			contentString == "application/json" || 
-			contentString == "text/plain" )
-			return BODY_RAW;
-	} catch (const std::exception &e) {
-		std::cerr << "Error: " << e.what() << "\n";
-		return BODY_UNKNOWN;
-	}
-
-	return (BODY_UNKNOWN); 
+	return (_bodycontenttype); 
 };

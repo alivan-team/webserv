@@ -21,7 +21,7 @@ class HTTPRequest{
 		size_t _bodyOffset;
 		size_t _bodySize;
 		std::string _boundary;
-		BodyType _bodytype;
+		BodyContentType _bodycontenttype;
 
 	public:
 		HTTPRequest();
@@ -35,7 +35,7 @@ class HTTPRequest{
 		void addHeader(const std::string &name, const std::string &value);
 		void setBodyLocation(const std::string& requestBuffer, size_t offset, size_t size);
 		void setBoundary(std::string boundary);
-		void setBodyType(BodyType type);
+		void setBodyType(BodyContentType type);
 		
 		Method getMethod() const;
 		const std::string &getUri() const;
@@ -50,7 +50,7 @@ class HTTPRequest{
 		
 		bool hasHeader(const std::string &name) const;
 		const std::string &getHeader(const std::string &name) const;
-		const BodyType getBodyType() const;
+		const BodyContentType getBodyType() const;
 };
 
 #endif
