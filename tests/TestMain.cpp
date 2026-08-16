@@ -159,7 +159,7 @@ void testHttpRequestBodyLocation()
 
 void testPostUpload()
 {
-    char temporaryDirectory[] = "/private/tmp/webserv-post-test-XXXXXX";
+    char temporaryDirectory[] = "/tmp/webserv-post-test-XXXXXX";
     char* uploadStore = mkdtemp(temporaryDirectory);
     check(uploadStore != NULL, "temporary upload directory is created");
     if (uploadStore == NULL)
