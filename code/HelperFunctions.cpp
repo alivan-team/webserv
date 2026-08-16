@@ -158,3 +158,4 @@ std::string trim(const std::string& value) {
 
     return value.substr(start, end - start);
 }
+

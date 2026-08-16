@@ -160,6 +160,9 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
 HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const ServerConfig& servConf) {
+
+	std::cout << "\n ------------------------>\n"  << "Received reqiest buffer: " << request.getRequestBuffer() << "\n <------------------------" << std::endl;
+	std::cout << " >>" << request.getRequestBuffer().data() + request.getBodyOffset()  << "<<\n;" ;
 	const LocationConfig* location = findBestLocation(request.getPath(), servConf);
 	if (location == NULL)
 		return makeErrorResponse(404, request, servConf);

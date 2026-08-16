@@ -1,54 +1,85 @@
 #include "./hpp/HTTPRequest.hpp"
+#include <iostream>
 
-		HTTPRequest::HTTPRequest()
-			: _method(Method::UNKNOWN), _requestBuffer(NULL), _bodyOffset(0), _bodySize(0) { };
 
-		void HTTPRequest::setMethod(Method method){ _method = method; };
+HTTPRequest::HTTPRequest()
+	: _method(Method::UNKNOWN), _requestBuffer(NULL), _bodyOffset(0), _bodySize(0), _boundary(""), _bodytype(BODY_UNKNOWN){ };
 
-		void HTTPRequest::setUri(const std::string &uri){ _uri = uri; };
+void HTTPRequest::setMethod(Method method){ _method = method; };
 
-		void HTTPRequest::setPath(const std::string &path){ _path = path; };
+void HTTPRequest::setUri(const std::string &uri){ _uri = uri; };
 
-		void HTTPRequest::setQuery(const std::string &query){ _query = query; };
+void HTTPRequest::setPath(const std::string &path){ _path = path; };
 
-		void HTTPRequest::setVersion(const std::string &version){ _version = version;};
+void HTTPRequest::setQuery(const std::string &query){ _query = query; };
 
-		void HTTPRequest::addHeader(const std::string &name, const std::string &value){
-			_headers[name] = value;
-		};
+void HTTPRequest::setVersion(const std::string &version){ _version = version;};
 
-		void HTTPRequest::setBodyLocation(const std::string& requestBuffer, size_t offset, size_t size) {
-			_requestBuffer = &requestBuffer;
-			_bodyOffset = offset;
-			_bodySize = size;
-		};
+void HTTPRequest::addHeader(const std::string &name, const std::string &value){
+	_headers[name] = value;
+};
 
-		Method HTTPRequest::getMethod() const { return _method; };
+void HTTPRequest::setBodyLocation(const std::string& requestBuffer, size_t offset, size_t size) {
+	_requestBuffer = &requestBuffer;
+	_bodyOffset = offset;
+	_bodySize = size;
+};
 
-		const std::string& HTTPRequest::getUri() const{ return _uri; };
-		const std::string& HTTPRequest::getPath() const{ return _path; };
-		const std::string& HTTPRequest::getQuery() const{ return _query; };
-		const std::string& HTTPRequest::getVersion() const{ return _version; };
-		const std::map<std::string, std::string>& HTTPRequest::getHeaders() const{ return _headers; };
+void HTTPRequest::setBoundary(std::string boundary){
+	_boundary = boundary;
+};
+void HTTPRequest::setBodyType(BodyType type){
+	_bodytype = type;
+};
 
-		const std::string& HTTPRequest::getRequestBuffer() const {
-			if (_requestBuffer == NULL)
-				throw std::runtime_error("Request buffer is not available");
-			return *_requestBuffer;
-		};
+Method HTTPRequest::getMethod() const { return _method; };
 
-		size_t HTTPRequest::getBodyOffset() const { return _bodyOffset; };
-		size_t HTTPRequest::getBodySize() const { return _bodySize; };
+const std::string& HTTPRequest::getUri() const{ return _uri; };
+const std::string& HTTPRequest::getPath() const{ return _path; };
+const std::string& HTTPRequest::getQuery() const{ return _query; };
+const std::string& HTTPRequest::getVersion() const{ return _version; };
+const std::string HTTPRequest::getBoundary() const { return _boundary; };
+const std::map<std::string, std::string>& HTTPRequest::getHeaders() const{ return _headers; };
 
-		bool HTTPRequest::hasHeader(const std::string &name) const{ return (_headers.find(name) != _headers.end()); };
+const std::string& HTTPRequest::getRequestBuffer() const {
+	if (_requestBuffer == NULL)
+		throw std::runtime_error("Request buffer is not available");
+	return *_requestBuffer;
+};
 
-		const std::string& HTTPRequest::getHeader(const std::string &name) const{
-			std::map<std::string, std::string>::const_iterator it;
+size_t HTTPRequest::getBodyOffset() const { return _bodyOffset; };
+size_t HTTPRequest::getBodySize() const { return _bodySize; };
 
-			it = _headers.find(name);
+bool HTTPRequest::hasHeader(const std::string &name) const{ return (_headers.find(name) != _headers.end()); };
 
-			if (it == _headers.end())
-				throw std::runtime_error("Header not found");
+const std::string& HTTPRequest::getHeader(const std::string &name) const{
+	std::map<std::string, std::string>::const_iterator it;
 
-    		return (it->second); 
-		};
+	it = _headers.find(name);
+
+	if (it == _headers.end())
+		throw std::runtime_error("Header not found");
+
+	return (it->second); 
+};
+
+const BodyType HTTPRequest::getBodyType() const{
+
+	std::string contentString;
+
+	try {
+		contentString =  toLower(this->getHeader("Content-Type2:"));
+		if (contentString == "multipart/form-data") {
+			return BODY_MULTIPART;
+		}
+		if (contentString == "application/octet-stream" || 
+			contentString == "application/json" || 
+			contentString == "text/plain" )
+			return BODY_RAW;
+	} catch (const std::exception &e) {
+		std::cerr << "Error: " << e.what() << "\n";
+		return BODY_UNKNOWN;
+	}
+
+	return (BODY_UNKNOWN); 
+};

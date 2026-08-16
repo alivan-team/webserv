@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cctype>
 #include "externalStructures.hpp"
+#include "HelperFunctions.hpp"
 
 class HTTPRequest{
 
@@ -19,6 +20,8 @@ class HTTPRequest{
 		const std::string* _requestBuffer;
 		size_t _bodyOffset;
 		size_t _bodySize;
+		std::string _boundary;
+		BodyType _bodytype;
 
 	public:
 		HTTPRequest();
@@ -31,19 +34,23 @@ class HTTPRequest{
 		void setVersion(const std::string &version);
 		void addHeader(const std::string &name, const std::string &value);
 		void setBodyLocation(const std::string& requestBuffer, size_t offset, size_t size);
+		void setBoundary(std::string boundary);
+		void setBodyType(BodyType type);
 		
 		Method getMethod() const;
 		const std::string &getUri() const;
 		const std::string &getPath() const;
 		const std::string &getQuery() const;
 		const std::string &getVersion() const;
+		const std::string getBoundary() const;
 		const std::map<std::string, std::string> &getHeaders() const;
 		const std::string& getRequestBuffer() const;
 		size_t getBodyOffset() const;
 		size_t getBodySize() const;
-
+		
 		bool hasHeader(const std::string &name) const;
 		const std::string &getHeader(const std::string &name) const;
+		const BodyType getBodyType() const;
 };
 
 #endif
