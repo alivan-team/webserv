@@ -55,7 +55,7 @@ bool HTTPRequest::hasHeader(const std::string &name) const{ return (_headers.fin
 const std::string& HTTPRequest::getHeader(const std::string &name) const{
 	std::map<std::string, std::string>::const_iterator it;
 
-	it = _headers.find(name);
+	it = _headers.find(toLower(name));
 
 	if (it == _headers.end())
 		throw std::runtime_error("Header not found");
