@@ -2,7 +2,7 @@
 #define MULTIPART_PARSER_HPP
 
 #include <string>
-#include <map>
+#include <vector>
 #include "externalStructures.hpp"
 #include "MultipartPart.hpp"
 
@@ -13,6 +13,7 @@ private:
 	size_t			_bodyOffset;
 	size_t			_bodySize;
 	std::string		_boundary;
+	std::
 
 public:
 	MultipartParser(const std::string& buffer,
