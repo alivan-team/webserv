@@ -25,4 +25,11 @@ enum class Method
     HEAD
 };
 
+enum BodyContentType
+{
+    BODY_UNKNOWN,
+    BODY_MULTIPART,
+    BODY_RAW
+};
+
 #endif

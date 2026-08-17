@@ -1,6 +1,7 @@
 #include "./hpp/HTTPRequestParser.hpp"
 #include "./hpp/HTTPParseException.hpp"
 #include <iostream>
+#include <algorithm>
 
 std::string HTTPRequestParser::trim(const std::string &text) const {
 
@@ -79,6 +80,10 @@ void HTTPRequestParser::parseHeaders(
 
 			std::string name = trim(line.substr(0, colon));
 			std::string value = trim(line.substr(colon + 1));
+			std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
+        		return std::tolower(c);
+    		});
+
 			request.addHeader(name, value);
 
 			begin = end + 2;
@@ -132,6 +137,29 @@ HTTPRequest HTTPRequestParser::parse(const std::string &buffer) const{
 
 	std::string headers = buffer.substr(endFirstLine + 2, headersEnd - endFirstLine - 2);
 	parseHeaders(headers, httpparseresult);
+
+	const std::map<std::string, std::string> allHeaders = httpparseresult.getHeaders();
+	std::map<std::string, std::string>::const_iterator it;
+
+	it = allHeaders.find("content-type");
+
+	if (it != allHeaders.end()) {
+		size_t semicolon = it->second.find(";");
+		std::string lowSecond = toLower(it->second);
+		if (semicolon != std::string::npos) {
+			if (trim(lowSecond.substr(0,semicolon)) =="multipart/form-data") {
+				size_t boundPos = lowSecond.find("boundary=");
+				if (boundPos != std::string::npos) {
+					httpparseresult.setBodyType(BODY_MULTIPART);
+					httpparseresult.setBoundary(it->second.substr(boundPos + 9));
+				}
+			}
+			else
+				httpparseresult.setBodyType(BODY_RAW);
+		}
+		else
+			httpparseresult.setBodyType(BODY_RAW);
+	}
 
 	size_t bodyOffset = headersEnd + 4;
 	httpparseresult.setBodyLocation(buffer, bodyOffset, buffer.size() - bodyOffset);
