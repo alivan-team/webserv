@@ -181,8 +181,6 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
         
         res.setStatusCode(200);
         res.setStatus(getStatusText(200));
-        // std::cout << "Final fullPath: " << fullPath << std::endl;
-        // std::cout << "Content-Type: " << getContentType(fullPath) << std::endl;
         res.setHeader("Content-Type", getContentType(fullPath));
         res.setHeader("Content-Length", std::to_string(body.size()));
         res.setHeader("Connection", decideConnection(request));
@@ -249,12 +247,17 @@ HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const Ser
 	close(outputFd);
 
 	HTTPResponse res;
-	res.setStatusCode(201);
+    std::string body = readReadFile("./site/www/post-result.html");
+	
+    res.setStatusCode(201);
 	res.setStatus(getStatusText(201));
 	res.setVersion(request.getVersion());
-	res.setHeader("Content-Length", "0");
+    res.setHeader("Content-Type", getContentType("./site/www/post-result.html"));
+	res.setHeader("Content-Length", std::to_string(body.size()));
 	res.setHeader("Connection", decideConnection(request));
 	res.setHeader("Location", joinPath(location->getUriPath(), outputPath.substr(uploadStore.size())));
+    res.setBody(body);
+
 	return res;
 }
 
@@ -392,7 +395,7 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     res.setStatusCode(204);
     res.setStatus(getStatusText(204));
 
-    res.setHeader("Content-Length", "0");
+    res.setHeader("Content-Length", "0"); // send body for successful deleting file... 
     res.setHeader("Connection", decideConnection(request));
 
     res.setVersion(request.getVersion());
