@@ -123,16 +123,28 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     if (!location->isGetAllowed())
         return makeErrorResponse(405, request, servConf);
 
+    // std::cout << "\t location->getUriPath().size():  " <<  location->getUriPath().size() << std::endl;
+    // std::cout << "\t location->getUriPath():  " <<  location->getUriPath() << std::endl;
+    // std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
+    // std::cout << "\t path :  " <<  path << std::endl;
+
     std::string fullPath;
-    if (location->getRoot().empty())
+    std::string relativePath = path;
+
+    if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
+        relativePath = path.substr(location->getUriPath().size());
+
+    // std::cout << "\t relativePath :  " <<  relativePath << std::endl;
+
+    if (!location->getRoot().empty())
+        fullPath = joinPath(location->getRoot(), relativePath);
+    else
         fullPath = joinPath(servConf.getRoot()[0], path);
-    else 
-        fullPath = location->getRoot();
 
     // std::cout << "fullPath :  " <<  fullPath << std::endl;
 
     if (!fileExists(fullPath)) {
-        std::cout << "fileExists2645" << std::endl;
+        // std::cout << "fileExists2645" << std::endl;
         return makeErrorResponse(404, request, servConf);
     }
 
