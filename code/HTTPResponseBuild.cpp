@@ -384,11 +384,11 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
 
     if (lstat(fullPath.c_str(), &targetStat) == -1) {
 
-        std::cout << "9: " << std::endl;
-        std::cout << "lstat FAILED" << std::endl;
-        std::cout << "fullPath: " << fullPath << std::endl;
-        std::cout << "errno: " << errno << std::endl;
-        std::cout << "error: " << strerror(errno) << std::endl;
+        // std::cout << "9: " << std::endl;
+        // std::cout << "lstat FAILED" << std::endl;
+        // std::cout << "fullPath: " << fullPath << std::endl;
+        // std::cout << "errno: " << errno << std::endl;
+        // std::cout << "error: " << strerror(errno) << std::endl;
 
         if (errno == ENOENT || errno == ENOTDIR) 
             return makeErrorResponse(404, request, servConf);
@@ -410,7 +410,38 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     if (!deleteParentInsideBase(baseDir, fullPath))
         return makeErrorResponse(403, request, servConf);
 
-    // return 
+
+    if (unlink(fullPath.c_str()) == -1) {
+
+        // std::cerr << "unlink() failed for: " << fullPath << std::endl;
+        // std::cerr << "errno: " << errno << std::endl;
+        // std::cerr << "error: " << strerror(errno) << std::endl;
+
+        if (errno == ENOENT || errno == ENOTDIR)
+            return makeErrorResponse(404, request, servConf);
+
+        if (errno == EACCES || errno == EPERM)
+            return makeErrorResponse(403, request, servConf);
+
+        if (errno == EISDIR)
+            return makeErrorResponse(403, request, servConf);
+
+        return makeErrorResponse(500, request, servConf);
+    }
+
+    HTTPResponse res;
+
+    res.setStatusCode(204);
+    res.setStatus(getStatusText(204));
+
+    res.setHeader("Content-Length", "0");
+    res.setHeader("Connection", decideConnection(request));
+
+    res.setVersion(request.getVersion());
+    res.setBody("");
+
+    return res;
+
 };
 
 
