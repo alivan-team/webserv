@@ -188,7 +188,8 @@ int main(int argc, char **argv)
 		return (1);
 	}
 	a = init_stack();
-	b = init_stack();
+	b = init_stack();Content-Disposition: form-data; name="file"; filename="push_swap2.c"
+Content-Type: application/octet-stream
 	for (int i = 1; i < argc; i++)
 		push(a, create_node(atoi(argv[i])));
 	radix_sort(a, b);

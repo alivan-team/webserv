@@ -98,7 +98,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
     HTTPResponse res;
     std::string path;
-    // std::cout << "    :    Request    : \n" << "code:  "<<  request.getUri() << std::endl;
+    // std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
     
     try { 
         path = urlDecoder(request.getPath());
@@ -113,10 +113,10 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     }
 
     const LocationConfig* location = findBestLocation(path ,servConf);
-    // std::cout << "location:  " <<  location.getUriPath() << std::endl;
+    // std::cout << "location:  " <<  location->getUriPath() << std::endl;
 
     if (location == NULL) {
-        // std::cout << "fileExists1" << std::endl;
+        std::cout << "fileExists1" << std::endl;
         return makeErrorResponse(404, request, servConf);
     }
 
@@ -127,12 +127,12 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     if (location->getRoot().empty())
         fullPath = joinPath(servConf.getRoot()[0], path);
     else 
-        fullPath = joinPath(location->getRoot(), path);
+        fullPath = location->getRoot();
 
     // std::cout << "fullPath :  " <<  fullPath << std::endl;
 
     if (!fileExists(fullPath)) {
-        std::cout << "fileExists2" << std::endl;
+        std::cout << "fileExists2645" << std::endl;
         return makeErrorResponse(404, request, servConf);
     }
 
@@ -247,63 +247,6 @@ HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const Ser
 }
 
 // DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
-    // HTTPRequest already parsed
-    //         │
-    //         ▼
-    // Method::DELETE
-    //         │
-    //         ▼
-    // URL-decode the path
-    //         │
-    //         ▼
-    // Reject malformed encoding / NUL
-    //         │
-    //         ▼
-    // Reject ../ traversal
-    //         │
-    //         ▼
-    // Find best location
-    //         │
-    //         ▼
-    // Is DELETE allowed?
-    //         │
-    //       no ───────► 405 + Allow header
-    //         │
-    //        yes
-    //         │
-    //         ▼
-    // Resolve URI → filesystem target
-    //         │
-    //         ├── upload_store exists
-    //         │        ↓
-    //         │   upload_store + URI suffix
-    //         │
-    //         └── otherwise
-    //                  ↓
-    //              root + URI
-    //         │
-    //         ▼
-    // Does target exist?
-    //         │
-    //        no ───────► 404
-    //         │
-    //         ▼
-    // Is target a directory?
-    //         │
-    //        yes ──────► 403
-    //         │
-    //         ▼
-    // Verify parent remains inside configured base
-    //         │
-    //         ▼
-    // unlink()
-    //         │
-    //      failure ────► appropriate error 403/500
-    //         │
-    //      success
-    //         ▼
-    // 204 No Content
-
     // The expected DELETE behavior is essentially: existing deletable 
     // file → delete it; missing file → 404; DELETE forbidden by the 
     // location → 405; successful deletion → 204 No Content
@@ -326,16 +269,16 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     std::string fullPath;
     struct stat targetStat;
 
-    std::cout << "1 - DETELE -> request.getPath(): " << request.getPath() << std::endl;
+    // std::cout << "1 - DETELE -> request.getPath(): " << request.getPath() << std::endl;
     try {
         path = urlDecoder(request.getPath());
     } catch (const std::exception &e) {
-        std::cout << "??? catch ???" << std::endl;
+        // std::cout << "??? catch ???" << std::endl;
 
         return makeErrorResponse(400, request, servConf);
     }
 
-    std::cout << "2 - DETELE -> path: " << path << std::endl;
+    // std::cout << "2 - DETELE -> path: " << path << std::endl;
 
     // check for something after the \0 terminator? 
     if (path.find('\0') != std::string::npos) 
@@ -347,10 +290,10 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     if (containsParentTraversal(path))
         return makeErrorResponse(403 ,request ,servConf);
 
-    std::cout << "3 - DETELE -> request.getUri(): " << request.getUri() << std::endl;
+    // std::cout << "3 - DETELE -> request.getUri(): " << request.getUri() << std::endl;
     
     const LocationConfig* location = findBestLocation(path, servConf);
-    std::cout << "4 - DETELE -> location: " << location->getUriPath() << std::endl;
+    // std::cout << "4 - DETELE -> location: " << location->getUriPath() << std::endl;
     // std::cout << "location->getUploadStore();" <<location->getUploadStore() <<std::endl;
 
     if (location == NULL)
@@ -383,7 +326,7 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     // std::cout << "5 - location->getRoot();: " << location->getRoot() << std::endl;
     // std::cout << "6 - servConf.getRoot()[0];: " << servConf.getRoot()[0] << std::endl;
     // std::cout << "7 - result: " << baseDir << std::endl;
-    std::cout << "8 - fullPath: " << fullPath << std::endl;
+    // std::cout << "8 - fullPath: " << fullPath << std::endl;
 
     if (lstat(fullPath.c_str(), &targetStat) == -1) {
 
@@ -446,8 +389,6 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     return res;
 
 };
-
-
 
 std::string HTTPResponseBuild::buildAllowHeader(const LocationConfig& location) {
 
@@ -512,282 +453,6 @@ bool HTTPResponseBuild::deleteParentInsideBase(const std::string& base, const st
 
     return canonicalParent.compare(0, canonicalBase.size(), canonicalBase) == 0;
 }
-
-// HTTPResponse HTTPResponseBuild::handleDelete(
-//     const HTTPRequest& request,
-//     const ServerConfig& servConf)
-// {
-//     std::string path;
-
-//     // ---------------------------------------------------------
-//     // 1. Decode the URI path.
-//     // ---------------------------------------------------------
-//     try {
-//         path = urlDecoder(request.getPath());
-//     }
-//     catch (const std::exception& e) {
-//         return makeErrorResponse(400, request, servConf);
-//     }
-
-//     // A percent-encoded '\0' must never reach filesystem functions.
-//     //
-//     // Example:
-//     //      /upload/file.txt%00.html
-//     //
-//     // Filesystem C APIs use '\0' to terminate strings.
-//     if (path.find('\0') != std::string::npos)
-//         return makeErrorResponse(400, request, servConf);
-
-//     // ---------------------------------------------------------
-//     // 2. Prevent ../ traversal after URL decoding.
-//     // ---------------------------------------------------------
-//     if (containsParentTraversal(path))
-//         return makeErrorResponse(403, request, servConf);
-
-//     // ---------------------------------------------------------
-//     // 3. Find the location that owns this URI.
-//     // ---------------------------------------------------------
-//     const LocationConfig* location =
-//         findBestLocation(path, servConf);
-
-//     if (location == NULL)
-//         return makeErrorResponse(404, request, servConf);
-
-//     // ---------------------------------------------------------
-//     // 4. Check whether DELETE is allowed for that location.
-//     // ---------------------------------------------------------
-//     if (!location->isDeleteAllowed()) {
-
-//         HTTPResponse res =
-//             makeErrorResponse(405, request, servConf);
-
-//         res.setHeader(
-//             "Allow",
-//             buildAllowHeader(*location)
-//         );
-
-//         return res;
-//     }
-
-//     // ---------------------------------------------------------
-//     // 5. Resolve HTTP URI -> filesystem path.
-//     // ---------------------------------------------------------
-
-//     std::string baseDirectory;
-//     std::string fullPath;
-
-//     if (!location->getUploadStore().empty()) {
-
-//         /*
-//             Example:
-
-//                 location URI:
-//                     /upload
-
-//                 upload_store:
-//                     ./site/www/uploads
-
-//                 request:
-//                     /upload/cat.jpg
-
-//                 relativePath:
-//                     /cat.jpg
-
-//                 final filesystem path:
-//                     ./site/www/uploads/cat.jpg
-//         */
-
-//         baseDirectory = location->getUploadStore();
-
-//         std::string relativePath =
-//             path.substr(location->getUriPath().size());
-
-//         /*
-//             Prevent:
-
-//                 DELETE /upload
-
-//             from turning into:
-
-//                 unlink("./site/www/uploads")
-
-//             It would fail later because it is a directory anyway,
-//             but explicitly refusing this is clearer and safer.
-//         */
-//         if (relativePath.empty() || relativePath == "/")
-//             return makeErrorResponse(403, request, servConf);
-
-//         fullPath =
-//             joinPath(baseDirectory, relativePath);
-//     }
-//     else {
-
-//         /*
-//             Normal static resource.
-
-//             Use a location-specific root if one exists;
-//             otherwise inherit the server root.
-//         */
-
-//         if (!location->getRoot().empty()) {
-
-//             baseDirectory = location->getRoot();
-//         }
-//         else {
-
-//             if (servConf.getRoot().empty())
-//                 return makeErrorResponse(
-//                     500,
-//                     request,
-//                     servConf
-//                 );
-
-//             baseDirectory = servConf.getRoot()[0];
-//         }
-
-//         /*
-//             Keep the same root semantics currently used by GET.
-
-//             Example:
-
-//                 root ./site/www
-//                 request /documents/test.txt
-
-//             becomes:
-
-//                 ./site/www/documents/test.txt
-//         */
-
-//         fullPath =
-//             joinPath(baseDirectory, path);
-//     }
-
-//     // ---------------------------------------------------------
-//     // 6. Inspect the exact target with lstat().
-//     //
-//     // lstat() is preferable here to stat() because if the target
-//     // itself is a symbolic link we want information about the link,
-//     // not the file it points to.
-//     // ---------------------------------------------------------
-
-//     struct stat targetStat;
-
-//     if (lstat(fullPath.c_str(), &targetStat) != 0) {
-
-//         if (errno == ENOENT || errno == ENOTDIR)
-//             return makeErrorResponse(
-//                 404,
-//                 request,
-//                 servConf
-//             );
-
-//         if (errno == EACCES)
-//             return makeErrorResponse(
-//                 403,
-//                 request,
-//                 servConf
-//             );
-
-//         return makeErrorResponse(
-//             500,
-//             request,
-//             servConf
-//         );
-//     }
-
-//     // ---------------------------------------------------------
-//     // 7. Webserv subject:
-//     //    DELETE files/resources, not directories.
-//     // ---------------------------------------------------------
-
-//     if (S_ISDIR(targetStat.st_mode))
-//         return makeErrorResponse(
-//             403,
-//             request,
-//             servConf
-//         );
-
-//     // ---------------------------------------------------------
-//     // 8. Make sure a symlinked parent hasn't escaped the
-//     //    configured filesystem area.
-//     // ---------------------------------------------------------
-
-//     if (!deleteParentInsideBase(
-//             baseDirectory,
-//             fullPath))
-//     {
-//         return makeErrorResponse(
-//             403,
-//             request,
-//             servConf
-//         );
-//     }
-
-//     // ---------------------------------------------------------
-//     // 9. Actually delete the filesystem entry.
-//     // ---------------------------------------------------------
-
-//     if (unlink(fullPath.c_str()) != 0) {
-
-//         /*
-//             It could disappear between lstat() and unlink()
-//             because filesystem state can change.
-//         */
-//         if (errno == ENOENT || errno == ENOTDIR)
-//             return makeErrorResponse(
-//                 404,
-//                 request,
-//                 servConf
-//             );
-
-//         /*
-//             Existing resource, but server isn't permitted
-//             to remove it.
-//         */
-//         if (errno == EACCES ||
-//             errno == EPERM ||
-//             errno == EROFS ||
-//             errno == EISDIR)
-//         {
-//             return makeErrorResponse(
-//                 403,
-//                 request,
-//                 servConf
-//             );
-//         }
-
-//         /*
-//             Unexpected filesystem failure.
-//         */
-//         return makeErrorResponse(
-//             500,
-//             request,
-//             servConf
-//         );
-//     }
-
-//     // ---------------------------------------------------------
-//     // 10. Success: 204 No Content.
-//     // ---------------------------------------------------------
-
-//     HTTPResponse res;
-
-//     res.setStatusCode(204);
-//     res.setStatus(getStatusText(204));
-//     res.setVersion(request.getVersion());
-
-//     res.setHeader(
-//         "Content-Length",
-//         "0"
-//     );
-
-//     res.setHeader(
-//         "Connection",
-//         decideConnection(request)
-//     );
-
-//     return res;
-// }
 
 // ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR 
 
@@ -1006,9 +671,9 @@ const LocationConfig* HTTPResponseBuild::findBestLocation (const std::string& pa
 
     for (const auto& loc : locations) {
 
-        std::cout << "LOCATIONS " << loc.getUriPath() << std::endl;
-        std::cout << "LOCATIONS path : " << path << std::endl;
-        std::cout << "LOCATIONS loc. : " << loc.getUriPath() << std::endl;
+        // std::cout << "LOCATIONS " << loc.getUriPath() << std::endl;
+        // std::cout << "LOCATIONS path : " << path << std::endl;
+        // std::cout << "LOCATIONS loc. : " << loc.getUriPath() << std::endl;
         
         if (startsWithLocation(path, loc.getUriPath())) {
             if (!bestLoc || loc.getUriPath().size() > bestLoc->getUriPath().size())
