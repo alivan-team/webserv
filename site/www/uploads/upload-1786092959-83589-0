@@ -1,3 +1,7 @@
+------WebKitFormBoundary9lkUPK1pLo7pl7Pv
+Content-Disposition: form-data; name="file"; filename="README.md"
+Content-Type: text/markdown
+
 # Webserv (CODAM : School42)
 
 HTTP/1.1 web server implementation in C++;
@@ -91,3 +95,5 @@ make test
 Набор включает проверку границ body в исходном request buffer и POST-загрузку
 бинарного тела с нулевым байтом: проверяется ответ `201 Created` и побайтовое
 совпадение сохранённого файла с телом запроса.
+
+------WebKitFormBoundary9lkUPK1pLo7pl7Pv--

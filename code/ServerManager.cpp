@@ -3,6 +3,7 @@
 #include "./hpp/HTTPResponseBuild.hpp"
 #include "./hpp/HTTPRequestParser.hpp"
 #include "./hpp/printDebug.hpp"
+#include "./hpp/HTTPParseException.hpp"
 
 // ServerManager::ServerManager() {};
 
@@ -60,6 +61,7 @@ void ServerManager::readClientData(size_t index) {
     }
 
     Client& client = _clients.at(clientFd);
+    const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
     client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
     RequestState state = client.checkRequestState();
@@ -67,22 +69,16 @@ void ServerManager::readClientData(size_t index) {
         return ;
     if (state == RequestState::BadRequest) {
 
-        const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
-        
         int errorCode = client.getRequestErrorCode();
         if (errorCode == 0)
             errorCode = 400;
 
-        // when creating errorRequest check the version before hard coding it...
-        HTTPRequest errorRequest;
-        errorRequest.setVersion("HTTP/1.1");
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
 
-        HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(400, errorRequest, serverConfig);
-
+        //  From here to line 86 can be in a nother functions
+        //  calles sendResponseAndClose(); -> or soemthing like that. 
         std::string response = errorResponse.toString(errorResponse);
-
         send(clientFd, response.c_str(), response.size(), 0);
-        
         // client.clearRequestBuffer(); // ?
         close(clientFd);
         _clients.erase(clientFd);
@@ -95,15 +91,51 @@ void ServerManager::readClientData(size_t index) {
     // HTTPRequest request = HTTPRequestParser().parse(client.getRequestBuffer());
 	// printDebug("HTTPRequestParser", request);
 	// std::cout << "~HTTPParser ============================\n";
-	
-    client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
+    std::string response;
+    try
+    {
+        client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
+        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+        
+        response = ClassResponse.toString(ClassResponse);
+        // std::cout << "Response: >>> " << response << "\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+
+
+    } catch (const HTTPParseException& e) {
+        HTTPResponse errorResponse =
+            HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
+
+        std::string response = errorResponse.toString(errorResponse);
+        send(clientFd, response.c_str(), response.size(), 0);
+        // client.clearRequestBuffer(); // ?
+        close(clientFd);
+        _clients.erase(clientFd);
+        _pollfds.erase(_pollfds.begin() + index);
+        // sendResponseAndClose(index, response);
+    } catch (const std::exception& e) {
+        // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
+
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
+
+        std::string response = errorResponse.toString(errorResponse);
+        send(clientFd, response.c_str(), response.size(), 0);
+        
+        // client.clearRequestBuffer(); // ?
+        close(clientFd);
+        _clients.erase(clientFd);
+        _pollfds.erase(_pollfds.begin() + index);
+        // sendResponseAndClose(index, response);
+    }
+
+
+            // client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
 
     // HTTP RESPONSE BUILD 
     // ServerConfig has multible servers and I need to connect the Client to the SC.
     // HTTP RESPONSE 
     // later ClassResponse will be changed to response
-    HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-
+    // HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
 
     // ALL under is default. 
     // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
@@ -113,7 +145,7 @@ void ServerManager::readClientData(size_t index) {
     // std::string body = "Hello from ServerManager\n";
 
     
-    std::string response = ClassResponse.toString(ClassResponse);
+            // std::string response = ClassResponse.toString(ClassResponse);
     // "HTTP/1.1 200 OK\r\n"
     // "Content-Type: text/plain\r\n"
     // "Content-Length: " + std::to_string(body.size()) + "\r\n"
@@ -123,8 +155,8 @@ void ServerManager::readClientData(size_t index) {
     // std::string res = response;
     // std::cout << "~~~~~~ RESPONSE ~~~~~~ \n\t" << res << " ----- \n";
 
-    std::cout << "Response: >>> " << response << "\n";
-    send(clientFd, response.c_str(), response.size(), 0);
+    // std::cout << "Response: >>> " << response << "\n";
+                //  send(clientFd, response.c_str(), response.size(), 0);
     
     // TODO: IMPORTANT TO CHECK LATER !!!!!!!!!!!!!!!!!!!
     // Connection: keep-alive

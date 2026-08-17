@@ -2,6 +2,7 @@
 #include "ClientData.hpp"
 #include "HTTPRequestParser.hpp"
 #include "HTTPResponse.hpp"
+#include "HTTPResponseBuild.hpp"
 #include "LocationConfig.hpp"
 #include "ServerConfig.hpp"
 #include "HelperFunctions.hpp"
@@ -10,6 +11,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <dirent.h>
+#include <fstream>
+#include <iterator>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace {
 
@@ -130,6 +136,69 @@ void testHttpRequestParser()
     checkThrows([&request] { request.getHeader("Missing"); }, "missing headers throw");
     checkThrows([&parser] { HTTPRequest request; parser.parseRequestLine("GET /", request); },
                 "incomplete request lines are rejected");
+}
+
+void testHttpRequestBodyLocation()
+{
+    HTTPRequestParser parser;
+    std::string raw = "POST /upload HTTP/1.1\r\nContent-Length: 11\r\n\r\n";
+    raw.append("binary", 6);
+    raw.push_back('\0');
+    raw.append("body", 4);
+
+    HTTPRequest request = parser.parse(raw);
+    const size_t expectedOffset = raw.find("\r\n\r\n") + 4;
+
+    check(request.getBodyOffset() == expectedOffset, "body offset follows the header delimiter");
+    check(request.getBodySize() == 11, "body size includes all binary bytes");
+    check(&request.getRequestBuffer() == &raw, "request retains the existing request buffer");
+    check(request.getRequestBuffer().compare(request.getBodyOffset(), request.getBodySize(),
+                                             "binary\0body", 11) == 0,
+          "body location addresses the original buffer without parsing it");
+}
+
+void testPostUpload()
+{
+    char temporaryDirectory[] = "/tmp/webserv-post-test-XXXXXX";
+    char* uploadStore = mkdtemp(temporaryDirectory);
+    check(uploadStore != NULL, "temporary upload directory is created");
+    if (uploadStore == NULL)
+        return;
+
+    LocationConfig location;
+    location.setUriPath("/upload");
+    location.setAllowMethods(std::vector<std::string>{"POST"});
+    location.setUploadStore(std::vector<std::string>{uploadStore});
+    ServerConfig server;
+    server.addLocation(location);
+
+    std::string raw = "POST /upload HTTP/1.1\r\nContent-Length: 11\r\n\r\n";
+    raw.append("binary", 6);
+    raw.push_back('\0');
+    raw.append("body", 4);
+    HTTPRequest request = HTTPRequestParser().parse(raw);
+    HTTPResponse response = HTTPResponseBuild::build(request, server);
+
+    DIR* directory = opendir(uploadStore);
+    struct dirent* entry = directory == NULL ? NULL : readdir(directory);
+    while (entry != NULL && (std::string(entry->d_name) == "." || std::string(entry->d_name) == ".."))
+        entry = readdir(directory);
+
+    check(response.toString(response).find("HTTP/1.1 201 Created\r\n") == 0,
+          "successful POST returns 201 Created");
+    check(entry != NULL, "successful POST creates an upload file");
+
+    if (entry != NULL) {
+        const std::string path = std::string(uploadStore) + "/" + entry->d_name;
+        std::ifstream file(path.c_str(), std::ios::binary);
+        const std::string saved((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        check(saved == raw.substr(request.getBodyOffset(), request.getBodySize()),
+              "uploaded file exactly matches the original binary body");
+        unlink(path.c_str());
+    }
+    if (directory != NULL)
+        closedir(directory);
+    rmdir(uploadStore);
 }
 
 void testHttpResponse()
@@ -455,8 +524,9 @@ int main()
     run("ServerConfig", testServerConfig);
     run("ConfigParser", testConfigParser);
     run("HTTPRequestParser", testHttpRequestParser);
+    run("HTTPRequest body location", testHttpRequestBodyLocation);
+    run("POST upload", testPostUpload);
     // run("Client request buffer", testClientRequestBuffer);
-    run("Client chunked request buffer", testClientChunkedRequestBuffer);
     run("HTTPResponse", testHttpResponse);
 
     if (g_failures != 0) {

@@ -23,7 +23,6 @@ void HTTPResponse::setVersion(const std::string& version) {
     _version = version;
 };
 
-
 std::string HTTPResponse::toString(HTTPResponse& ClassResponse) const {
     
     std::string response;

@@ -101,8 +101,7 @@ bool hasControlChar(const std::string& s)
  * @param value String to trim.
  * @return A new string without leading or trailing spaces and tabs.
  */
-std::string Client::trim(const std::string& value) const
-{
+std::string Client::trim(const std::string& value) const {
     size_t start = 0;
 
     while (start < value.size() && (value[start] == ' ' || value[start] == '\t')) {
@@ -124,8 +123,7 @@ std::string Client::trim(const std::string& value) const
  * @param value String to convert.
  * @return A lowercase copy of the string.
  */
-std::string Client::toLower(const std::string& value) const
-{
+std::string Client::toLower(const std::string& value) const {
     std::string result = value;
 
     for (size_t i = 0; i < result.size(); ++i) {
@@ -133,4 +131,30 @@ std::string Client::toLower(const std::string& value) const
     }
 
     return result;
+}
+
+std::string toLower(const std::string& value) {
+    std::string result = value;
+
+    for (size_t i = 0; i < result.size(); ++i) {
+        result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
+    }
+
+    return result;
+}
+
+std::string trim(const std::string& value) {
+    size_t start = 0;
+
+    while (start < value.size() && (value[start] == ' ' || value[start] == '\t')) {
+        ++start;
+    }
+
+    size_t end = value.size();
+
+    while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t')) {
+        --end;
+    }
+
+    return value.substr(start, end - start);
 }

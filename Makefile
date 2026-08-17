@@ -23,6 +23,7 @@ SRCS		:= main.cpp \
 			   code/HTTPRequestParser.cpp \
 			   code/HTTPResponseBuild.cpp \
 			   code/HTTPResponse.cpp \
+			   code/HTTPParseException.cpp \
 
 TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ConfigParser.cpp \
@@ -33,6 +34,7 @@ TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ClientRequestParsing.cpp\
 			   code/HTTPRequest.cpp \
 			   code/HTTPRequestParser.cpp \
+			   code/HTTPResponseBuild.cpp \
 			   code/HTTPResponse.cpp
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
