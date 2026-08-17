@@ -3,7 +3,7 @@ TEST_NAME	:= webserv_tests
 
 CXX			:= c++
 # CXXFLAGS	:= -Wall -Wextra -Werror -std=c++17
-CPPFLAGS	:= -Icode/hpp
+CPPFLAGS	:= -Icode/hpp -g
 
 OBJ_DIR		:= build
 
@@ -35,7 +35,8 @@ TEST_SRCS	:= tests/TestMain.cpp \
 			   code/HTTPRequest.cpp \
 			   code/HTTPRequestParser.cpp \
 			   code/HTTPResponseBuild.cpp \
-			   code/HTTPResponse.cpp
+			   code/HTTPResponse.cpp \
+			   code/HTTPParseException.cpp \
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS		:= $(OBJS:.o=.d)
