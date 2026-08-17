@@ -98,7 +98,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
     HTTPResponse res;
     std::string path;
-    // std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
+    std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
     
     try { 
         path = urlDecoder(request.getPath());
@@ -124,18 +124,16 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
         return makeErrorResponse(405, request, servConf);
 
     // std::cout << "\t location->getUriPath().size():  " <<  location->getUriPath().size() << std::endl;
-    // std::cout << "\t location->getUriPath():  " <<  location->getUriPath() << std::endl;
-    // std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
-    // std::cout << "\t path :  " <<  path << std::endl;
+    std::cout << "\t location->getUriPath():  " <<  location->getUriPath() << std::endl;
+    std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
+    std::cout << "\t path :  " <<  path << std::endl;
 
     std::string fullPath;
     std::string relativePath = path;
 
     if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
         relativePath = path.substr(location->getUriPath().size());
-
     // std::cout << "\t relativePath :  " <<  relativePath << std::endl;
-
     if (!location->getRoot().empty())
         fullPath = joinPath(location->getRoot(), relativePath);
     else
@@ -293,6 +291,8 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
         return makeErrorResponse(400, request, servConf);
     }
 
+    std::cout << "\t path :  " <<  path << std::endl;
+
     // std::cout << "2 - DETELE -> path: " << path << std::endl;
 
     // check for something after the \0 terminator? 
@@ -324,7 +324,19 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
         return res;
     }
 
+    // if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
+    //     relativePath = path.substr(location->getUriPath().size());
+    // // std::cout << "\t relativePath :  " <<  relativePath << std::endl;
+    // if (!location->getRoot().empty())
+    //     fullPath = joinPath(location->getRoot(), relativePath);
+    // else
+    //     fullPath = joinPath(servConf.getRoot()[0], path);
+
     if (!location->getRoot().empty()) {
+        std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
+        std::cout << "\t location->getUriPath() :  " <<  location->getUriPath() << std::endl;
+        // std::cout << "\t location->getPath() :  " <<  location->getRoot << std::endl;
+
         baseDir = location->getRoot();
         std::string fileName = path.substr(location->getUriPath().size());
         fullPath = joinPath(baseDir, fileName);
@@ -342,6 +354,8 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     // std::cout << "6 - servConf.getRoot()[0];: " << servConf.getRoot()[0] << std::endl;
     // std::cout << "7 - result: " << baseDir << std::endl;
     // std::cout << "8 - fullPath: " << fullPath << std::endl;
+    // std::cout << "8 - location->getUriPath : " << location->getUriPath() << std::endl;
+    // location->getUriPath
 
     if (lstat(fullPath.c_str(), &targetStat) == -1) {
 
