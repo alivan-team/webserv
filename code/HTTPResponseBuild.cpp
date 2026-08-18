@@ -2,31 +2,6 @@
 #include "./hpp/HTTPResponseBuild.hpp"
 #include "./hpp/HTTPResponse.hpp"
 
-	// HTTP/version status reason
-	// Content-Type
-	// Content-Length
-	// Connection
-
-    // Client requests /images/
-    //         ↓
-    // Is it a directory?
-    //         ↓
-    // Yes
-    //         ↓
-    // Find index file
-    //         ↓
-    // Found?
-    //     /    |
-    //     yes    no
-    //     |       |
-    // serve      autoindex?
-    // index        /   |
-    //             on   off
-    //             |     |
-    // read directory   403
-    // generate HTML
-    // return HTML
-
 HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerConfig& servConf) {
 	
 
@@ -35,10 +10,6 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
     std::string version = request.getVersion();
 
     // std::cout << "REQUEST: " << version << std::endl;
-    // printDebug("\t _uri: ", request.getUri());
-    // printDebug("\t _path: ", request.getPath());
-    // printDebug("\t _query: ", request.getQuery());
-    // printDebug("\t _version: ", request.getVersion());
 
     if (version != "1.0" && version != "1.1")
         return makeErrorResponse(505, request, servConf);
@@ -53,10 +24,6 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
 
         case Method::DELETE:
             return handleDelete(request, servConf);
-
-        // investigate: decide later 
-        // case Method::HEAD:
-        //     return handleHead(request, servConf);
 
         default:
             return makeErrorResponse(400, request, servConf);
