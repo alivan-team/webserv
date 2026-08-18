@@ -31,6 +31,24 @@ void Client::clearRequestBuffer() {
     _request = HTTPRequest();
 };
 
+void Client::consumeRequest() {
+
+    if (_requestEnd > _requestBuffer.size())
+        _requestEnd = _requestBuffer.size();
+
+    _requestBuffer.erase(0, _requestEnd);
+    _headersParsed = false;
+    _bodyType = BodyType::None;
+    _contentLength = 0;
+    _bodyPos = 0;
+    _bodySize = 0;
+    _requestEnd = 0;
+    _requestErrorCode = 0;
+
+    _request = HTTPRequest();
+};
+
+
 void Client::setClientRequest(const HTTPRequest& req) {
     _request = req;
 };
@@ -41,4 +59,5 @@ int Client::getClientFd() const { return _client_fd; };
 int Client::getServerFd() const { return _server_fd; };
 const std::string& Client::getRequestBuffer() const { return _requestBuffer; };
 const HTTPRequest& Client::getRequest() const { return _request; };
+size_t Client::getRequestEnd() const { return _requestEnd; };
 int Client::getRequestErrorCode() const { return _requestErrorCode; };

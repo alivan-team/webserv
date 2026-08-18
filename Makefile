@@ -27,15 +27,19 @@ SRCS		:= main.cpp \
 
 TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ConfigParser.cpp \
+			   code/ServerManager.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
+			   code/ErrorPages.cpp \
 			   code/HelperFunctions.cpp \
+			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/ClientRequestParsing.cpp\
 			   code/HTTPRequest.cpp \
 			   code/HTTPRequestParser.cpp \
 			   code/HTTPResponseBuild.cpp \
-			   code/HTTPResponse.cpp
+			   code/HTTPResponse.cpp \
+			   code/HTTPParseException.cpp \
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS		:= $(OBJS:.o=.d)

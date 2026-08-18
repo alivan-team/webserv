@@ -28,10 +28,102 @@ void ServerManager::acceptNewClient(int serverFd) {
     _pollfds.push_back(client_poll);
     _clients[newClientFd] = Client(newClientFd, serverFd);
 
-    std::cout << "New client: fd " << newClientFd << "\n";
+    // std::cout << "New client: fd " << newClientFd << "\n";
 };
 
-void ServerManager::readClientData(size_t index) {
+void ServerManager::removeClient(size_t index) {
+    if (index >= _pollfds.size())
+        return;
+
+    int clientFd = _pollfds[index].fd;
+    close(clientFd);
+    _clients.erase(clientFd);
+    _pollfds.erase(_pollfds.begin() + index);
+}
+
+bool ServerManager::sendWholeResponse(int clientFd, const std::string& response) const {
+    size_t sentTotal = 0;
+
+    while (sentTotal < response.size()) {
+        ssize_t sent = send(clientFd, response.data() + sentTotal, response.size() - sentTotal, 0);
+
+        // send(clientFd, response.c_str(), response.size(), 0);
+        // // client.clearRequestBuffer(); // ?
+        // close(clientFd);
+        // _clients.erase(clientFd);
+        // _pollfds.erase(_pollfds.begin() + index);
+        // return ;
+
+        if (sent > 0) {
+            sentTotal += static_cast<size_t>(sent);
+            continue;
+        }
+
+        if (sent < 0 && errno == EINTR)
+            continue;
+
+        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+            return false;
+
+        return false;
+    }
+
+    return true;
+}
+
+bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
+    std::string connection;
+
+    if (request.hasHeader("Connection"))
+        connection = toLower(trim(request.getHeader("Connection")));
+
+    if (request.getVersion() == "1.1")
+        return connection != "close";
+
+    if (request.getVersion() == "1.0")
+        return connection == "keep-alive";
+
+    return false;
+}
+
+//  while (true) in serverManager needs to make sure all the requests recieved from the 
+//      recv(); are consumed, read, processed. If the consumption is not "Completed"
+//      We return to the poll() waiting for more, or completed request. 
+//          All this to keep the connection "keep-alive" and clear 
+//          the buffer at the correct time and place
+            //     ┌──────────────────────────┐
+            //     │ check _requestBuffer     │
+            //     └────────────┬─────────────┘
+            //                  │
+            //        complete request?
+            //         /               \
+            //       NO                 YES
+            //       │                   │
+            //       ▼                   ▼
+            // return to poll       process it
+            // wait for bytes           │
+            //                          ▼
+            //                   keep connection?
+            //                     /          \
+            //                   NO            YES
+            //                   │              │
+            //                   ▼              ▼
+            //                close       consumeRequest()
+            //                                 │
+            //                                 ▼
+            //                          buffer empty?
+            //                           /        \
+            //                         YES         NO
+            //                         │            │
+            //                         ▼            │
+            //                   return poll        │
+            //                                      │
+            //                   ┌──────────────────┘
+            //                   │
+            //                   ▼
+            //              loop again
+
+bool ServerManager::readClientData(size_t index) {
 
     int clientFd = _pollfds[index].fd;
 
@@ -42,143 +134,97 @@ void ServerManager::readClientData(size_t index) {
 
     if (bytes == 0) {
 
-        std::cout << "client disconnected fd: " << std::endl;
-        close(clientFd);
-        _clients.erase(clientFd);
-        _pollfds.erase(_pollfds.begin() + index);
-        return ;
+        // std::cout << "client disconnected fd: " << std::endl;
+        // close(clientFd);
+        // _clients.erase(clientFd);
+        // _pollfds.erase(_pollfds.begin() + index);
+        removeClient(index);
+        return true;
 
     } else if (bytes < 0) {
 
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            return;
+            return false;
         }
-        std::cerr << "recv() failed" << std::endl;
-        close(clientFd);
-        _clients.erase(clientFd);
-        _pollfds.erase(_pollfds.begin() + index);
-        return;
+        // std::cerr << "recv() failed" << std::endl;
+        // close(clientFd);
+        // _clients.erase(clientFd);
+        // _pollfds.erase(_pollfds.begin() + index);
+        removeClient(index);
+        return true;
     }
 
     Client& client = _clients.at(clientFd);
     const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
     client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
-    RequestState state = client.checkRequestState();
-    if (state == RequestState::Incomplete)
-        return ;
-    if (state == RequestState::BadRequest) {
+    while (true) {
+        RequestState state = client.checkRequestState();
+        if (state == RequestState::Incomplete)
+            return false;
+        if (state == RequestState::BadRequest) {
+    
+            int errorCode = client.getRequestErrorCode();
+            if (errorCode == 0)
+                errorCode = 400;
+    
+            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
+            
+            std::string response = errorResponse.toString(errorResponse);
+            sendWholeResponse(clientFd, response);
+            
+            removeClient(index);
+            return true;
+        }
 
-        int errorCode = client.getRequestErrorCode();
-        if (errorCode == 0)
-            errorCode = 400;
+        try
+        {
+            std::string response;
+            client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
 
-        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
+            const HTTPRequest& request = client.getRequest();
+            bool keepAlive = shouldKeepAlive(request);
 
-        //  From here to line 86 can be in a nother functions
-        //  calles sendResponseAndClose(); -> or soemthing like that. 
-        std::string response = errorResponse.toString(errorResponse);
-        send(clientFd, response.c_str(), response.size(), 0);
-        // client.clearRequestBuffer(); // ?
-        close(clientFd);
-        _clients.erase(clientFd);
-        _pollfds.erase(_pollfds.begin() + index);
-        return ;
+            HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+
+            response = ClassResponse.toString(ClassResponse);
+
+            // send(clientFd, response.c_str(), response.size(), 0);
+            if (!sendWholeResponse(clientFd, response)) {
+                removeClient(index);
+                return true;
+            }
+
+            if(!keepAlive) {
+                removeClient(index);
+                return true;
+            }
+
+            client.consumeRequest();
+            if(client.getRequestBuffer().empty())
+                return false;
+
+        } catch (const HTTPParseException& e) {
+
+            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
+
+            std::string response = errorResponse.toString(errorResponse);
+            sendWholeResponse(clientFd, response);
+            removeClient(index);
+            return true;
+
+        } catch (const std::exception& e) {
+            // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
+            (void)e;
+            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
+
+            std::string response = errorResponse.toString(errorResponse);
+            sendWholeResponse(clientFd, response);
+            removeClient(index);
+            return true;
+        }
     }
 
-    // HTTP REQUST PARSER 
-	// std::cout << "HTTPParser ============================\n";
-    // HTTPRequest request = HTTPRequestParser().parse(client.getRequestBuffer());
-	// printDebug("HTTPRequestParser", request);
-	// std::cout << "~HTTPParser ============================\n";
-    std::string response;
-    try
-    {
-        client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
-        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-        
-        response = ClassResponse.toString(ClassResponse);
-        // std::cout << "Response: >>> " << response << "\n";
-        send(clientFd, response.c_str(), response.size(), 0);
-
-
-    } catch (const HTTPParseException& e) {
-        HTTPResponse errorResponse =
-            HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
-
-        std::string response = errorResponse.toString(errorResponse);
-        send(clientFd, response.c_str(), response.size(), 0);
-        // client.clearRequestBuffer(); // ?
-        close(clientFd);
-        _clients.erase(clientFd);
-        _pollfds.erase(_pollfds.begin() + index);
-        // sendResponseAndClose(index, response);
-    } catch (const std::exception& e) {
-        // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
-
-        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
-
-        std::string response = errorResponse.toString(errorResponse);
-        send(clientFd, response.c_str(), response.size(), 0);
-        
-        // client.clearRequestBuffer(); // ?
-        close(clientFd);
-        _clients.erase(clientFd);
-        _pollfds.erase(_pollfds.begin() + index);
-        // sendResponseAndClose(index, response);
-    }
-
-
-            // client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer()));
-
-    // HTTP RESPONSE BUILD 
-    // ServerConfig has multible servers and I need to connect the Client to the SC.
-    // HTTP RESPONSE 
-    // later ClassResponse will be changed to response
-    // HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-
-    // ALL under is default. 
-    // std::cout << "~~~~~~ REQUEST ~~~~~~ \n\t client.getRequestBuffer() \n\t -- from fd : " << clientFd << " -- \n";
-    // std::cout << "~~~~~~ BODY FROM MANAGER ~~~~~~ " << std::endl;
-    // std::cout << ClassResponse.getHeader() << std::endl;
-
-    // std::string body = "Hello from ServerManager\n";
-
-    
-            // std::string response = ClassResponse.toString(ClassResponse);
-    // "HTTP/1.1 200 OK\r\n"
-    // "Content-Type: text/plain\r\n"
-    // "Content-Length: " + std::to_string(body.size()) + "\r\n"
-    // "\r\n" +
-    // body;
-
-    // std::string res = response;
-    // std::cout << "~~~~~~ RESPONSE ~~~~~~ \n\t" << res << " ----- \n";
-
-    // std::cout << "Response: >>> " << response << "\n";
-                //  send(clientFd, response.c_str(), response.size(), 0);
-    
-    // TODO: IMPORTANT TO CHECK LATER !!!!!!!!!!!!!!!!!!!
-    // Connection: keep-alive
-    // It means:
-    // After sending the response, do not close the client socket yet.
-    // The browser may send another request on the same connection.
-    // if response has Connection: keep-alive
-    //     keep client fd inside poll()
-    //     clear request buffer after complete request
-    // else
-    //     close(client_fd)
-    //     remove from poll()
-    // Important: after one full request is handled, clear only the processed request from the client buffer.
-    // For HTTP/1.1, keep-alive is the default unless the client sends:
-    // Connection: close
-    // bool keepAlive = request.getVersion() == "HTTP/1.1"
-    //           && request.getHeader("Connection") != "close";
-
-    client.clearRequestBuffer();
-    close(clientFd);
-    _clients.erase(clientFd);
-    _pollfds.erase(_pollfds.begin() + index);
 };
 
 bool ServerManager::isServerSocket(int fd) const
@@ -210,16 +256,20 @@ void ServerManager::run() {
         if (ready < 0)
             throw std::runtime_error("poll() failed");
 
-        for (size_t i = 0; i < _pollfds.size(); i++) {
+        size_t i = 0;
+        while (i < _pollfds.size()) {
 
             if (_pollfds[i].revents & POLLIN) {
 
                 if (isServerSocket(_pollfds[i].fd)) {
                     acceptNewClient(_pollfds[i].fd);
                 } else {
-                    readClientData(i);
+                    bool removed = readClientData(i);
+                    if (removed)
+                        continue;
                 }
             }
+            i++;
         }
     }
 };

@@ -121,7 +121,10 @@ Method HTTPRequestParser::parseMethod(const std::string &method) const {
 	return Method::UNKNOWN;
 };
 
-HTTPRequest HTTPRequestParser::parse(const std::string &buffer) const{
+HTTPRequest HTTPRequestParser::parse(const std::string &buffer, size_t requestSize) const{
+
+	if (requestSize > buffer.size())
+		throw HTTPParseException(400, "Invalid request size");
 
 	HTTPRequest httpparseresult;
 	
@@ -162,6 +165,8 @@ HTTPRequest HTTPRequestParser::parse(const std::string &buffer) const{
 	}
 
 	size_t bodyOffset = headersEnd + 4;
+	if (bodyOffset > requestSize)
+		throw HTTPParseException(400, "Invalid body offset");
 	httpparseresult.setBodyLocation(buffer, bodyOffset, buffer.size() - bodyOffset);
 
 	return httpparseresult;
