@@ -186,9 +186,9 @@ bool ServerManager::readClientData(size_t index) {
             bool keepAlive = shouldKeepAlive(request);
 
             HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-            
+
             response = ClassResponse.toString(ClassResponse);
-            
+
             // send(clientFd, response.c_str(), response.size(), 0);
             if (!sendWholeResponse(clientFd, response)) {
                 removeClient(index);
