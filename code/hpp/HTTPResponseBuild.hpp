@@ -23,14 +23,11 @@
 class HTTPResponseBuild {
 
     private: 
-        // static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
-
         static HTTPResponse handleGet(const HTTPRequest& request, const ServerConfig& servConf);
         static HTTPResponse handlePost(const HTTPRequest& request, const ServerConfig& servConf);
         static HTTPResponse handleDelete(const HTTPRequest& request, const ServerConfig& servConf);
 
         static std::string getStatusText(int code);
-        static std::string decideConnection(const HTTPRequest& request);
         static std::string  buildErrorBody(int code, const ServerConfig& servConf);
         static std::string joinPath(const std::string& root, const std::string& path);
         static bool fileExists(const std::string& file);
@@ -44,27 +41,20 @@ class HTTPResponseBuild {
         static HTTPResponse buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& directoryPath, const std::string& requestPath);
         static bool checkExtensionOfFile(const std::string& extension);
         static bool containsParentTraversal(const std::string& path);
+        static bool pathInsideBase(const std::string& base, const std::string& target);
         static std::string urlDecoder(std::string urlPath);
 
+        // DELETE 
+        // static std::string uploadStorePresent(const LocationConfig& location);
         static std::string buildAllowHeader(const LocationConfig& location);
-        static std::string uploadStorePresent(const LocationConfig& location);
         static bool deleteParentInsideBase(const std::string& base, const std::string& target);
 
 	public:
     	static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
+        static std::string decideConnection(const HTTPRequest& request);
         static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
-        // create another Error Response in order to handler earlier errors: 
-        //  such as in parsing ... 
         static HTTPResponse makeEarlyErrorResponse(int code, const ServerConfig& servConf);
 
 };
 
 #endif
-
-
-    // std::string response =
-    // "HTTP/1.1 200 OK\r\n"
-    // "Content-Type: text/plain\r\n"
-    // "Content-Length: " + std::to_string(body.size()) + "\r\n"
-    // "\r\n" +
-    // body;

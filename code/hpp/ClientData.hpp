@@ -60,6 +60,7 @@ class Client {
         void appendToRequestBuffer(const char* buffer, size_t bytes);
         RequestState checkRequestState();
         void clearRequestBuffer();
+        void consumeRequest();
         void setClientRequest(const HTTPRequest& req);
         size_t getBodyPos() const;
         size_t getBodySize() const;
@@ -68,6 +69,7 @@ class Client {
         const std::string& getRequestBuffer() const;
         const HTTPRequest& getRequest() const;
         int     getRequestErrorCode() const;
+        size_t getRequestEnd() const;
 
 };
 

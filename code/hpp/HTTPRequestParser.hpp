@@ -19,6 +19,7 @@ class HTTPRequestParser{
 
 	public:
 		HTTPRequest parse(const std::string &buffer) const;
+		HTTPRequest parse(const std::string &buffer, size_t requestSize) const;
 		void parseRequestLine(
 			const std::string &line, 
 			HTTPRequest &request) const;

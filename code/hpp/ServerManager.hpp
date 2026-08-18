@@ -24,7 +24,11 @@ class ServerManager {
         int createListeningSockets(const ServerConfig& servers);
         bool isServerSocket(int fd) const;
         void acceptNewClient(int serverFd);
-        void readClientData(size_t index);
+        bool readClientData(size_t index);
+
+        bool shouldKeepAlive(const HTTPRequest& request) const;
+        void removeClient(size_t index);
+        bool sendWholeResponse(int clinetFd, const std::string& respone) const;
 
     public: 
         const std::map<int, ServerConfig>& getServerManager() const;

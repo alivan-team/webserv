@@ -45,12 +45,6 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
 
     switch (method) {
         // CGI function 
-        // IVAN: Change the behaviour of GET for these cases /upload and /uploads
-        // /upload
-        //     → upload form/page
-
-        // /upload/<filename>
-        //     → uploaded resource
         case Method::GET:
             return handleGet(request, servConf);
 
@@ -73,27 +67,6 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
 
 // GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
 
-// So:
-// GET /upload
-// → upload page
-// while:
-// GET /upload/cat.jpg
-// → uploaded cat.jpg
-
-// if (path == location->getUriPath() ||
-//     path == location->getUriPath() + "/")
-// {
-//     // Resolve the location page normally using root.
-// }
-// else if (!location->getUploadStore().empty())
-// {
-//     // Resolve resource under upload_store.
-// }
-// else
-// {
-//     // Normal root resolution.
-// }
-
 HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const ServerConfig& servConf) {
 
     HTTPResponse res;
@@ -107,6 +80,9 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     }
     // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "-> path:  "<<  path << std::endl;
 
+    if (path.find('\0') != std::string::npos)
+        return makeErrorResponse(400, request, servConf);
+
     if (containsParentTraversal(path)) {
         // std::cout << "path in containsParentTraversal -> " << path << std::endl;
         return makeErrorResponse(403, request, servConf);
@@ -116,35 +92,45 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
     // std::cout << "location:  " <<  location->getUriPath() << std::endl;
 
     if (location == NULL) {
-        std::cout << "fileExists1" << std::endl;
-        return makeErrorResponse(404, request, servConf);
+        // std::cout << "fileExists1" << std::endl;
+        return makeErrorResponse(400, request, servConf);
     }
 
-    if (!location->isGetAllowed())
-        return makeErrorResponse(405, request, servConf);
+    if (!location->isGetAllowed()) {
+        HTTPResponse erRes = makeErrorResponse(405, request, servConf);
+        erRes.setHeader("Allow: ", buildAllowHeader(*location));
+        return erRes;
+    }
 
     // std::cout << "\t location->getUriPath().size():  " <<  location->getUriPath().size() << std::endl;
-    std::cout << "\t location->getUriPath():  " <<  location->getUriPath() << std::endl;
-    std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
-    std::cout << "\t path :  " <<  path << std::endl;
+    // std::cout << "\t location->getUriPath():  " <<  location->getUriPath() << std::endl;
+    // std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
+    // std::cout << "\t path :  " <<  path << std::endl;
 
+    std::string baseDir;
     std::string fullPath;
     std::string relativePath = path;
 
     if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
         relativePath = path.substr(location->getUriPath().size());
     // std::cout << "\t relativePath :  " <<  relativePath << std::endl;
-    if (!location->getRoot().empty())
+    if (!location->getRoot().empty()) {
+        baseDir = location->getRoot();
         fullPath = joinPath(location->getRoot(), relativePath);
-    else
+    } else {
+        baseDir = servConf.getRoot()[0];
         fullPath = joinPath(servConf.getRoot()[0], path);
+    }
 
-    // std::cout << "fullPath :  " <<  fullPath << std::endl;
+    std::cout << "GET ---> fullPath :  " <<  fullPath << std::endl;
 
     if (!fileExists(fullPath)) {
         // std::cout << "fileExists2645" << std::endl;
         return makeErrorResponse(404, request, servConf);
     }
+
+    if (!pathInsideBase(baseDir, fullPath))
+        return makeErrorResponse(403, request, servConf);
 
     if (isDirectory(fullPath)) {
 
@@ -260,22 +246,8 @@ HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const Ser
 }
 
 // DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
-    // The expected DELETE behavior is essentially: existing deletable 
-    // file → delete it; missing file → 404; DELETE forbidden by the 
-    // location → 405; successful deletion → 204 No Content
 
 HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const ServerConfig& servConf) {
-
-    // matched location
-    //   │
-    //   ├── has upload_store and URI represents uploaded resource
-    //   │       └── resolve against upload_store
-    //   │
-    //   ├── has location root
-    //   │       └── resolve against location root
-    //   │
-    //   └── otherwise
-    //           └── resolve against server root
 
     std::string path;
     std::string baseDir;
@@ -291,7 +263,7 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
         return makeErrorResponse(400, request, servConf);
     }
 
-    std::cout << "\t path :  " <<  path << std::endl;
+    // std::cout << "\t path :  " <<  path << std::endl;
 
     // std::cout << "2 - DETELE -> path: " << path << std::endl;
 
@@ -333,8 +305,8 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     //     fullPath = joinPath(servConf.getRoot()[0], path);
 
     if (!location->getRoot().empty()) {
-        std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
-        std::cout << "\t location->getUriPath() :  " <<  location->getUriPath() << std::endl;
+        // std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
+        // std::cout << "\t location->getUriPath() :  " <<  location->getUriPath() << std::endl;
         // std::cout << "\t location->getPath() :  " <<  location->getRoot << std::endl;
 
         baseDir = location->getRoot();
@@ -353,13 +325,13 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     // std::cout << "5 - location->getRoot();: " << location->getRoot() << std::endl;
     // std::cout << "6 - servConf.getRoot()[0];: " << servConf.getRoot()[0] << std::endl;
     // std::cout << "7 - result: " << baseDir << std::endl;
-    // std::cout << "8 - fullPath: " << fullPath << std::endl;
+    std::cout << "8 - fullPath: " << fullPath << std::endl;
     // std::cout << "8 - location->getUriPath : " << location->getUriPath() << std::endl;
     // location->getUriPath
 
     if (lstat(fullPath.c_str(), &targetStat) == -1) {
 
-        // std::cout << "9: " << std::endl;
+        std::cout << "9: " << std::endl;
         // std::cout << "lstat FAILED" << std::endl;
         // std::cout << "fullPath: " << fullPath << std::endl;
         // std::cout << "errno: " << errno << std::endl;
@@ -572,7 +544,7 @@ std::string HTTPResponseBuild::getStatusText(int code)
     switch (code) {
         case 200: return "OK";
 		case 201: return "Created";
-        case 204: return "No Contend";
+        case 204: return "No Content";
         case 400: return "Bad Request";
         case 403: return "Forbidden";
         case 404: return "Not Found";
@@ -589,8 +561,8 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
     std::string version = request.getVersion();
     std::string connection;
 
-    if (request.hasHeader("Connection"))
-        connection = toLower(trim(request.getHeader("Connection")));
+    if (request.hasHeader("connection"))
+        connection = toLower(trim(request.getHeader("connection")));
 
     if (version == "1.0") {
         if (connection == "keep-alive")
@@ -883,6 +855,30 @@ bool HTTPResponseBuild::containsParentTraversal(const std::string& path)
     return false;
 }
 
+bool HTTPResponseBuild::pathInsideBase(const std::string& base, const std::string& target) {
+
+    char resolveBase[PATH_MAX];
+    char resolveTarget[PATH_MAX];
+
+    if (realpath(base.c_str(), resolveBase) == NULL)
+        return false;
+    
+    if (realpath(target.c_str(), resolveTarget) == NULL)
+        return false;
+    
+    std::string canonicalBase(resolveBase);
+    std::string canonicalTarget(resolveTarget);
+
+    if (canonicalTarget == canonicalBase)
+        return true;
+
+    if (!canonicalBase.empty() && canonicalBase[canonicalBase.size() - 1] != '/')
+        canonicalBase += '/';
+    
+    return canonicalTarget.compare(0, canonicalBase.size(), canonicalBase) == 0;
+}
+
+
 std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 
     std::string decodedUrl;
@@ -917,3 +913,5 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
     }
     return decodedUrl;
 }
+
+// bool decideConnection()
