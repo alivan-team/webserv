@@ -71,7 +71,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
     HTTPResponse res;
     std::string path;
-    std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
+    // std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
     
     try { 
         path = urlDecoder(request.getPath());
@@ -122,7 +122,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
         fullPath = joinPath(servConf.getRoot()[0], path);
     }
 
-    std::cout << "GET ---> fullPath :  " <<  fullPath << std::endl;
+    // std::cout << "GET ---> fullPath :  " <<  fullPath << std::endl;
 
     if (!fileExists(fullPath)) {
         // std::cout << "fileExists2645" << std::endl;
@@ -183,8 +183,8 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
 HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const ServerConfig& servConf) {
 
-	std::cout << "\n ------------------------>\n"  << "Received reqiest buffer: " << request.getRequestBuffer() << "\n <------------------------" << std::endl;
-	std::cout << " >>" << request.getRequestBuffer().data() + request.getBodyOffset()  << "<<\n;" ;
+	// std::cout << "\n ------------------------>\n"  << "Received reqiest buffer: " << request.getRequestBuffer() << "\n <------------------------" << std::endl;
+	// std::cout << " >>" << request.getRequestBuffer().data() + request.getBodyOffset()  << "<<\n;" ;
 	const LocationConfig* location = findBestLocation(request.getPath(), servConf);
 	if (location == NULL)
 		return makeErrorResponse(404, request, servConf);
@@ -325,13 +325,13 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     // std::cout << "5 - location->getRoot();: " << location->getRoot() << std::endl;
     // std::cout << "6 - servConf.getRoot()[0];: " << servConf.getRoot()[0] << std::endl;
     // std::cout << "7 - result: " << baseDir << std::endl;
-    std::cout << "8 - fullPath: " << fullPath << std::endl;
+    // std::cout << "8 - fullPath: " << fullPath << std::endl;
     // std::cout << "8 - location->getUriPath : " << location->getUriPath() << std::endl;
     // location->getUriPath
 
     if (lstat(fullPath.c_str(), &targetStat) == -1) {
 
-        std::cout << "9: " << std::endl;
+        // std::cout << "9: " << std::endl;
         // std::cout << "lstat FAILED" << std::endl;
         // std::cout << "fullPath: " << fullPath << std::endl;
         // std::cout << "errno: " << errno << std::endl;
@@ -351,8 +351,8 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     // if (!S_ISREG(targetStat.st_mode) && !S_ISLNK(targetStat.st_mode)) 
     //     return makeErrorResponse(403, request, servConf);
 
-    std::cout << "before sending --- baseDir -> base :  " << baseDir << std::endl;     
-    std::cout << "before sending --- fullPath -> target :  " << fullPath << std::endl;     
+    // std::cout << "before sending --- baseDir -> base :  " << baseDir << std::endl;     
+    // std::cout << "before sending --- fullPath -> target :  " << fullPath << std::endl;     
     
     if (!deleteParentInsideBase(baseDir, fullPath))
         return makeErrorResponse(403, request, servConf);
@@ -377,15 +377,16 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
     }
 
     HTTPResponse res;
+    std::string body = readReadFile("./site/www/delete_page/index.html");
 
     res.setStatusCode(204);
     res.setStatus(getStatusText(204));
-
-    res.setHeader("Content-Length", "0"); // send body for successful deleting file... 
+    res.setHeader("Content-Type", getContentType(fullPath));
+    res.setHeader("Content-Length", std::to_string(body.size())); // send body for successful deleting file... 
     res.setHeader("Connection", decideConnection(request));
 
     res.setVersion(request.getVersion());
-    res.setBody("");
+    res.setBody(body);
 
     return res;
 
@@ -420,7 +421,7 @@ bool HTTPResponseBuild::deleteParentInsideBase(const std::string& base, const st
         return false;
 
     // realpath(base.c_str(), resolvedBase);
-    std::cout << "base AFTER ->resolvedBase<- realpath:  " << resolvedBase << std::endl;     
+    // std::cout << "base AFTER ->resolvedBase<- realpath:  " << resolvedBase << std::endl;     
     // return false;
 
     size_t slash = target.find_last_of('/');
@@ -434,12 +435,12 @@ bool HTTPResponseBuild::deleteParentInsideBase(const std::string& base, const st
     else
         parentPath = target.substr(0, slash);
 
-    std::cout << "base ->parentPath<-  :  " << parentPath << std::endl;     
+    // std::cout << "base ->parentPath<-  :  " << parentPath << std::endl;     
     
 
     if (realpath(parentPath.c_str(), resolvedParent) == NULL)
         return false;
-    std::cout << "2 - base AFTER ->resolvedParent<- realpath():  " << resolvedParent << std::endl;     
+    // std::cout << "2 - base AFTER ->resolvedParent<- realpath():  " << resolvedParent << std::endl;     
     
 
     std::string canonicalBase(resolvedBase);
@@ -592,7 +593,7 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest& request) {
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest& request, const ServerConfig& servConf, const std::string& fullPath, const std::string& requestPath) {
     
     HTTPResponse res;
-    std::cout << " Hello from HTTPResponseBuild " << std::endl;
+    // std::cout << " Hello from HTTPResponseBuild " << std::endl;
 
     DIR* dir = opendir(fullPath.c_str());
 
@@ -709,8 +710,8 @@ bool HTTPResponseBuild::startsWithLocation(const std::string& path, const std::s
 std::string HTTPResponseBuild::joinPath(const std::string& root, const std::string& path) {
     
 
-    std::cout << "root: " << root << std::endl;
-    std::cout << "path: " << path << std::endl;
+    // std::cout << "root: " << root << std::endl;
+    // std::cout << "path: " << path << std::endl;
 
     if (root.empty())
         return path;
@@ -913,5 +914,3 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
     }
     return decodedUrl;
 }
-
-// bool decideConnection()
