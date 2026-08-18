@@ -124,8 +124,8 @@ void testConfigParser()
 void testHttpRequestParser()
 {
     HTTPRequestParser parser;
-    HTTPRequest request = parser.parse(
-        "GET /search?q=webserv HTTP/1.1\r\nHost: example.test\r\nConnection: close\r\n\r\n");
+    std::string raw = "GET /search?q=webserv HTTP/1.1\r\nHost: example.test\r\nConnection: close\r\n\r\n";
+    HTTPRequest request = parser.parse(raw, raw.size());
 
     check(request.getMethod() == Method::GET, "HTTP method is parsed");
     check(request.getUri() == "/search?q=webserv", "raw URI is retained");
@@ -147,7 +147,7 @@ void testHttpRequestBodyLocation()
     raw.push_back('\0');
     raw.append("body", 4);
 
-    HTTPRequest request = parser.parse(raw);
+    HTTPRequest request = parser.parse(raw, raw.size());
     const size_t expectedOffset = raw.find("\r\n\r\n") + 4;
 
     check(request.getBodyOffset() == expectedOffset, "body offset follows the header delimiter");
@@ -177,7 +177,7 @@ void testPostUpload()
     raw.append("binary", 6);
     raw.push_back('\0');
     raw.append("body", 4);
-    HTTPRequest request = HTTPRequestParser().parse(raw);
+    HTTPRequest request = HTTPRequestParser().parse(raw, raw.size());
     HTTPResponse response = HTTPResponseBuild::build(request, server);
 
     DIR* directory = opendir(uploadStore);

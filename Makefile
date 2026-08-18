@@ -27,9 +27,12 @@ SRCS		:= main.cpp \
 
 TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ConfigParser.cpp \
+			   code/ServerManager.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
+			   code/ErrorPages.cpp \
 			   code/HelperFunctions.cpp \
+			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/ClientRequestParsing.cpp\
 			   code/HTTPRequest.cpp \
