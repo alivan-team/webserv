@@ -117,21 +117,21 @@ std::string Client::trim(const std::string& value) const {
     return value.substr(start, end - start);
 }
 
-/**
- * @brief Converts all characters in a string to lowercase.
- *
- * @param value String to convert.
- * @return A lowercase copy of the string.
- */
-std::string Client::toLower(const std::string& value) const {
-    std::string result = value;
+// /**
+//  * @brief Converts all characters in a string to lowercase.
+//  *
+//  * @param value String to convert.
+//  * @return A lowercase copy of the string.
+//  */
+// std::string Client::toLower(const std::string& value) const {
+//     std::string result = value;
 
-    for (size_t i = 0; i < result.size(); ++i) {
-        result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
-    }
+//     for (size_t i = 0; i < result.size(); ++i) {
+//         result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
+//     }
 
-    return result;
-}
+//     return result;
+// }
 
 std::string toLower(const std::string& value) {
     std::string result = value;

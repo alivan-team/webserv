@@ -26,7 +26,7 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest& request, const ServerCo
             return handleDelete(request, servConf);
 
         default:
-            return makeErrorResponse(400, request, servConf);
+            return makeErrorResponse(501, request, servConf);
     }
 
     return {};
@@ -85,6 +85,9 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
         baseDir = location->getRoot();
         fullPath = joinPath(location->getRoot(), relativePath);
     } else {
+        if (servConf.getRoot().empty() || servConf.getRoot()[0].empty()) 
+            return makeErrorResponse(500, request, servConf);
+
         baseDir = servConf.getRoot()[0];
         fullPath = joinPath(servConf.getRoot()[0], path);
     }
@@ -107,6 +110,9 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 
         if (!indexPath.empty()) {
             fullPath = indexPath;
+            if (!pathInsideBase(baseDir, fullPath)) {
+                return makeErrorResponse(403, request, servConf);
+            }
         } else if (location->getAutoIndex()) {
             return buildAutoIndexPage(request, servConf, fullPath, request.getPath());
         } else {
@@ -283,7 +289,7 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest& request, const S
         // std::cout << "4-BBB ---> fileName: " << fileName << std::endl;
 
     } else {
-        if (servConf.getRoot()[0].empty())
+        if (servConf.getRoot().empty() || servConf.getRoot()[0].empty())
             return makeErrorResponse(500, request, servConf);
         baseDir = servConf.getRoot()[0];
         fullPath = joinPath(baseDir, path);

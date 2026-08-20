@@ -30,6 +30,8 @@ class Client {
 
     private:
         std::string _requestBuffer;
+        std::string _responseBuffer;
+        size_t _responseSent;
         int _client_fd;
         int _server_fd;
         bool _headersParsed;
@@ -40,13 +42,14 @@ class Client {
         size_t _requestEnd;
         int _requestErrorCode;
         HTTPRequest _request;
+        bool _closeAfterResoinse;
         // HTTPResponse _response;
         
         bool parseContentLength(const std::string& value, size_t& result) const;
         bool parseHexSize(const std::string& value, size_t& result) const;
         RequestState checkChunkedBody(size_t bodyStart, size_t& requestEnd) const;
         std::string trim(const std::string& value) const;
-        std::string toLower(const std::string& value) const;
+        // std::string toLower(const std::string& value) const;
         RequestState parseHeaders();
         RequestState checkChunkedRequestBody();
         RequestState checkContentLengthBody();
@@ -62,6 +65,12 @@ class Client {
         void clearRequestBuffer();
         void consumeRequest();
         void setClientRequest(const HTTPRequest& req);
+        void setResponseBuffer(const std::string& response);
+        void setResponseSent(size_t sent);
+        void setCloseAfterResponse(bool value);
+        bool getCloseAfterReponse() const;
+        size_t getResponseSent() const;
+        const std::string& getResponseBuffer() const;
         size_t getBodyPos() const;
         size_t getBodySize() const;
         int getClientFd() const;
@@ -70,7 +79,7 @@ class Client {
         const HTTPRequest& getRequest() const;
         int     getRequestErrorCode() const;
         size_t getRequestEnd() const;
-
+        void clearResponse();
 };
 
 #endif

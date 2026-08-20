@@ -47,13 +47,6 @@ bool ServerManager::sendWholeResponse(int clientFd, const std::string& response)
     while (sentTotal < response.size()) {
         ssize_t sent = send(clientFd, response.data() + sentTotal, response.size() - sentTotal, 0);
 
-        // send(clientFd, response.c_str(), response.size(), 0);
-        // // client.clearRequestBuffer(); // ?
-        // close(clientFd);
-        // _clients.erase(clientFd);
-        // _pollfds.erase(_pollfds.begin() + index);
-        // return ;
-
         if (sent > 0) {
             sentTotal += static_cast<size_t>(sent);
             continue;
@@ -133,99 +126,30 @@ bool ServerManager::readClientData(size_t index) {
     int bytes = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
 
     if (bytes == 0) {
-
-        // std::cout << "client disconnected fd: " << std::endl;
-        // close(clientFd);
-        // _clients.erase(clientFd);
-        // _pollfds.erase(_pollfds.begin() + index);
         removeClient(index);
         return true;
 
     } else if (bytes < 0) {
-
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return false;
         }
-        // std::cerr << "recv() failed" << std::endl;
-        // close(clientFd);
-        // _clients.erase(clientFd);
-        // _pollfds.erase(_pollfds.begin() + index);
         removeClient(index);
         return true;
     }
 
     Client& client = _clients.at(clientFd);
-    const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
     client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
-    while (true) {
-        RequestState state = client.checkRequestState();
-        if (state == RequestState::Incomplete)
-            return false;
-        if (state == RequestState::BadRequest) {
-    
-            int errorCode = client.getRequestErrorCode();
-            if (errorCode == 0)
-                errorCode = 400;
-    
-            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
-            
-            std::string response = errorResponse.toString(errorResponse);
-            sendWholeResponse(clientFd, response);
-            
-            removeClient(index);
-            return true;
-        }
-
-        try
-        {
-            std::string response;
-            client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
-
-            const HTTPRequest& request = client.getRequest();
-            bool keepAlive = shouldKeepAlive(request);
-
-            HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-
-            response = ClassResponse.toString(ClassResponse);
-
-            // send(clientFd, response.c_str(), response.size(), 0);
-            if (!sendWholeResponse(clientFd, response)) {
-                removeClient(index);
-                return true;
-            }
-
-            if(!keepAlive) {
-                removeClient(index);
-                return true;
-            }
-
-            client.consumeRequest();
-            if(client.getRequestBuffer().empty())
-                return false;
-
-        } catch (const HTTPParseException& e) {
-
-            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
-
-            std::string response = errorResponse.toString(errorResponse);
-            sendWholeResponse(clientFd, response);
-            removeClient(index);
-            return true;
-
-        } catch (const std::exception& e) {
-            // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
-            (void)e;
-            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
-
-            std::string response = errorResponse.toString(errorResponse);
-            sendWholeResponse(clientFd, response);
-            removeClient(index);
-            return true;
-        }
-    }
-
+    return processRequestBuffer(index);
 };
+
+void ServerManager::queueResponse(size_t index, Client& client, HTTPResponse& response) {
+    
+    client.setResponseBuffer(response.toString(response));
+    _pollfds[index].events &= ~POLLIN;
+    _pollfds[index].events |= POLLOUT;
+};
+
 
 bool ServerManager::isServerSocket(int fd) const
 {
@@ -268,6 +192,11 @@ void ServerManager::run() {
                     if (removed)
                         continue;
                 }
+            }
+            if (_pollfds[i].revents & POLLOUT) {
+                bool removed = writeClientData(i);
+                if(removed)
+                    continue;
             }
             i++;
         }
@@ -345,3 +274,113 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex) const
 
     return it->second;
 };
+
+bool ServerManager::writeClientData(size_t index) {
+    
+    int clientFd = _pollfds[index].fd;
+
+    Client& client = _clients.at(clientFd);
+
+    const std::string& response = client.getResponseBuffer();
+    size_t sentAlreay = client.getResponseSent();
+
+    ssize_t sent = send(clientFd, response.data() + sentAlreay, response.size() - sentAlreay, 0);
+
+    if (sent < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return false;
+        removeClient(index);
+        return true;
+    }
+
+    if (sent > 0) 
+        client.setResponseSent(sentAlreay + static_cast<size_t>(sent));
+
+    if (client.getResponseSent() == response.size()) {
+        _pollfds[index].events &= ~POLLOUT;
+
+        if (client.getCloseAfterReponse() == false) {
+            if(!shouldKeepAlive(client.getRequest())) {
+                removeClient(index);
+                return true;
+            }
+        } else {
+            removeClient(index);
+            return true;
+        }
+
+        client.consumeRequest();
+        client.clearResponse();
+
+        if (client.getRequestBuffer().empty()) {
+            _pollfds[index].events |= POLLIN;
+        } else {
+            return processRequestBuffer(index);
+        }
+    }
+
+    return false;
+};
+
+//      request 1 response finishes
+//              ↓
+//      consume request 1
+//              ↓
+//      is there already data left?
+//              |
+//         +----+----+
+//         |         |
+//        no        yes
+//         |         |
+//      POLLIN    processRequestBuffer()
+
+bool ServerManager::processRequestBuffer(size_t index) {
+
+    int clientFd = _pollfds[index].fd;
+    Client& client = _clients.at(clientFd);
+
+    const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
+
+    RequestState state = client.checkRequestState();
+
+    if (state == RequestState::Incomplete) {
+        _pollfds[index].events |= POLLIN;
+        return false;
+    }
+    if (state == RequestState::BadRequest) {
+
+        int errorCode = client.getRequestErrorCode();
+        if (errorCode == 0)
+            errorCode = 400;
+
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
+        client.setCloseAfterResponse(true);
+        queueResponse(index, client, errorResponse);
+        return false;
+    }
+
+    try {
+        client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
+        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+        queueResponse(index, client, ClassResponse);
+        return false;
+
+    } catch (const HTTPParseException& e) {
+
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
+        client.setCloseAfterResponse(true);
+        queueResponse(index, client, errorResponse);
+        return false;
+
+    } catch (const std::exception& e) {
+        // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
+        (void)e;
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
+        client.setCloseAfterResponse(true);
+        queueResponse(index, client, errorResponse);
+        return false;
+    }
+
+};
+
+// printf 'GET / HTTP/1.1\r\nHost: localhost:8080\r\nConnection: keep-alive\r\n\r\n' | nc 127.0.0.1 8080
