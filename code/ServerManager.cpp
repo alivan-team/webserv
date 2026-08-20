@@ -19,11 +19,11 @@ void ServerManager::acceptNewClient(int serverFd) {
         return ;
 
     // for Linux: without line -22 -23 -24 -25 -26  this is only for macOS protechting the while socket.
-    int opt = 1;
-    if (setsockopt(newClientFd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) < 0) {
-        close(newClientFd);
-        return ;
-    }
+    // int opt = 1;
+    // if (setsockopt(newClientFd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) < 0) {
+    //     close(newClientFd);
+    //     return ;
+    // }
 
     setNonBlocking(newClientFd);
 
