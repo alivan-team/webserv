@@ -704,6 +704,7 @@ int main()
     run("POST upload", testPostUpload);
     // run("Client request buffer", testClientRequestBuffer);
     run("HTTPResponse", testHttpResponse);
+    // added on 20 Aug - Ivan - for log:
     run("Client response buffer", testClientResponseBuffer);
     run("Client new response resets progress", testClientNewResponseResetsProgress);
     run("Client close after response", testClientCloseAfterResponse);
