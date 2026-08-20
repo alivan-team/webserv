@@ -215,6 +215,182 @@ void testHttpResponse()
           "responses use a valid status line and replace duplicate headers");
 }
 
+void testClientResponseBuffer()
+{
+    Client client(42, 7);
+
+    const std::string response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Length: 5\r\n"
+        "\r\n"
+        "Hello";
+
+    client.setResponseBuffer(response);
+
+    check(
+        client.getResponseBuffer() == response,
+        "client stores a queued response"
+    );
+
+    check(
+        client.getResponseSent() == 0,
+        "a newly queued response starts with zero bytes sent"
+    );
+
+    client.setResponseSent(10);
+
+    check(
+        client.getResponseSent() == 10,
+        "client tracks how many response bytes were sent"
+    );
+
+    client.clearResponse();
+
+    check(
+        client.getResponseBuffer().empty(),
+        "clearing a response empties the response buffer"
+    );
+
+    check(
+        client.getResponseSent() == 0,
+        "clearing a response resets the sent-byte counter"
+    );
+}
+
+void testClientCloseAfterResponse()
+{
+    Client client(42, 7);
+
+    check(
+        client.getCloseAfterReponse() == false,
+        "clients do not close after responses by default"
+    );
+
+    client.setCloseAfterResponse(true);
+
+    check(
+        client.getCloseAfterReponse() == true,
+        "client can be marked to close after its response"
+    );
+
+    client.setCloseAfterResponse(false);
+
+    check(
+        client.getCloseAfterReponse() == false,
+        "close-after-response state can be reset"
+    );
+}
+
+void testClientConsumeRequestPreservesNextRequest()
+{
+    Client client(42, 7);
+
+    const std::string firstRequest =
+        "GET /one HTTP/1.1\r\n"
+        "Host: unit.test\r\n"
+        "\r\n";
+
+    const std::string secondRequest =
+        "GET /two HTTP/1.1\r\n"
+        "Host: unit.test\r\n"
+        "\r\n";
+
+    const std::string combined =
+        firstRequest + secondRequest;
+
+    client.appendToRequestBuffer(
+        combined.c_str(),
+        combined.size()
+    );
+
+    check(
+        client.checkRequestState() == RequestState::Complete,
+        "first request is detected when two requests are buffered"
+    );
+
+    check(
+        client.getRequestEnd() == firstRequest.size(),
+        "request end points to the end of only the first request"
+    );
+
+    client.consumeRequest();
+
+    check(
+        client.getRequestBuffer() == secondRequest,
+        "consumeRequest preserves an already-buffered next request"
+    );
+
+    check(
+        client.checkRequestState() == RequestState::Complete,
+        "preserved second request can immediately be processed"
+    );
+}
+
+void testClientConsumeRequestPreservesPartialNextRequest()
+{
+    Client client(42, 7);
+
+    const std::string firstRequest =
+        "GET /one HTTP/1.1\r\n"
+        "Host: unit.test\r\n"
+        "\r\n";
+
+    const std::string partialSecondRequest =
+        "GET /two HTTP/1.1\r\n"
+        "Host:";
+
+    const std::string combined =
+        firstRequest + partialSecondRequest;
+
+    client.appendToRequestBuffer(
+        combined.c_str(),
+        combined.size()
+    );
+
+    check(
+        client.checkRequestState() == RequestState::Complete,
+        "first request completes even when part of the next request is buffered"
+    );
+
+    client.consumeRequest();
+
+    check(
+        client.getRequestBuffer() == partialSecondRequest,
+        "consumeRequest preserves partial bytes belonging to the next request"
+    );
+
+    check(
+        client.checkRequestState() == RequestState::Incomplete,
+        "partial preserved request correctly waits for more POLLIN data"
+    );
+}
+
+void testClientNewResponseResetsProgress()
+{
+    Client client(42, 7);
+
+    client.setResponseBuffer("first response");
+
+    client.setResponseSent(5);
+
+    check(
+        client.getResponseSent() == 5,
+        "response progress can be updated"
+    );
+
+    client.setResponseBuffer("second response");
+
+    check(
+        client.getResponseSent() == 0,
+        "queueing a new response resets response progress"
+    );
+
+    check(
+        client.getResponseBuffer() == "second response",
+        "queueing a new response replaces the previous response"
+    );
+}
+
 // void testClientRequestBuffer()
 // {
 //     Client client(42, 7);
@@ -528,6 +704,11 @@ int main()
     run("POST upload", testPostUpload);
     // run("Client request buffer", testClientRequestBuffer);
     run("HTTPResponse", testHttpResponse);
+    run("Client response buffer", testClientResponseBuffer);
+    run("Client new response resets progress", testClientNewResponseResetsProgress);
+    run("Client close after response", testClientCloseAfterResponse);
+    run("Client consume preserves next request", testClientConsumeRequestPreservesNextRequest);
+    run("Client consume preserves partial next request", testClientConsumeRequestPreservesPartialNextRequest);
 
     if (g_failures != 0) {
         std::cerr << g_failures << " assertion(s) failed\n";

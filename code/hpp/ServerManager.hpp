@@ -30,7 +30,7 @@ class ServerManager {
 
         bool shouldKeepAlive(const HTTPRequest& request) const;
         void removeClient(size_t index);
-        bool sendWholeResponse(int clinetFd, const std::string& respone) const;
+        // bool sendWholeResponse(int clinetFd, const std::string& respone) const;
         bool processRequestBuffer(size_t index);
 
     public: 

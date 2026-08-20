@@ -18,6 +18,13 @@ void ServerManager::acceptNewClient(int serverFd) {
     if (newClientFd < 0)
         return ;
 
+    // for Linux: without line -22 -23 -24 -25 -26  this is only for macOS protechting the while socket.
+    int opt = 1;
+    if (setsockopt(newClientFd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) < 0) {
+        close(newClientFd);
+        return ;
+    }
+
     setNonBlocking(newClientFd);
 
     pollfd client_poll;
@@ -41,28 +48,28 @@ void ServerManager::removeClient(size_t index) {
     _pollfds.erase(_pollfds.begin() + index);
 }
 
-bool ServerManager::sendWholeResponse(int clientFd, const std::string& response) const {
-    size_t sentTotal = 0;
+// bool ServerManager::sendWholeResponse(int clientFd, const std::string& response) const {
+//     size_t sentTotal = 0;
 
-    while (sentTotal < response.size()) {
-        ssize_t sent = send(clientFd, response.data() + sentTotal, response.size() - sentTotal, 0);
+//     while (sentTotal < response.size()) {
+//         ssize_t sent = send(clientFd, response.data() + sentTotal, response.size() - sentTotal, MSG_NOSIGNAL);
 
-        if (sent > 0) {
-            sentTotal += static_cast<size_t>(sent);
-            continue;
-        }
+//         if (sent > 0) {
+//             sentTotal += static_cast<size_t>(sent);
+//             continue;
+//         }
 
-        if (sent < 0 && errno == EINTR)
-            continue;
+//         if (sent < 0 && errno == EINTR)
+//             continue;
 
-        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-            return false;
+//         if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+//             return false;
 
-        return false;
-    }
+//         return false;
+//     }
 
-    return true;
-}
+//     return true;
+// }
 
 bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
     std::string connection;
@@ -183,6 +190,16 @@ void ServerManager::run() {
         size_t i = 0;
         while (i < _pollfds.size()) {
 
+            if (_pollfds[i].revents & POLLNVAL) {
+                if (!isServerSocket(_pollfds[i].fd)) {
+                    removeClient(i);
+                    continue;
+                }
+                // std::cerr << "Listening socket became invalid" << std::endl;;
+                // i++;
+                // continue;
+            }
+
             if (_pollfds[i].revents & POLLIN) {
 
                 if (isServerSocket(_pollfds[i].fd)) {
@@ -197,6 +214,16 @@ void ServerManager::run() {
                 bool removed = writeClientData(i);
                 if(removed)
                     continue;
+            }
+
+            if (_pollfds[i].revents & (POLLERR | POLLHUP)) {
+                if (!isServerSocket(_pollfds[i].fd)) {
+                    removeClient(i);
+                    continue;
+                }
+                // std::cerr << "Listening socket error" << std::endl;;
+                // i++;
+                // continue;
             }
             i++;
         }
@@ -284,7 +311,8 @@ bool ServerManager::writeClientData(size_t index) {
     const std::string& response = client.getResponseBuffer();
     size_t sentAlreay = client.getResponseSent();
 
-    ssize_t sent = send(clientFd, response.data() + sentAlreay, response.size() - sentAlreay, 0);
+    // Linux:  MSG_NOSIGNAL instead of 0 at the end of send. Linux protects each send() call.
+    ssize_t sent = send(clientFd, response.data() + sentAlreay, response.size() - sentAlreay, MSG_NOSIGNAL);
 
     if (sent < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
