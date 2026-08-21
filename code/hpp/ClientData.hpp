@@ -29,7 +29,9 @@ class Client {
     private:
         std::string _requestBuffer;
         std::string _responseBuffer;
-        // std::string pureBody;
+        
+        std::string _body;
+        
         size_t _responseSent;
         int _client_fd;
         int _server_fd;

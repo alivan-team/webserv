@@ -113,15 +113,9 @@ RequestState Client::checkChunkedRequestBody(size_t maxBodySize) {
     size_t decodedBodySize = 0;
 
     RequestState chunkedState = checkChunkedBody(_bodyPos, checkedRequestEnd, decodedBodySize, maxBodySize);
-
-    // if(chunkedState == RequestState::Incomplete) 
-    //     return RequestState::Incomplete;
-
-    if(chunkedState != RequestState::Complete) {
-        // std::cout << "Err from checkChunkedRequestBody  " << std::endl;
-
+    
+    if(chunkedState != RequestState::Complete)
         return chunkedState;
-    }
 
     _requestEnd = checkedRequestEnd;
     // _bodySize = decodedBodySize; -> size only info 
@@ -143,14 +137,8 @@ RequestState Client::checkChunkedRequestBody(size_t maxBodySize) {
 // GET /upload HTTP/1.1
 // Host: localhost:8080
 // ...
-
 // decodedBodySize = 8
-
 // _requestEnd - _bodyPos = 24
-
-
-
-
 
 //  Test chunk : 
 //       curl -v -X POST \
@@ -220,11 +208,6 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd, size
 
         position = sizeLineEnd + 2;
 
-        // std::cout << "\n--- CHUNK BODY SIZE TEST ---" << std::endl;
-        // std::cout << "chunkHex        = " << chunkHex << std::endl;
-        // std::cout << "decodedBodySize = " << decodedBodySize << std::endl;
-        // std::cout << "maxBodySize     = " << maxBodySize << std::endl;
-
         if (chunkHex == 0) {
             if(_requestBuffer.size() < position + 2)
                 return RequestState::Incomplete;
@@ -235,19 +218,11 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd, size
             return RequestState::Complete;
         }
 
-        if (decodedBodySize > maxBodySize){
-            // std::cout << "ERR decodedBodySize > maxBodySize     = " << decodedBodySize << std::endl;
-
+        if (decodedBodySize > maxBodySize)
             return setRequestError(413);
-        }
-        if (chunkHex > maxBodySize - decodedBodySize) {
-            // std::cout << "ERR maxBodychunkHex > maxBodySize - decodedBodySizeSize     = " << chunkHex << std::endl;
-
+        if (chunkHex > maxBodySize - decodedBodySize)
             return setRequestError(413);
-        }
         decodedBodySize += chunkHex;
-
-        // std::cout << "new decodedBodySize = " << decodedBodySize << std::endl;
 
         if(position > std::numeric_limits<size_t>::max() - chunkHex) 
             return RequestState::BadRequest;

@@ -371,9 +371,6 @@ bool ServerManager::processRequestBuffer(size_t index) {
     size_t maxBodySize = serverConfig.getClientMaxBodySize().back();
     RequestState state = client.checkRequestState(maxBodySize);
 
-    // std::cout << "Err RequestState state = client.checkRequestState(maxBodySize);  " << std::endl;
-
-
     if (state == RequestState::Incomplete) {
         _pollfds[index].events |= POLLIN;
         return false;
@@ -391,8 +388,10 @@ bool ServerManager::processRequestBuffer(size_t index) {
     }
 
     try {
+
         // client requestBuffer should have funtion that cleans the body of the request and removed all the chunked
         // protocol "/r/n"
+
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
         HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
         queueResponse(index, client, ClassResponse);
