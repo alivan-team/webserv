@@ -7,6 +7,8 @@
 #include "ServerConfig.hpp"
 #include "HelperFunctions.hpp"
 #include "HTTPParseException.hpp"
+#include "MultipartParser.hpp"
+#include "MultipartPart.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -516,6 +518,125 @@ void testClientChunkedRequestBuffer()
     }
 }
 
+void testMultipartParser()
+{
+    const std::string boundary =
+        "----WebKitFormBoundarySdZ4qsF6uVWggfJk";
+
+    const std::string body =
+        "------WebKitFormBoundarySdZ4qsF6uVWggfJk\r\n"
+        "Content-Disposition: form-data; name=\"file\"; filename=\"main.cpp\"\r\n"
+        "Content-Type: application/octet-stream\r\n"
+        "\r\n"
+        "#include \"./code/hpp/ServerConfig.hpp\"\r\n"
+        "#include \"./code/hpp/ConfigParser.hpp\"\r\n"
+        "int main()\r\n"
+        "{\r\n"
+        "    return 0;\r\n"
+        "}\r\n"
+        "------WebKitFormBoundarySdZ4qsF6uVWggfJk--";
+
+    const size_t bodyOffset = 0;
+    const size_t bodySize = body.size();
+
+    MultipartParser parser(
+        body,
+        bodyOffset,
+        bodySize,
+        boundary
+    );
+
+    const std::vector<MultipartPart> parts = parser.parse();
+
+    check(
+        parts.size() == 1,
+        "one multipart part is parsed"
+    );
+
+    if (parts.size() != 1)
+        return;
+
+    const MultipartPart& part = parts.at(0);
+
+// ////
+
+// 	std::cout << "\n--- Multipart debug ---\n";
+// 	std::cout << "body size: "
+// 	          << body.size()
+// 	          << '\n';
+
+// 	std::cout << "data offset: "
+// 	          << part.getDataOffset()
+// 	          << '\n';
+
+// 	std::cout << "data size: "
+// 	          << part.getDataSize()
+// 	          << '\n';
+
+// 	std::cout << "data:\n";
+
+// 	std::cout << body.substr(
+// 	    part.getDataOffset(),
+// 	    part.getDataSize()
+// 	) << '\n';
+
+// 	std::cout << "--- end debug ---\n";
+
+// ////
+
+
+    check(
+        part.getName() == "file",
+        "multipart field name is parsed"
+    );
+
+    check(
+        part.hasFilename(),
+        "file part has a filename"
+    );
+
+    check(
+        part.getFilename() == "main.cpp",
+        "multipart filename is parsed"
+    );
+
+	const std::string expectedData =
+	    "#include \"./code/hpp/ServerConfig.hpp\"\r\n"
+	    "#include \"./code/hpp/ConfigParser.hpp\"\r\n"
+	    "int main()\r\n"
+	    "{\r\n"
+	    "    return 0;\r\n"
+	    "}";
+
+    check(
+        part.getDataSize() == expectedData.size(),
+        "multipart data size is correct"
+    );
+
+    check(
+        body.compare(
+            part.getDataOffset(),
+            part.getDataSize(),
+            expectedData
+        ) == 0,
+        "multipart data points to the original body"
+    );
+
+	const size_t boundaryPosition =
+	    body.find("--" + boundary, part.getDataOffset());
+
+	check(
+	    boundaryPosition != std::string::npos,
+	    "closing boundary follows the file data"
+	);
+
+	check(
+	    part.getDataOffset() + part.getDataSize() + 2
+	        == boundaryPosition,
+	    "multipart data ends immediately before CRLF and boundary"
+	);
+}
+
 } // namespace
 
 int main()
@@ -529,6 +650,7 @@ int main()
     run("POST upload", testPostUpload);
     // run("Client request buffer", testClientRequestBuffer);
     run("HTTPResponse", testHttpResponse);
+	run("MultipartParser", testMultipartParser);
 
     if (g_failures != 0) {
         std::cerr << g_failures << " assertion(s) failed\n";
