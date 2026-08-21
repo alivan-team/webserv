@@ -5,6 +5,8 @@
 #include "./HTTPRequest.hpp"
 #include "./ServerConfig.hpp"
 #include "./LocationConfig.hpp"
+#include "MultipartPart.hpp"
+#include "MultipartParser.hpp"
 #include <fstream>
 #include <sys/stat.h>
 #include <unistd.h>
