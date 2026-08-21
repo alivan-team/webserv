@@ -220,10 +220,10 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd, size
 
         position = sizeLineEnd + 2;
 
-        std::cout << "\n--- CHUNK BODY SIZE TEST ---" << std::endl;
-        std::cout << "chunkHex        = " << chunkHex << std::endl;
-        std::cout << "decodedBodySize = " << decodedBodySize << std::endl;
-        std::cout << "maxBodySize     = " << maxBodySize << std::endl;
+        // std::cout << "\n--- CHUNK BODY SIZE TEST ---" << std::endl;
+        // std::cout << "chunkHex        = " << chunkHex << std::endl;
+        // std::cout << "decodedBodySize = " << decodedBodySize << std::endl;
+        // std::cout << "maxBodySize     = " << maxBodySize << std::endl;
 
         if (chunkHex == 0) {
             if(_requestBuffer.size() < position + 2)
@@ -236,18 +236,18 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd, size
         }
 
         if (decodedBodySize > maxBodySize){
-            std::cout << "ERR decodedBodySize > maxBodySize     = " << decodedBodySize << std::endl;
+            // std::cout << "ERR decodedBodySize > maxBodySize     = " << decodedBodySize << std::endl;
 
             return setRequestError(413);
         }
         if (chunkHex > maxBodySize - decodedBodySize) {
-            std::cout << "ERR maxBodychunkHex > maxBodySize - decodedBodySizeSize     = " << chunkHex << std::endl;
+            // std::cout << "ERR maxBodychunkHex > maxBodySize - decodedBodySizeSize     = " << chunkHex << std::endl;
 
             return setRequestError(413);
         }
         decodedBodySize += chunkHex;
 
-        std::cout << "new decodedBodySize = " << decodedBodySize << std::endl;
+        // std::cout << "new decodedBodySize = " << decodedBodySize << std::endl;
 
         if(position > std::numeric_limits<size_t>::max() - chunkHex) 
             return RequestState::BadRequest;
@@ -281,11 +281,8 @@ RequestState Client::checkRequestState(size_t maxBodySize)  {
         return checkContentLengthBody();
     }
 
-    if (_bodyType == BodyType::Chunked) {
-        // std::cout << "Err from checkRequestState  " << std::endl;
-
+    if (_bodyType == BodyType::Chunked)
         return checkChunkedRequestBody(maxBodySize);
-    }
     
     _bodySize = 0;
     _requestEnd = _bodyPos;

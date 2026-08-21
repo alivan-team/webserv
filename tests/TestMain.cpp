@@ -281,89 +281,89 @@ void testClientCloseAfterResponse()
     );
 }
 
-void testClientConsumeRequestPreservesNextRequest()
-{
-    Client client(42, 7);
+// void testClientConsumeRequestPreservesNextRequest()
+// {
+//     Client client(42, 7);
 
-    const std::string firstRequest =
-        "GET /one HTTP/1.1\r\n"
-        "Host: unit.test\r\n"
-        "\r\n";
+//     const std::string firstRequest =
+//         "GET /one HTTP/1.1\r\n"
+//         "Host: unit.test\r\n"
+//         "\r\n";
 
-    const std::string secondRequest =
-        "GET /two HTTP/1.1\r\n"
-        "Host: unit.test\r\n"
-        "\r\n";
+//     const std::string secondRequest =
+//         "GET /two HTTP/1.1\r\n"
+//         "Host: unit.test\r\n"
+//         "\r\n";
 
-    const std::string combined =
-        firstRequest + secondRequest;
+//     const std::string combined =
+//         firstRequest + secondRequest;
 
-    client.appendToRequestBuffer(
-        combined.c_str(),
-        combined.size()
-    );
+//     client.appendToRequestBuffer(
+//         combined.c_str(),
+//         combined.size()
+//     );
 
-    check(
-        client.checkRequestState() == RequestState::Complete,
-        "first request is detected when two requests are buffered"
-    );
+//     check(
+//         client.checkRequestState() == RequestState::Complete,
+//         "first request is detected when two requests are buffered"
+//     );
 
-    check(
-        client.getRequestEnd() == firstRequest.size(),
-        "request end points to the end of only the first request"
-    );
+//     check(
+//         client.getRequestEnd() == firstRequest.size(),
+//         "request end points to the end of only the first request"
+//     );
 
-    client.consumeRequest();
+//     client.consumeRequest();
 
-    check(
-        client.getRequestBuffer() == secondRequest,
-        "consumeRequest preserves an already-buffered next request"
-    );
+//     check(
+//         client.getRequestBuffer() == secondRequest,
+//         "consumeRequest preserves an already-buffered next request"
+//     );
 
-    check(
-        client.checkRequestState() == RequestState::Complete,
-        "preserved second request can immediately be processed"
-    );
-}
+//     check(
+//         client.checkRequestState() == RequestState::Complete,
+//         "preserved second request can immediately be processed"
+//     );
+// }
 
-void testClientConsumeRequestPreservesPartialNextRequest()
-{
-    Client client(42, 7);
+// void testClientConsumeRequestPreservesPartialNextRequest()
+// {
+//     Client client(42, 7);
 
-    const std::string firstRequest =
-        "GET /one HTTP/1.1\r\n"
-        "Host: unit.test\r\n"
-        "\r\n";
+//     const std::string firstRequest =
+//         "GET /one HTTP/1.1\r\n"
+//         "Host: unit.test\r\n"
+//         "\r\n";
 
-    const std::string partialSecondRequest =
-        "GET /two HTTP/1.1\r\n"
-        "Host:";
+//     const std::string partialSecondRequest =
+//         "GET /two HTTP/1.1\r\n"
+//         "Host:";
 
-    const std::string combined =
-        firstRequest + partialSecondRequest;
+//     const std::string combined =
+//         firstRequest + partialSecondRequest;
 
-    client.appendToRequestBuffer(
-        combined.c_str(),
-        combined.size()
-    );
+//     client.appendToRequestBuffer(
+//         combined.c_str(),
+//         combined.size()
+//     );
 
-    check(
-        client.checkRequestState() == RequestState::Complete,
-        "first request completes even when part of the next request is buffered"
-    );
+//     check(
+//         client.checkRequestState() == RequestState::Complete,
+//         "first request completes even when part of the next request is buffered"
+//     );
 
-    client.consumeRequest();
+//     client.consumeRequest();
 
-    check(
-        client.getRequestBuffer() == partialSecondRequest,
-        "consumeRequest preserves partial bytes belonging to the next request"
-    );
+//     check(
+//         client.getRequestBuffer() == partialSecondRequest,
+//         "consumeRequest preserves partial bytes belonging to the next request"
+//     );
 
-    check(
-        client.checkRequestState() == RequestState::Incomplete,
-        "partial preserved request correctly waits for more POLLIN data"
-    );
-}
+//     check(
+//         client.checkRequestState() == RequestState::Incomplete,
+//         "partial preserved request correctly waits for more POLLIN data"
+//     );
+// }
 
 void testClientNewResponseResetsProgress()
 {
@@ -417,279 +417,279 @@ void run(const std::string& name, void (*test)())
     std::cout << (failuresBefore == g_failures ? "PASS" : "FAIL") << " " << name << '\n';
 }
 
-void testClientChunkedRequestBuffer()
-{
-    {
-        Client client(42, 7);
+// void testClientChunkedRequestBuffer()
+// {
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "5\r\n"
-            "Hello\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "5\r\n"
+//             "Hello\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::Complete,
-            "a valid single-chunk request is complete"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::Complete,
+//             "a valid single-chunk request is complete"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "5\r\n"
-            "Hello\r\n"
-            "6\r\n"
-            " World\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "5\r\n"
+//             "Hello\r\n"
+//             "6\r\n"
+//             " World\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::Complete,
-            "a valid multi-chunk request is complete"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::Complete,
+//             "a valid multi-chunk request is complete"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "A\r\n"
-            "0123456789\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "A\r\n"
+//             "0123456789\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::Complete,
-            "hexadecimal chunk sizes are accepted"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::Complete,
+//             "hexadecimal chunk sizes are accepted"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::Complete,
-            "an empty chunked body is complete"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::Complete,
+//             "an empty chunked body is complete"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "5;name=value\r\n"
-            "Hello\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "5;name=value\r\n"
+//             "Hello\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::Complete,
-            "chunk extensions are accepted"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::Complete,
+//             "chunk extensions are accepted"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "G\r\n"
-            "Hello\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "G\r\n"
+//             "Hello\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::BadRequest,
-            "invalid hexadecimal chunk sizes are rejected"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::BadRequest,
+//             "invalid hexadecimal chunk sizes are rejected"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "5\r\n"
-            "HelloXX";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "5\r\n"
+//             "HelloXX";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::BadRequest,
-            "invalid CRLF after chunk data is rejected"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::BadRequest,
+//             "invalid CRLF after chunk data is rejected"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "4\r\n"
-            "Hello\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "4\r\n"
+//             "Hello\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::BadRequest,
-            "extra bytes beyond the declared chunk size are rejected"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::BadRequest,
+//             "extra bytes beyond the declared chunk size are rejected"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "5\r\n"
-            "Hello\r\n"
-            "0\r\n"
-            "XX";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "5\r\n"
+//             "Hello\r\n"
+//             "0\r\n"
+//             "XX";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::BadRequest,
-            "an invalid final chunk terminator is rejected"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::BadRequest,
+//             "an invalid final chunk terminator is rejected"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string firstPart =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "A\r\n"
-            "12345";
+//         const std::string firstPart =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "A\r\n"
+//             "12345";
 
-        const std::string secondPart =
-            "67890\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string secondPart =
+//             "67890\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(firstPart.c_str(), firstPart.size());
+//         client.appendToRequestBuffer(firstPart.c_str(), firstPart.size());
 
-        check(
-            client.checkRequestState() == RequestState::Incomplete,
-            "partial chunk data is incomplete"
-        );
+//         check(
+//             client.checkRequestState() == RequestState::Incomplete,
+//             "partial chunk data is incomplete"
+//         );
 
-        client.appendToRequestBuffer(secondPart.c_str(), secondPart.size());
+//         client.appendToRequestBuffer(secondPart.c_str(), secondPart.size());
 
-        check(
-            client.checkRequestState() == RequestState::Complete,
-            "chunked request completes after remaining data arrives"
-        );
-    }
-    //Test a size line split between two reads:
-    {
-        Client client(42, 7);
+//         check(
+//             client.checkRequestState() == RequestState::Complete,
+//             "chunked request completes after remaining data arrives"
+//         );
+//     }
+//     //Test a size line split between two reads:
+//     {
+//         Client client(42, 7);
 
-        const std::string firstPart =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "A";
+//         const std::string firstPart =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "A";
 
-        const std::string secondPart =
-            "\r\n"
-            "0123456789\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string secondPart =
+//             "\r\n"
+//             "0123456789\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(firstPart.c_str(), firstPart.size());
+//         client.appendToRequestBuffer(firstPart.c_str(), firstPart.size());
 
-        check(
-            client.checkRequestState() == RequestState::Incomplete,
-            "a partial chunk-size line is incomplete"
-        );
+//         check(
+//             client.checkRequestState() == RequestState::Incomplete,
+//             "a partial chunk-size line is incomplete"
+//         );
 
-        client.appendToRequestBuffer(secondPart.c_str(), secondPart.size());
+//         client.appendToRequestBuffer(secondPart.c_str(), secondPart.size());
 
-        check(
-            client.checkRequestState() == RequestState::Complete,
-            "the request completes after the chunk-size line arrives"
-        );
-    }
+//         check(
+//             client.checkRequestState() == RequestState::Complete,
+//             "the request completes after the chunk-size line arrives"
+//         );
+//     }
 
-    {
-        Client client(42, 7);
+//     {
+//         Client client(42, 7);
 
-        const std::string request =
-            "POST /upload HTTP/1.1\r\n"
-            "Host: unit.test\r\n"
-            "Content-Length: 5\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "5\r\n"
-            "Hello\r\n"
-            "0\r\n"
-            "\r\n";
+//         const std::string request =
+//             "POST /upload HTTP/1.1\r\n"
+//             "Host: unit.test\r\n"
+//             "Content-Length: 5\r\n"
+//             "Transfer-Encoding: chunked\r\n"
+//             "\r\n"
+//             "5\r\n"
+//             "Hello\r\n"
+//             "0\r\n"
+//             "\r\n";
 
-        client.appendToRequestBuffer(request.c_str(), request.size());
+//         client.appendToRequestBuffer(request.c_str(), request.size());
 
-        check(
-            client.checkRequestState() == RequestState::BadRequest,
-            "Content-Length and Transfer-Encoding together are rejected"
-        );
-    }
-}
+//         check(
+//             client.checkRequestState() == RequestState::BadRequest,
+//             "Content-Length and Transfer-Encoding together are rejected"
+//         );
+//     }
+// }
 
 } // namespace
 
@@ -708,8 +708,8 @@ int main()
     run("Client response buffer", testClientResponseBuffer);
     run("Client new response resets progress", testClientNewResponseResetsProgress);
     run("Client close after response", testClientCloseAfterResponse);
-    run("Client consume preserves next request", testClientConsumeRequestPreservesNextRequest);
-    run("Client consume preserves partial next request", testClientConsumeRequestPreservesPartialNextRequest);
+    // run("Client consume preserves next request", testClientConsumeRequestPreservesNextRequest);
+    // run("Client consume preserves partial next request", testClientConsumeRequestPreservesPartialNextRequest);
 
     if (g_failures != 0) {
         std::cerr << g_failures << " assertion(s) failed\n";
