@@ -2,6 +2,7 @@
 #define MULTIPART_PARSER_HPP
 
 #include <string>
+#include <vector>
 #include <map>
 #include "externalStructures.hpp"
 #include "MultipartPart.hpp"
