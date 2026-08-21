@@ -199,7 +199,6 @@ void ServerManager::run() {
                 // i++;
                 // continue;
             }
-
             if (_pollfds[i].revents & POLLIN) {
 
                 if (isServerSocket(_pollfds[i].fd)) {
@@ -215,7 +214,6 @@ void ServerManager::run() {
                 if(removed)
                     continue;
             }
-
             if (_pollfds[i].revents & (POLLERR | POLLHUP)) {
                 if (!isServerSocket(_pollfds[i].fd)) {
                     removeClient(i);
@@ -311,6 +309,8 @@ bool ServerManager::writeClientData(size_t index) {
     const std::string& response = client.getResponseBuffer();
     size_t sentAlreay = client.getResponseSent();
 
+    // std::cout << ">>> writeClientData CALLED" << std::endl;
+
     // Linux:  MSG_NOSIGNAL instead of 0 at the end of send. Linux protects each send() call.
     ssize_t sent = send(clientFd, response.data() + sentAlreay, response.size() - sentAlreay, MSG_NOSIGNAL);
 
@@ -368,8 +368,11 @@ bool ServerManager::processRequestBuffer(size_t index) {
     Client& client = _clients.at(clientFd);
 
     const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
+    size_t maxBodySize = serverConfig.getClientMaxBodySize().back();
+    RequestState state = client.checkRequestState(maxBodySize);
 
-    RequestState state = client.checkRequestState();
+    // std::cout << "Err RequestState state = client.checkRequestState(maxBodySize);  " << std::endl;
+
 
     if (state == RequestState::Incomplete) {
         _pollfds[index].events |= POLLIN;
@@ -388,13 +391,14 @@ bool ServerManager::processRequestBuffer(size_t index) {
     }
 
     try {
+        // client requestBuffer should have funtion that cleans the body of the request and removed all the chunked
+        // protocol "/r/n"
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
         HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
         queueResponse(index, client, ClassResponse);
         return false;
 
     } catch (const HTTPParseException& e) {
-
         HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
         client.setCloseAfterResponse(true);
         queueResponse(index, client, errorResponse);
@@ -408,7 +412,6 @@ bool ServerManager::processRequestBuffer(size_t index) {
         queueResponse(index, client, errorResponse);
         return false;
     }
-
 };
 
 // printf 'GET / HTTP/1.1\r\nHost: localhost:8080\r\nConnection: keep-alive\r\n\r\n' | nc 127.0.0.1 8080

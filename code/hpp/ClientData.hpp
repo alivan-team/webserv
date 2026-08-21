@@ -12,15 +12,13 @@
 #include "HTTPResponse.hpp"
 #include "./HelperFunctions.hpp"
 
-enum class RequestState
-{
+enum class RequestState {
     Incomplete,
     Complete,
     BadRequest
 };
 
-enum class BodyType
-{
+enum class BodyType {
     None,
     ContentLength,
     Chunked
@@ -31,6 +29,7 @@ class Client {
     private:
         std::string _requestBuffer;
         std::string _responseBuffer;
+        // std::string pureBody;
         size_t _responseSent;
         int _client_fd;
         int _server_fd;
@@ -47,11 +46,11 @@ class Client {
         
         bool parseContentLength(const std::string& value, size_t& result) const;
         bool parseHexSize(const std::string& value, size_t& result) const;
-        RequestState checkChunkedBody(size_t bodyStart, size_t& requestEnd) const;
+        RequestState checkChunkedBody(size_t bodyStart, size_t& requestEnd, size_t& decodedBodySize, size_t maxBodySize);
         std::string trim(const std::string& value) const;
         // std::string toLower(const std::string& value) const;
         RequestState parseHeaders();
-        RequestState checkChunkedRequestBody();
+        RequestState checkChunkedRequestBody(size_t maxBodySize);
         RequestState checkContentLengthBody();
         RequestState setRequestError(int errorCode);
 
@@ -61,7 +60,7 @@ class Client {
         Client(int client_fd, int server_fd);
 
         void appendToRequestBuffer(const char* buffer, size_t bytes);
-        RequestState checkRequestState();
+        RequestState checkRequestState(size_t maxBodySize);
         void clearRequestBuffer();
         void consumeRequest();
         void setClientRequest(const HTTPRequest& req);

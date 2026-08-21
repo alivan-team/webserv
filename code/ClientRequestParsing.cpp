@@ -107,23 +107,64 @@ RequestState Client::checkContentLengthBody() {
     return RequestState::Complete;
 };
 
-RequestState Client::checkChunkedRequestBody() {
+RequestState Client::checkChunkedRequestBody(size_t maxBodySize) {
     
     size_t checkedRequestEnd = 0;
+    size_t decodedBodySize = 0;
 
-    RequestState chunkedState = checkChunkedBody(_bodyPos, checkedRequestEnd);
+    RequestState chunkedState = checkChunkedBody(_bodyPos, checkedRequestEnd, decodedBodySize, maxBodySize);
 
-    if(chunkedState == RequestState::Incomplete) 
-        return RequestState::Incomplete;
+    // if(chunkedState == RequestState::Incomplete) 
+    //     return RequestState::Incomplete;
 
-    if(chunkedState == RequestState::BadRequest) 
-        return setRequestError(400);
+    if(chunkedState != RequestState::Complete) {
+        // std::cout << "Err from checkChunkedRequestBody  " << std::endl;
+
+        return chunkedState;
+    }
 
     _requestEnd = checkedRequestEnd;
-    _bodySize = _requestEnd - _bodyPos;
+    // _bodySize = decodedBodySize; -> size only info 
+    _bodySize = _requestEnd - _bodyPos; // size info + protocol;
 
     return RequestState::Complete;
 };
+
+// POST /upload HTTP/1.1
+// Host: localhost:8080
+// Content-Type: text/plain
+// Transfer-Encoding: chunked /r/n
+// /r/n
+// 5/r/n
+// hello/r/n
+// 3/r/n
+// asd/r/n
+// /r/n
+// GET /upload HTTP/1.1
+// Host: localhost:8080
+// ...
+
+// decodedBodySize = 8
+
+// _requestEnd - _bodyPos = 24
+
+
+
+
+
+//  Test chunk : 
+//       curl -v -X POST \
+//         -H "Content-Type: text/plain" \
+//         -H "Transfer-Encoding: chunked" \
+//         --data-binary "$(printf 'A%.0s' {1..200})" \
+//         http://localhost:8080/upload
+
+// test content_length: 
+//       curl -v -X POST \
+//         -H "Content-Type: text/plain" \
+//         --data-binary "12345678901" \
+//         http://localhost:8080/upload
+
 
 bool Client::parseContentLength(const std::string& value, size_t& result) const {
 
@@ -153,7 +194,7 @@ bool Client::parseContentLength(const std::string& value, size_t& result) const 
     return true;
 }
 
-RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd) const {
+RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd, size_t& decodedBodySize, size_t maxBodySize) {
 
     size_t position = bodyStart;
 
@@ -179,19 +220,34 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd) cons
 
         position = sizeLineEnd + 2;
 
-        if (chunkHex == 0) {
+        std::cout << "\n--- CHUNK BODY SIZE TEST ---" << std::endl;
+        std::cout << "chunkHex        = " << chunkHex << std::endl;
+        std::cout << "decodedBodySize = " << decodedBodySize << std::endl;
+        std::cout << "maxBodySize     = " << maxBodySize << std::endl;
 
+        if (chunkHex == 0) {
             if(_requestBuffer.size() < position + 2)
                 return RequestState::Incomplete;
-
             if(_requestBuffer.compare(position, 2, "\r\n") != 0)
                 return RequestState::BadRequest;
 
             requestEnd = position + 2;
-
             return RequestState::Complete;
-        
         }
+
+        if (decodedBodySize > maxBodySize){
+            std::cout << "ERR decodedBodySize > maxBodySize     = " << decodedBodySize << std::endl;
+
+            return setRequestError(413);
+        }
+        if (chunkHex > maxBodySize - decodedBodySize) {
+            std::cout << "ERR maxBodychunkHex > maxBodySize - decodedBodySizeSize     = " << chunkHex << std::endl;
+
+            return setRequestError(413);
+        }
+        decodedBodySize += chunkHex;
+
+        std::cout << "new decodedBodySize = " << decodedBodySize << std::endl;
 
         if(position > std::numeric_limits<size_t>::max() - chunkHex) 
             return RequestState::BadRequest;
@@ -211,20 +267,25 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd) cons
     }
 }
 
-RequestState Client::checkRequestState()  {
+RequestState Client::checkRequestState(size_t maxBodySize)  {
 
     if (!_headersParsed) {
-
         RequestState headerState = parseHeaders();
         if (headerState != RequestState::Complete)
             return headerState;
     }
 
-    if (_bodyType == BodyType::ContentLength) 
+    if (_bodyType == BodyType::ContentLength) {
+        if (_contentLength > maxBodySize)
+            return setRequestError(413);
         return checkContentLengthBody();
+    }
 
-    if (_bodyType == BodyType::Chunked) 
-        return checkChunkedRequestBody();
+    if (_bodyType == BodyType::Chunked) {
+        // std::cout << "Err from checkRequestState  " << std::endl;
+
+        return checkChunkedRequestBody(maxBodySize);
+    }
     
     _bodySize = 0;
     _requestEnd = _bodyPos;
