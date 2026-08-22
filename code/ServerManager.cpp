@@ -7,6 +7,8 @@
 
 // ServerManager::ServerManager() {};
 
+
+
 const std::map<int, ServerConfig>& ServerManager::getServerManager() const {
     return _serversMap;
 };
@@ -17,6 +19,13 @@ void ServerManager::acceptNewClient(int serverFd) {
 
     if (newClientFd < 0)
         return ;
+
+    // for Linux: without line -22 -23 -24 -25 -26  this is only for macOS protechting the while socket.
+    // int opt = 1;
+    // if (setsockopt(newClientFd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) < 0) {
+    //     close(newClientFd);
+    //     return ;
+    // }
 
     setNonBlocking(newClientFd);
 
@@ -41,35 +50,28 @@ void ServerManager::removeClient(size_t index) {
     _pollfds.erase(_pollfds.begin() + index);
 }
 
-bool ServerManager::sendWholeResponse(int clientFd, const std::string& response) const {
-    size_t sentTotal = 0;
+// bool ServerManager::sendWholeResponse(int clientFd, const std::string& response) const {
+//     size_t sentTotal = 0;
 
-    while (sentTotal < response.size()) {
-        ssize_t sent = send(clientFd, response.data() + sentTotal, response.size() - sentTotal, 0);
+//     while (sentTotal < response.size()) {
+//         ssize_t sent = send(clientFd, response.data() + sentTotal, response.size() - sentTotal, MSG_NOSIGNAL);
 
-        // send(clientFd, response.c_str(), response.size(), 0);
-        // // client.clearRequestBuffer(); // ?
-        // close(clientFd);
-        // _clients.erase(clientFd);
-        // _pollfds.erase(_pollfds.begin() + index);
-        // return ;
+//         if (sent > 0) {
+//             sentTotal += static_cast<size_t>(sent);
+//             continue;
+//         }
 
-        if (sent > 0) {
-            sentTotal += static_cast<size_t>(sent);
-            continue;
-        }
+//         if (sent < 0 && errno == EINTR)
+//             continue;
 
-        if (sent < 0 && errno == EINTR)
-            continue;
+//         if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+//             return false;
 
-        if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-            return false;
+//         return false;
+//     }
 
-        return false;
-    }
-
-    return true;
-}
+//     return true;
+// }
 
 bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
     std::string connection;
@@ -133,99 +135,30 @@ bool ServerManager::readClientData(size_t index) {
     int bytes = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
 
     if (bytes == 0) {
-
-        // std::cout << "client disconnected fd: " << std::endl;
-        // close(clientFd);
-        // _clients.erase(clientFd);
-        // _pollfds.erase(_pollfds.begin() + index);
         removeClient(index);
         return true;
 
     } else if (bytes < 0) {
-
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return false;
         }
-        // std::cerr << "recv() failed" << std::endl;
-        // close(clientFd);
-        // _clients.erase(clientFd);
-        // _pollfds.erase(_pollfds.begin() + index);
         removeClient(index);
         return true;
     }
 
     Client& client = _clients.at(clientFd);
-    const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
     client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
-    while (true) {
-        RequestState state = client.checkRequestState();
-        if (state == RequestState::Incomplete)
-            return false;
-        if (state == RequestState::BadRequest) {
-    
-            int errorCode = client.getRequestErrorCode();
-            if (errorCode == 0)
-                errorCode = 400;
-    
-            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
-            
-            std::string response = errorResponse.toString(errorResponse);
-            sendWholeResponse(clientFd, response);
-            
-            removeClient(index);
-            return true;
-        }
-
-        try
-        {
-            std::string response;
-            client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
-
-            const HTTPRequest& request = client.getRequest();
-            bool keepAlive = shouldKeepAlive(request);
-
-            HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
-
-            response = ClassResponse.toString(ClassResponse);
-
-            // send(clientFd, response.c_str(), response.size(), 0);
-            if (!sendWholeResponse(clientFd, response)) {
-                removeClient(index);
-                return true;
-            }
-
-            if(!keepAlive) {
-                removeClient(index);
-                return true;
-            }
-
-            client.consumeRequest();
-            if(client.getRequestBuffer().empty())
-                return false;
-
-        } catch (const HTTPParseException& e) {
-
-            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
-
-            std::string response = errorResponse.toString(errorResponse);
-            sendWholeResponse(clientFd, response);
-            removeClient(index);
-            return true;
-
-        } catch (const std::exception& e) {
-            // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
-            (void)e;
-            HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
-
-            std::string response = errorResponse.toString(errorResponse);
-            sendWholeResponse(clientFd, response);
-            removeClient(index);
-            return true;
-        }
-    }
-
+    return processRequestBuffer(index);
 };
+
+void ServerManager::queueResponse(size_t index, Client& client, HTTPResponse& response) {
+    
+    client.setResponseBuffer(response.toString(response));
+    _pollfds[index].events &= ~POLLIN;
+    _pollfds[index].events |= POLLOUT;
+};
+
 
 bool ServerManager::isServerSocket(int fd) const
 {
@@ -259,6 +192,15 @@ void ServerManager::run() {
         size_t i = 0;
         while (i < _pollfds.size()) {
 
+            if (_pollfds[i].revents & POLLNVAL) {
+                if (!isServerSocket(_pollfds[i].fd)) {
+                    removeClient(i);
+                    continue;
+                }
+                // std::cerr << "Listening socket became invalid" << std::endl;;
+                // i++;
+                // continue;
+            }
             if (_pollfds[i].revents & POLLIN) {
 
                 if (isServerSocket(_pollfds[i].fd)) {
@@ -268,6 +210,20 @@ void ServerManager::run() {
                     if (removed)
                         continue;
                 }
+            }
+            if (_pollfds[i].revents & POLLOUT) {
+                bool removed = writeClientData(i);
+                if(removed)
+                    continue;
+            }
+            if (_pollfds[i].revents & (POLLERR | POLLHUP)) {
+                if (!isServerSocket(_pollfds[i].fd)) {
+                    removeClient(i);
+                    continue;
+                }
+                // std::cerr << "Listening socket error" << std::endl;;
+                // i++;
+                // continue;
             }
             i++;
         }
@@ -345,3 +301,149 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex) const
 
     return it->second;
 };
+
+bool ServerManager::writeClientData(size_t index) {
+    
+    int clientFd = _pollfds[index].fd;
+
+    Client& client = _clients.at(clientFd);
+
+    const std::string& response = client.getResponseBuffer();
+    size_t sentAlreay = client.getResponseSent();
+
+    // std::cout << ">>> writeClientData CALLED" << std::endl;
+
+    // Linux:  MSG_NOSIGNAL instead of 0 at the end of send. Linux protects each send() call.
+    ssize_t sent = send(clientFd, response.data() + sentAlreay, response.size() - sentAlreay, MSG_NOSIGNAL);
+
+    if (sent < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return false;
+        removeClient(index);
+        return true;
+    }
+
+    if (sent > 0) 
+        client.setResponseSent(sentAlreay + static_cast<size_t>(sent));
+
+    if (client.getResponseSent() == response.size()) {
+        _pollfds[index].events &= ~POLLOUT;
+
+        if (client.getCloseAfterReponse() == false) {
+            if(!shouldKeepAlive(client.getRequest())) {
+                removeClient(index);
+                return true;
+            }
+        } else {
+            removeClient(index);
+            return true;
+        }
+
+        client.consumeRequest();
+        client.clearResponse();
+
+        if (client.getRequestBuffer().empty()) {
+            _pollfds[index].events |= POLLIN;
+        } else {
+            return processRequestBuffer(index);
+        }
+    }
+
+    return false;
+};
+
+//      request 1 response finishes
+//              ↓
+//      consume request 1
+//              ↓
+//      is there already data left?
+//              |
+//         +----+----+
+//         |         |
+//        no        yes
+//         |         |
+//      POLLIN    processRequestBuffer()
+
+bool ServerManager::processRequestBuffer(size_t index) {
+
+    int clientFd = _pollfds[index].fd;
+    Client& client = _clients.at(clientFd);
+
+    const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
+    size_t maxBodySize = serverConfig.getClientMaxBodySize().back();
+    RequestState state = client.checkRequestState(maxBodySize);
+
+    if (state == RequestState::Incomplete) {
+        _pollfds[index].events |= POLLIN;
+        return false;
+    }
+    if (state == RequestState::BadRequest) {
+
+        int errorCode = client.getRequestErrorCode();
+        if (errorCode == 0)
+            errorCode = 400;
+
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
+        client.setCloseAfterResponse(true);
+        queueResponse(index, client, errorResponse);
+        return false;
+    }
+
+    try {
+
+		// client requestBuffer should have funtion that cleans the body of the request and removed all the chunked
+		// protocol "/r/n"
+		if (client.getBodyType() == BodyType::Chunked)
+		{
+			if (!client.decodeChunkedBody())
+			{
+				// internal error: we need throw "Internal error" in case when we sure we chunked
+				// request but while decoding catch undecodable part
+			}
+		}
+
+		std::cout << "Request buffer:\n"
+		          << client.getRequestBuffer()
+		          << std::endl;
+
+		std::cout << "Body position: "
+		          << client.getBodyPos()
+		          << std::endl;
+
+		std::cout << "Body size: "
+		          << client.getBodySize()
+		          << std::endl;
+
+		std::cout << "Request end: "
+		          << client.getRequestEnd()
+		          << std::endl;
+
+		client.consumeRequest();
+
+		std::cerr << "Request buffer AFTER consume:\n"
+		          << client.getRequestBuffer()
+		          << std::endl;
+
+
+        client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
+        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+        queueResponse(index, client, ClassResponse);
+        return false;
+
+    } catch (const HTTPParseException& e) {
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
+        client.setCloseAfterResponse(true);
+        queueResponse(index, client, errorResponse);
+        return false;
+
+    } catch (const std::exception& e) {
+        // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
+        (void)e;
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
+        client.setCloseAfterResponse(true);
+        queueResponse(index, client, errorResponse);
+        return false;
+    }
+};
+
+// printf 'GET / HTTP/1.1\r\nHost: localhost:8080\r\nConnection: keep-alive\r\n\r\n' | nc 127.0.0.1 8080
