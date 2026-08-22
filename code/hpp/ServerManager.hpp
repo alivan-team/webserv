@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <cerrno>
 
 class ServerManager {
 
@@ -25,12 +26,15 @@ class ServerManager {
         bool isServerSocket(int fd) const;
         void acceptNewClient(int serverFd);
         bool readClientData(size_t index);
+        bool writeClientData(size_t index);
 
         bool shouldKeepAlive(const HTTPRequest& request) const;
         void removeClient(size_t index);
-        bool sendWholeResponse(int clinetFd, const std::string& respone) const;
+        // bool sendWholeResponse(int clinetFd, const std::string& respone) const;
+        bool processRequestBuffer(size_t index);
 
     public: 
+        void queueResponse(size_t index, Client& client, HTTPResponse& response);
         const std::map<int, ServerConfig>& getServerManager() const;
         const ServerConfig& getClientServerManager(int serverIndex) const;
         void initialize(const std::vector<ServerConfig>& servers);
