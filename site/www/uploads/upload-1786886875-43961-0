@@ -1,0 +1,201 @@
+------WebKitFormBoundaryvBSJVVUu2kVQf3TL
+Content-Disposition: form-data; name="file"; filename="push_swap2.c"
+Content-Type: application/octet-stream
+
+#include "../include/push_swap.h"
+#include <stdlib.h>
+#include <unistd.h>
+
+// Function to get the number of bits needed to represent the largest number
+static int get_max_bits(t_stack *stack)
+{
+	int max = 0;
+	int bits = 0;
+	t_node *current = stack->head;
+
+	while (current)
+	{
+		if (current->value > max)
+			max = current->value;
+		current = current->next;
+	}
+	while (max > 0)
+	{
+		max >>= 1;
+		bits++;
+	}
+	return (bits);
+}
+
+// Push the top element of stack a to stack b
+void pb(t_stack *a, t_stack *b)
+{
+	if (a->head)
+	{
+		t_node *node = pop(a);
+		push(b, node);
+		write(1, "pb\n", 3);
+	}
+}
+
+// Push the top element of stack b to stack a
+void pa(t_stack *a, t_stack *b)
+{
+	if (b->head)
+	{
+		t_node *node = pop(b);
+		push(a, node);
+		write(1, "pa\n", 3);
+	}
+}
+
+// Rotate stack a upwards
+void ra(t_stack *a)
+{
+	if (a->head && a->head != a->tail)
+	{
+		t_node *node = pop(a);
+		if (node)
+		{
+			node->next = NULL;
+			node->prev = a->tail;
+			a->tail->next = node;
+			a->tail = node;
+		}
+		write(1, "ra\n", 3);
+	}
+}
+
+// Radix sort implementation
+void radix_sort(t_stack *a, t_stack *b)
+{
+	int size = a->size;
+	int max_bits = get_max_bits(a);
+
+	for (int bit = 0; bit < max_bits; bit++)
+	{
+		for (int i = 0; i < size; i++)
+		{
+			int num = a->head->value;
+			if (((num >> bit) & 1) == 0)
+				pb(a, b); // Push to stack B
+			else
+				ra(a);	// Rotate stack A
+		}
+		while (b->head)
+			pa(a, b);
+	}
+}
+
+// Initialize an empty stack
+t_stack *init_stack(void)
+{
+	t_stack *stack = malloc(sizeof(t_stack));
+	if (!stack)
+		return (NULL);
+	stack->head = NULL;
+	stack->tail = NULL;
+	stack->size = 0;
+	return (stack);
+}
+
+// Create a new node
+t_node *create_node(int value)
+{
+	t_node *node = malloc(sizeof(t_node));
+	if (!node)
+		return (NULL);
+	node->value = value;
+	node->next = NULL;
+	node->prev = NULL;
+	return (node);
+}
+
+// Push a node onto a stack
+void push(t_stack *stack, t_node *node)
+{
+	if (!stack || !node)
+		return;
+	if (stack->head == NULL)
+	{
+		stack->head = node;
+		stack->tail = node;
+	}
+	else
+	{
+		node->next = stack->head;
+		stack->head->prev = node;
+		stack->head = node;
+	}
+	stack->size++;
+}
+
+// Pop a node from a stack
+t_node *pop(t_stack *stack)
+{
+	if (!stack || !stack->head)
+		return (NULL);
+	t_node *node = stack->head;
+	stack->head = node->next;
+	if (stack->head)
+		stack->head->prev = NULL;
+	else
+		stack->tail = NULL;
+	stack->size--;
+	node->next = NULL;
+	return (node);
+}
+
+// Free the stack and its nodes
+void free_stack(t_stack *stack)
+{
+	if (!stack)
+		return;
+	t_node *current = stack->head;
+	while (current)
+	{
+		t_node *next = current->next;
+		free(current);
+		current = next;
+	}
+	free(stack);
+}
+
+// Print the stack (for debugging)
+void print_stack(t_stack *stack)
+{
+	if (!stack)
+		return;
+	t_node *current = stack->head;
+	while (current)
+	{
+		char buffer[12];
+		int len = snprintf(buffer, 12, "%d\n", current->value);
+		write(1, buffer, len);
+		current = current->next;
+	}
+}
+
+// Example usage
+int main(int argc, char **argv)
+{
+	t_stack *a;
+	t_stack *b;
+
+	if (argc < 2)
+	{
+		write(2, "Error: Provide a list of numbers\n", 32);
+		return (1);
+	}
+	a = init_stack();
+	b = init_stack();
+	for (int i = 1; i < argc; i++)
+		push(a, create_node(atoi(argv[i])));
+	radix_sort(a, b);
+	print_stack(a);
+	free_stack(a);
+	free_stack(b);
+	return (0);
+}
+
+------WebKitFormBoundaryvBSJVVUu2kVQf3TL--

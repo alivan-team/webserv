@@ -6,6 +6,9 @@
 #include "LocationConfig.hpp"
 #include "ServerConfig.hpp"
 #include "HelperFunctions.hpp"
+#include "HTTPParseException.hpp"
+#include "MultipartParser.hpp"
+#include "MultipartPart.hpp"
 
 #include <iostream>
 #include <stdexcept>

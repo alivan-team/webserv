@@ -167,7 +167,7 @@ HTTPRequest HTTPRequestParser::parse(const std::string &buffer, size_t requestSi
 	size_t bodyOffset = headersEnd + 4;
 	if (bodyOffset > requestSize)
 		throw HTTPParseException(400, "Invalid body offset");
-	httpparseresult.setBodyLocation(buffer, bodyOffset, buffer.size() - bodyOffset);
+	httpparseresult.setBodyLocation(buffer, bodyOffset, requestSize - bodyOffset);
 
 	return httpparseresult;
 };

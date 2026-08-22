@@ -154,68 +154,176 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest& request, const Serv
 };
 
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST 
-HTTPResponse HTTPResponseBuild::handlePost(const HTTPRequest& request, const ServerConfig& servConf) {
+HTTPResponse HTTPResponseBuild::handlePost(
+    const HTTPRequest& request,
+    const ServerConfig& servConf)
+{
+    const LocationConfig* location =
+        findBestLocation(request.getPath(), servConf);
 
-	// std::cout << "\n ------------------------>\n"  << "Received reqiest buffer: " << request.getRequestBuffer() << "\n <------------------------" << std::endl;
-	// std::cout << " >>" << request.getRequestBuffer().data() + request.getBodyOffset()  << "<<\n;" ;
-	const LocationConfig* location = findBestLocation(request.getPath(), servConf);
-	if (location == NULL)
-		return makeErrorResponse(404, request, servConf);
-	if (!location->isPostAllowed())
-		return makeErrorResponse(405, request, servConf);
+    if (location == NULL)
+        return makeErrorResponse(404, request, servConf);
 
-	const std::string& uploadStore = location->getUploadStore();
-	if (uploadStore.empty() || !isDirectory(uploadStore) || access(uploadStore.c_str(), W_OK | X_OK) != 0)
-		return makeErrorResponse(500, request, servConf);
+    if (!location->isPostAllowed())
+        return makeErrorResponse(405, request, servConf);
 
-	const std::string& requestBuffer = request.getRequestBuffer();
-	const size_t bodyOffset = request.getBodyOffset();
-	const size_t bodySize = request.getBodySize();
-	if (bodyOffset > requestBuffer.size() || bodySize > requestBuffer.size() - bodyOffset)
-		return makeErrorResponse(400, request, servConf);
+    const std::string& uploadStore = location->getUploadStore();
 
-	std::string outputPath;
-	int outputFd = -1;
-	for (size_t attempt = 0; attempt < 100; ++attempt) {
-		std::ostringstream name;
-		name << "upload-" << std::time(NULL) << "-" << getpid() << "-" << attempt;
-		outputPath = joinPath(uploadStore, name.str());
-		outputFd = open(outputPath.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
-		if (outputFd >= 0)
-			break;
-		if (errno != EEXIST)
-			return makeErrorResponse(500, request, servConf);
-	}
-	if (outputFd < 0)
-		return makeErrorResponse(500, request, servConf);
+    if (uploadStore.empty()
+        || !isDirectory(uploadStore)
+        || access(uploadStore.c_str(), W_OK | X_OK) != 0)
+    {
+        return makeErrorResponse(500, request, servConf);
+    }
 
-	size_t written = 0;
-	while (written < bodySize) {
-		ssize_t result = write(outputFd, requestBuffer.data() + bodyOffset + written, bodySize - written);
-		if (result < 0 && errno == EINTR)
-			continue;
-		if (result <= 0) {
-			close(outputFd);
-			unlink(outputPath.c_str());
-			return makeErrorResponse(500, request, servConf);
-		}
-		written += static_cast<size_t>(result);
-	}
-	close(outputFd);
+    const std::string& requestBuffer =
+        request.getRequestBuffer();
 
-	HTTPResponse res;
-    std::string body = readReadFile("./site/www/post-result.html");
-	
+    const size_t bodyOffset =
+        request.getBodyOffset();
+
+    const size_t bodySize =
+        request.getBodySize();
+
+    if (bodyOffset > requestBuffer.size()
+        || bodySize > requestBuffer.size() - bodyOffset)
+    {
+        return makeErrorResponse(400, request, servConf);
+    }
+
+    /*
+     * Determine which part of the current request body
+     * must be saved.
+     */
+    size_t dataOffset = bodyOffset;
+    size_t dataSize = bodySize;
+
+    if (request.getBodyType() == BODY_MULTIPART)
+    {
+        MultipartParser parser(
+            requestBuffer,
+            bodyOffset,
+            bodySize,
+            request.getBoundary()
+        );
+
+        const std::vector<MultipartPart> parts =
+            parser.parse();
+
+        bool foundFile = false;
+
+        for (std::vector<MultipartPart>::const_iterator it =
+                 parts.begin();
+             it != parts.end();
+             ++it)
+        {
+            if (!it->hasFilename())
+                continue;
+
+            dataOffset = it->getDataOffset();
+            dataSize = it->getDataSize();
+            foundFile = true;
+            break;
+        }
+
+        if (!foundFile)
+            return makeErrorResponse(400, request, servConf);
+
+        if (dataOffset > requestBuffer.size()
+            || dataSize > requestBuffer.size() - dataOffset)
+        {
+            return makeErrorResponse(400, request, servConf);
+        }
+    }
+
+    std::string outputPath;
+    int outputFd = -1;
+
+    for (size_t attempt = 0; attempt < 100; ++attempt)
+    {
+        std::ostringstream name;
+
+        name << "upload-"
+             << std::time(NULL)
+             << "-"
+             << getpid()
+             << "-"
+             << attempt;
+
+        outputPath = joinPath(uploadStore, name.str());
+
+        outputFd = open(
+            outputPath.c_str(),
+            O_WRONLY | O_CREAT | O_EXCL,
+            0644
+        );
+
+        if (outputFd >= 0)
+            break;
+
+        if (errno != EEXIST)
+            return makeErrorResponse(500, request, servConf);
+    }
+
+    if (outputFd < 0)
+        return makeErrorResponse(500, request, servConf);
+
+    size_t written = 0;
+
+    while (written < dataSize)
+    {
+        ssize_t result = write(
+            outputFd,
+            requestBuffer.data() + dataOffset + written,
+            dataSize - written
+        );
+
+        if (result < 0 && errno == EINTR)
+            continue;
+
+        if (result <= 0)
+        {
+            close(outputFd);
+            unlink(outputPath.c_str());
+
+            return makeErrorResponse(500, request, servConf);
+        }
+
+        written += static_cast<size_t>(result);
+    }
+
+    close(outputFd);
+
+    HTTPResponse res;
+
+    std::string body =
+        readReadFile("./site/www/post-result.html");
+
     res.setStatusCode(201);
-	res.setStatus(getStatusText(201));
-	res.setVersion(request.getVersion());
-    res.setHeader("Content-Type", getContentType("./site/www/post-result.html"));
-	res.setHeader("Content-Length", std::to_string(body.size()));
-	res.setHeader("Connection", decideConnection(request));
-	res.setHeader("Location", joinPath(location->getUriPath(), outputPath.substr(uploadStore.size())));
+    res.setStatus(getStatusText(201));
+    res.setVersion(request.getVersion());
+    res.setHeader(
+        "Content-Type",
+        getContentType("./site/www/post-result.html")
+    );
+    res.setHeader(
+        "Content-Length",
+        std::to_string(body.size())
+    );
+    res.setHeader(
+        "Connection",
+        decideConnection(request)
+    );
+    res.setHeader(
+        "Location",
+        joinPath(
+            location->getUriPath(),
+            outputPath.substr(uploadStore.size())
+        )
+    );
     res.setBody(body);
 
-	return res;
+    return res;
 }
 
 // DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
