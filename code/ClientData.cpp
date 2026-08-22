@@ -72,6 +72,7 @@ size_t Client::getResponseSent() const { return _responseSent; };
 const std::string& Client::getResponseBuffer() const { return _responseBuffer; };
 size_t Client::getBodyPos() const { return _bodyPos; };
 size_t Client::getBodySize() const { return _bodySize; };
+BodyType Client::getBodyType() const { return _bodyType; }
 int Client::getClientFd() const { return _client_fd; };
 int Client::getServerFd() const { return _server_fd; };
 const std::string& Client::getRequestBuffer() const { return _requestBuffer; };
@@ -83,3 +84,66 @@ void Client::clearResponse() {
     _responseBuffer.clear();
     _responseSent = 0;
 };
+
+bool Client::decodeChunkedBody()
+{
+    const size_t oldRequestEnd = _requestEnd;
+    size_t readPos = _bodyPos;
+    size_t writePos = _bodyPos;
+
+    while (true)
+    {
+        size_t sizeLineEnd = _requestBuffer.find("\r\n", readPos);
+
+        if (sizeLineEnd == std::string::npos
+            || sizeLineEnd >= oldRequestEnd)
+            return false;
+
+        std::string sizeLine = _requestBuffer.substr(
+            readPos,
+            sizeLineEnd - readPos
+        );
+
+        size_t extensionPosition = sizeLine.find(";");
+
+        if (extensionPosition != std::string::npos)
+            sizeLine = sizeLine.substr(0, extensionPosition);
+
+        sizeLine = trim(sizeLine);
+
+        size_t chunkSize = 0;
+
+        if (!parseHexSize(sizeLine, chunkSize))
+            return false;
+
+        readPos = sizeLineEnd + 2;
+
+        if (chunkSize == 0)
+            break;
+
+        if (readPos > oldRequestEnd
+            || chunkSize > oldRequestEnd - readPos)
+            return false;
+
+        std::memmove(
+            &_requestBuffer[writePos],
+            &_requestBuffer[readPos],
+            chunkSize
+        );
+
+        writePos += chunkSize;
+        readPos += chunkSize + 2;
+    }
+
+    const size_t newRequestEnd = writePos;
+
+    _requestBuffer.erase(
+        newRequestEnd,
+        oldRequestEnd - newRequestEnd
+    );
+
+    _bodySize = newRequestEnd - _bodyPos;
+    _requestEnd = newRequestEnd;
+
+    return true;
+}

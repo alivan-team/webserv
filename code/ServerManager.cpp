@@ -7,6 +7,8 @@
 
 // ServerManager::ServerManager() {};
 
+
+
 const std::map<int, ServerConfig>& ServerManager::getServerManager() const {
     return _serversMap;
 };
@@ -389,8 +391,39 @@ bool ServerManager::processRequestBuffer(size_t index) {
 
     try {
 
-        // client requestBuffer should have funtion that cleans the body of the request and removed all the chunked
-        // protocol "/r/n"
+		// client requestBuffer should have funtion that cleans the body of the request and removed all the chunked
+		// protocol "/r/n"
+		if (client.getBodyType() == BodyType::Chunked)
+		{
+			if (!client.decodeChunkedBody())
+			{
+				// internal error: we need throw "Internal error" in case when we sure we chunked
+				// request but while decoding catch undecodable part
+			}
+		}
+
+		std::cout << "Request buffer:\n"
+		          << client.getRequestBuffer()
+		          << std::endl;
+
+		std::cout << "Body position: "
+		          << client.getBodyPos()
+		          << std::endl;
+
+		std::cout << "Body size: "
+		          << client.getBodySize()
+		          << std::endl;
+
+		std::cout << "Request end: "
+		          << client.getRequestEnd()
+		          << std::endl;
+
+		client.consumeRequest();
+
+		std::cerr << "Request buffer AFTER consume:\n"
+		          << client.getRequestBuffer()
+		          << std::endl;
+
 
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
         HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));

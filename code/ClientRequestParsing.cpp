@@ -118,8 +118,8 @@ RequestState Client::checkChunkedRequestBody(size_t maxBodySize) {
         return chunkedState;
 
     _requestEnd = checkedRequestEnd;
-    // _bodySize = decodedBodySize; -> size only info 
-    _bodySize = _requestEnd - _bodyPos; // size info + protocol;
+    _bodySize = decodedBodySize; //-> size only info 
+    // _bodySize = _requestEnd - _bodyPos; // size info + protocol;
 
     return RequestState::Complete;
 };

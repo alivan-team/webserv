@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstddef>
 #include <cctype>
+#include <cstring>
 #include <sstream>
 #include <iostream>
 #include <limits>
@@ -74,6 +75,7 @@ class Client {
         const std::string& getResponseBuffer() const;
         size_t getBodyPos() const;
         size_t getBodySize() const;
+		BodyType getBodyType() const;
         int getClientFd() const;
         int getServerFd() const;
         const std::string& getRequestBuffer() const;
@@ -81,6 +83,7 @@ class Client {
         int     getRequestErrorCode() const;
         size_t getRequestEnd() const;
         void clearResponse();
+		bool decodeChunkedBody();
 };
 
 #endif
