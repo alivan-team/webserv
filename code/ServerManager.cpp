@@ -418,11 +418,14 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		          << client.getRequestEnd()
 		          << std::endl;
 
-		client.consumeRequest();
+		// client.consumeRequest();
 
-		std::cerr << "Request buffer AFTER consume:\n"
-		          << client.getRequestBuffer()
-		          << std::endl;
+		// std::cerr << "Request buffer AFTER consume:\n"
+		//           << client.getRequestBuffer()
+		//           << std::endl;
+//aerokhina@MacBook-Air-A ~ % printf 'POST / HTTP/1.1\r\nHost: localhost:8080\r\nTransfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\nF\r\n123456789012345\r\n10\r\n0123456789ABCDEF\r\n1\r\nZ\r\n0\r\n\r\nGET /next HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n' | nc 127.0.0.1 8080
+//aerokhina@MacBook-Air-A ~ % printf 'POST / HTTP/1.1\r\nHost: localhost:8080\r\nTransfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\nF\r\n123456789012345\r\n10\r\n0123456789ABCDEF\r\n2\r\nZ\n\r\n0\r\n\r\nGET /next HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n' | nc 127.0.0.1 8080
+
 
 
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
