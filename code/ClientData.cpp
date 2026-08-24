@@ -21,6 +21,7 @@ void Client::clearRequestBuffer() {
     _requestBuffer.clear();
 
     _headersParsed = false;
+    _host.clear();
     _bodyType = BodyType::None;
     _contentLength = 0;
     _bodyPos = 0;

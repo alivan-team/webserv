@@ -22,6 +22,15 @@ RequestState Client::parseHeaderClient() {
     // if the first line is empty ??? can it be ?? 
     if (line.empty())
         return RequestState::BadRequest;
+    
+    std::istringstream requestLine(line);
+
+    std::string method;
+    std::string uri;
+    std::string version;
+
+    if (!(requestLine >> method >> uri >> version))
+        return setRequestError(400);
 
     bool hasContentLength = false;
     bool hasTransferEncoding = false;
@@ -87,6 +96,9 @@ RequestState Client::parseHeaderClient() {
             hasHost = true;
         }
     }
+
+    if (version == "HTTP/1.1" && !hasHost)
+        return setRequestError(400);
 
     if (hasContentLength && hasTransferEncoding) 
         return setRequestError(400);

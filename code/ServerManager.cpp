@@ -301,15 +301,24 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
     
     const std::vector<ServerConfig>& servers = it->second;
 
+    std::cout << "HOST TO FIND: [" << host << "]" << std::endl;
+
     for (size_t i = 0; i < servers.size(); i++) {
 
         const std::vector<std::string>& serverNames = servers[i].getServerName();
 
         for (size_t j = 0; j < serverNames.size(); j++) {
-            if (serverNames[j] == host) 
+
+            std::cout << "checking server_name: ["
+                  << serverNames[j] << "]" << std::endl;
+            if (serverNames[j] == host) {
+                std::cout << "SERVER MATCH!" << std::endl;
                 return servers[i];
+            }
         }
     } 
+
+    std::cout << "NO MATCH -> DEFAULT SERVER" << std::endl;
 
     return servers[0];
 };
@@ -429,6 +438,30 @@ bool ServerManager::processRequestBuffer(size_t index) {
 			if (!client.decodeChunkedBody())
                 throw HTTPParseException(500, "Internal Server Error");
 		}
+
+        std::cout << "\n--- AFTER CHUNK DECODING ---\n";
+
+        std::cout << "bodyPos: "
+                << client.getBodyPos()
+                << std::endl;
+
+        std::cout << "bodySize: "
+                << client.getBodySize()
+                << std::endl;
+
+        std::cout << "requestEnd: "
+                << client.getRequestEnd()
+                << std::endl;
+
+        std::cout << "BODY: ["
+                << client.getRequestBuffer().substr(
+                        client.getBodyPos(),
+                        client.getBodySize()
+                    )
+                << "]"
+                << std::endl;
+
+        std::cout << "----------------------------\n";
 
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
         HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);
