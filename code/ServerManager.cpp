@@ -173,7 +173,7 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
         if (serverFd == -1)
             serverFd = createListeningSockets(servers[i]);
 
-        std::cout << "\tserversFd: " << serverFd << "\t servers[i].getPort():  " << servers[i].getPort() <<"\t servers[i].getServerName():  " << servers[i].getServerName()[1] << std::endl;
+        std::cout << "\tserversFd: " << serverFd << "\t servers[i].getPort():  " << servers[i].getPort() <<"\t servers[i].getServerName():  " << servers[i].getServerName()[0] << std::endl;
         
         _serversMap[serverFd].push_back(servers[i]);
     }

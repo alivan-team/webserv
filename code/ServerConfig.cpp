@@ -54,6 +54,8 @@ void ServerConfig::setServerName(const std::vector<std::string>& server_name) {
             throw std::runtime_error("Invalid server name");
     }
 
+	_server_name.clear();
+
     _server_name.insert(_server_name.end(), server_name.begin(), server_name.end());
 };
 
