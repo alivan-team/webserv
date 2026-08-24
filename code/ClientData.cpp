@@ -95,8 +95,7 @@ bool Client::decodeChunkedBody()
     {
         size_t sizeLineEnd = _requestBuffer.find("\r\n", readPos);
 
-        if (sizeLineEnd == std::string::npos
-            || sizeLineEnd >= oldRequestEnd)
+        if (sizeLineEnd == std::string::npos || sizeLineEnd >= oldRequestEnd)
             return false;
 
         std::string sizeLine = _requestBuffer.substr(
@@ -121,15 +120,10 @@ bool Client::decodeChunkedBody()
         if (chunkSize == 0)
             break;
 
-        if (readPos > oldRequestEnd
-            || chunkSize > oldRequestEnd - readPos)
+        if (readPos > oldRequestEnd || chunkSize > oldRequestEnd - readPos)
             return false;
 
-        std::memmove(
-            &_requestBuffer[writePos],
-            &_requestBuffer[readPos],
-            chunkSize
-        );
+        std::memmove(&_requestBuffer[writePos], &_requestBuffer[readPos], chunkSize);
 
         writePos += chunkSize;
         readPos += chunkSize + 2;
@@ -137,10 +131,7 @@ bool Client::decodeChunkedBody()
 
     const size_t newRequestEnd = writePos;
 
-    _requestBuffer.erase(
-        newRequestEnd,
-        oldRequestEnd - newRequestEnd
-    );
+    _requestBuffer.erase(newRequestEnd, oldRequestEnd - newRequestEnd);
 
     _bodySize = newRequestEnd - _bodyPos;
     _requestEnd = newRequestEnd;

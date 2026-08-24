@@ -396,10 +396,7 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		if (client.getBodyType() == BodyType::Chunked)
 		{
 			if (!client.decodeChunkedBody())
-			{
-				// internal error: we need throw "Internal error" in case when we sure we chunked
-				// request but while decoding catch undecodable part
-			}
+                throw HTTPParseException(500, "Internal Server Error");
 		}
 
 		std::cout << "Request buffer:\n"
