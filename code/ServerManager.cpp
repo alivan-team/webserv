@@ -9,7 +9,7 @@
 
 
 
-const std::map<int, ServerConfig>& ServerManager::getServerManager() const {
+const std::map<int, std::vector<ServerConfig>>& ServerManager::getServerManager() const {
     return _serversMap;
 };
 
@@ -49,29 +49,6 @@ void ServerManager::removeClient(size_t index) {
     _clients.erase(clientFd);
     _pollfds.erase(_pollfds.begin() + index);
 }
-
-// bool ServerManager::sendWholeResponse(int clientFd, const std::string& response) const {
-//     size_t sentTotal = 0;
-
-//     while (sentTotal < response.size()) {
-//         ssize_t sent = send(clientFd, response.data() + sentTotal, response.size() - sentTotal, MSG_NOSIGNAL);
-
-//         if (sent > 0) {
-//             sentTotal += static_cast<size_t>(sent);
-//             continue;
-//         }
-
-//         if (sent < 0 && errno == EINTR)
-//             continue;
-
-//         if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-//             return false;
-
-//         return false;
-//     }
-
-//     return true;
-// }
 
 bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
     std::string connection;
@@ -170,14 +147,35 @@ bool ServerManager::isServerSocket(int fd) const
     return false;
 }
 
+int ServerManager::findServerFdByPort(int port) const {
+
+    for(std::map<int, std::vector<ServerConfig>>::const_iterator it = _serversMap.begin();
+        it != _serversMap.end(); ++it)
+    {
+            if (!it->second.empty() && it->second[0].getPort() == port) {
+                return it->first;
+            }
+    }
+    return -1;
+};
+
+
 void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 
     if(servers.empty())
         throw std::runtime_error("No servers configured");
     
     for (size_t i = 0; i < servers.size(); i++) {
-        int serverFd = createListeningSockets(servers[i]);
-        _serversMap[serverFd] = servers[i];
+        
+        int port = servers[i].getPort();
+        int serverFd = findServerFdByPort(port);
+
+        if (serverFd == -1)
+            serverFd = createListeningSockets(servers[i]);
+
+        std::cout << "\tserversFd: " << serverFd << "\t servers[i].getPort():  " << servers[i].getPort() <<"\t servers[i].getServerName():  " << servers[i].getServerName()[1] << std::endl;
+        
+        _serversMap[serverFd].push_back(servers[i]);
     }
 };
 
@@ -292,14 +290,28 @@ int ServerManager::createListeningSockets(const ServerConfig& server) {
     return server_fd;
 };
 
-const ServerConfig& ServerManager::getClientServerManager(int serverIndex) const {
+const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const std::string& host) const {
 
-    std::map<int, ServerConfig>::const_iterator it = _serversMap.find(serverIndex);
+    std::map<int, std::vector<ServerConfig>>::const_iterator it = _serversMap.find(serverIndex);
 
     if (it == _serversMap.end())
         throw std::runtime_error("Server configuration not found.");
+    if (it->second.empty())
+        throw std::runtime_error("Server configuration list is empty.");
+    
+    const std::vector<ServerConfig>& servers = it->second;
 
-    return it->second;
+    for (size_t i = 0; i < servers.size(); i++) {
+
+        const std::vector<std::string>& serverNames = servers[i].getServerName();
+
+        for (size_t j = 0; j < serverNames.size(); j++) {
+            if (serverNames[j] == host) 
+                return servers[i];
+        }
+    } 
+
+    return servers[0];
 };
 
 bool ServerManager::writeClientData(size_t index) {
@@ -364,14 +376,36 @@ bool ServerManager::writeClientData(size_t index) {
 //         |         |
 //      POLLIN    processRequestBuffer()
 
+// sdgavedsghfndfhghbaestrgfnsretdhgs
+
+RequestState ServerManager::getRequestState(Client& client, const ServerConfig*& serverConfig) {
+
+    // HTTPRequest reuqest = client.getRequest();
+    serverConfig = &getClientServerManager(client.getServerFd(), "");
+
+    if (!client.getHeaderIsParsed()) {
+        RequestState headerState = client.parseHeaderClient();
+        if (headerState != RequestState::Complete) {
+            return headerState;
+        }
+    }
+
+    serverConfig = &getClientServerManager(client.getServerFd(), client.getHost());
+    size_t maxBodySize = serverConfig->getClientMaxBodySize().back();
+    RequestState state = client.checkRequestState(maxBodySize);
+
+    return state;
+
+};
+
+
 bool ServerManager::processRequestBuffer(size_t index) {
 
     int clientFd = _pollfds[index].fd;
     Client& client = _clients.at(clientFd);
+    const ServerConfig* serverConfig = NULL;
 
-    const ServerConfig& serverConfig = getClientServerManager(client.getServerFd());
-    size_t maxBodySize = serverConfig.getClientMaxBodySize().back();
-    RequestState state = client.checkRequestState(maxBodySize);
+    RequestState state = getRequestState(client, serverConfig);
 
     if (state == RequestState::Incomplete) {
         _pollfds[index].events |= POLLIN;
@@ -383,7 +417,7 @@ bool ServerManager::processRequestBuffer(size_t index) {
         if (errorCode == 0)
             errorCode = 400;
 
-        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, serverConfig);
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(errorCode, *serverConfig);
         client.setCloseAfterResponse(true);
         queueResponse(index, client, errorResponse);
         return false;
@@ -391,47 +425,18 @@ bool ServerManager::processRequestBuffer(size_t index) {
 
     try {
 
-		// client requestBuffer should have funtion that cleans the body of the request and removed all the chunked
-		// protocol "/r/n"
-		if (client.getBodyType() == BodyType::Chunked)
-		{
+		if (client.getBodyType() == BodyType::Chunked) {
 			if (!client.decodeChunkedBody())
                 throw HTTPParseException(500, "Internal Server Error");
 		}
 
-		std::cout << "Request buffer:\n"
-		          << client.getRequestBuffer()
-		          << std::endl;
-
-		std::cout << "Body position: "
-		          << client.getBodyPos()
-		          << std::endl;
-
-		std::cout << "Body size: "
-		          << client.getBodySize()
-		          << std::endl;
-
-		std::cout << "Request end: "
-		          << client.getRequestEnd()
-		          << std::endl;
-
-		// client.consumeRequest();
-
-		// std::cerr << "Request buffer AFTER consume:\n"
-		//           << client.getRequestBuffer()
-		//           << std::endl;
-//aerokhina@MacBook-Air-A ~ % printf 'POST / HTTP/1.1\r\nHost: localhost:8080\r\nTransfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\nF\r\n123456789012345\r\n10\r\n0123456789ABCDEF\r\n1\r\nZ\r\n0\r\n\r\nGET /next HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n' | nc 127.0.0.1 8080
-//aerokhina@MacBook-Air-A ~ % printf 'POST / HTTP/1.1\r\nHost: localhost:8080\r\nTransfer-Encoding: chunked\r\nConnection: keep-alive\r\n\r\nF\r\n123456789012345\r\n10\r\n0123456789ABCDEF\r\n2\r\nZ\n\r\n0\r\n\r\nGET /next HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n' | nc 127.0.0.1 8080
-
-
-
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
-        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), getClientServerManager(client.getServerFd()));
+        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);
         queueResponse(index, client, ClassResponse);
         return false;
 
     } catch (const HTTPParseException& e) {
-        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), serverConfig);
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(e.getStatusCode(), *serverConfig);
         client.setCloseAfterResponse(true);
         queueResponse(index, client, errorResponse);
         return false;
@@ -439,7 +444,7 @@ bool ServerManager::processRequestBuffer(size_t index) {
     } catch (const std::exception& e) {
         // std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
         (void)e;
-        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, serverConfig);
+        HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, *serverConfig);
         client.setCloseAfterResponse(true);
         queueResponse(index, client, errorResponse);
         return false;

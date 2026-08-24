@@ -38,6 +38,7 @@ void Client::consumeRequest() {
 
     _requestBuffer.erase(0, _requestEnd);
     _headersParsed = false;
+    _host.clear();
     _bodyType = BodyType::None;
     _contentLength = 0;
     _bodyPos = 0;
@@ -67,6 +68,11 @@ void Client::setCloseAfterResponse(bool value) {
     _closeAfterResoinse = value;
 };
 
+void Client::setHost(const std::string& host) {
+    _host = host;
+};
+
+const std::string& Client::getHost() const { return _host; };
 bool Client::getCloseAfterReponse() const { return _closeAfterResoinse; };
 size_t Client::getResponseSent() const { return _responseSent; };
 const std::string& Client::getResponseBuffer() const { return _responseBuffer; };
@@ -79,6 +85,8 @@ const std::string& Client::getRequestBuffer() const { return _requestBuffer; };
 const HTTPRequest& Client::getRequest() const { return _request; };
 size_t Client::getRequestEnd() const { return _requestEnd; };
 int Client::getRequestErrorCode() const { return _requestErrorCode; };
+bool Client::getHeaderIsParsed() const {return _headersParsed; };
+
 
 void Client::clearResponse() {
     _responseBuffer.clear();

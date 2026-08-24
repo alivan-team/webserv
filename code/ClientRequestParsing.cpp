@@ -1,6 +1,6 @@
 #include "./hpp/ClientData.hpp"
 
-RequestState Client::parseHeaders() {
+RequestState Client::parseHeaderClient() {
 
     size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 
@@ -25,6 +25,7 @@ RequestState Client::parseHeaders() {
 
     bool hasContentLength = false;
     bool hasTransferEncoding = false;
+    bool hasHost = false;
 
     size_t parseContntLength = 0;
 
@@ -69,6 +70,21 @@ RequestState Client::parseHeaders() {
                 _requestErrorCode = 501;
                 return RequestState::BadRequest;
             }
+        } else if (headerName == "host") {
+
+            if (hasHost)
+                return  setRequestError(400);
+            if(headerValue.empty())
+                return  setRequestError(400);
+            
+            size_t colonPos = headerValue.find(":");
+            if (colonPos == std::string::npos)
+                _host = headerValue;
+            else 
+                _host = headerValue.substr(0, colonPos);
+
+            std::cout <<" _host : " << getHost() << std::endl;
+            hasHost = true;
         }
     }
 
@@ -86,7 +102,6 @@ RequestState Client::parseHeaders() {
     }
 
     _headersParsed = true;
-
     return RequestState::Complete;
 };
 
@@ -243,12 +258,6 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd, size
 }
 
 RequestState Client::checkRequestState(size_t maxBodySize)  {
-
-    if (!_headersParsed) {
-        RequestState headerState = parseHeaders();
-        if (headerState != RequestState::Complete)
-            return headerState;
-    }
 
     if (_bodyType == BodyType::ContentLength) {
         if (_contentLength > maxBodySize)

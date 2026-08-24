@@ -838,24 +838,24 @@ void testClientContentLengthUnaffected()
 //         );
 //     }
 
-//     {
-//         Client client(42, 7);
+    // {
+    //     Client client(42, 7);
 
-//         const std::string request =
-//             "POST /upload HTTP/1.1\r\n"
-//             "Host: unit.test\r\n"
-//             "Transfer-Encoding: chunked\r\n"
-//             "\r\n"
-//             "0\r\n"
-//             "\r\n";
+    //     const std::string request =
+    //         "POST /upload HTTP/1.1\r\n"
+    //         "Host: unit.test\r\n"
+    //         "Transfer-Encoding: chunked\r\n"
+    //         "\r\n"
+    //         "0\r\n"
+    //         "\r\n";
 
-//         client.appendToRequestBuffer(request.c_str(), request.size());
+    //     client.appendToRequestBuffer(request.c_str(), request.size());
 
-//         check(
-//             client.checkRequestState() == RequestState::Complete,
-//             "an empty chunked body is complete"
-//         );
-//     }
+    //     check(
+    //         client.checkRequestState() == RequestState::Complete,
+    //         "an empty chunked body is complete"
+    //     );
+    // }
 
 //     {
 //         Client client(42, 7);

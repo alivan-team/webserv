@@ -42,12 +42,9 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 	std::string path;
 	// std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
 
-	try
-	{
+	try {
 		path = urlDecoder(request.getPath());
-	}
-	catch (const std::exception &e)
-	{
+	} catch (const std::exception &e) {
 		return makeErrorResponse(400, request, servConf);
 	}
 	// std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "-> path:  "<<  path << std::endl;
@@ -55,8 +52,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 	if (path.find('\0') != std::string::npos)
 		return makeErrorResponse(400, request, servConf);
 
-	if (containsParentTraversal(path))
-	{
+	if (containsParentTraversal(path)) {
 		// std::cout << "path in containsParentTraversal -> " << path << std::endl;
 		return makeErrorResponse(403, request, servConf);
 	}
@@ -64,14 +60,12 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 	const LocationConfig *location = findBestLocation(path, servConf);
 	// std::cout << "location:  " <<  location->getUriPath() << std::endl;
 
-	if (location == NULL)
-	{
+	if (location == NULL) {
 		// std::cout << "fileExists1" << std::endl;
 		return makeErrorResponse(400, request, servConf);
 	}
 
-	if (!location->isGetAllowed())
-	{
+	if (!location->isGetAllowed()) {
 		HTTPResponse erRes = makeErrorResponse(405, request, servConf);
 		erRes.setHeader("Allow: ", buildAllowHeader(*location));
 		return erRes;
@@ -105,8 +99,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 
 	// std::cout << "GET ---> fullPath :  " <<  fullPath << std::endl;
 
-	if (!fileExists(fullPath))
-	{
+	if (!fileExists(fullPath)) {
 		// std::cout << "fileExists2645" << std::endl;
 		return makeErrorResponse(404, request, servConf);
 	}
@@ -114,27 +107,21 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 	if (!pathInsideBase(baseDir, fullPath))
 		return makeErrorResponse(403, request, servConf);
 
-	if (isDirectory(fullPath))
-	{
+	if (isDirectory(fullPath)) {
 
 		std::string indexPath = findIndexFile(fullPath, *location, servConf);
 
 		// std::cout << "\t -> indexPath: " << indexPath << "\n\t -> fullPath: " << fullPath << "\n\t -> request.getPath(): " << request.getPath() << std::endl;
 
-		if (!indexPath.empty())
-		{
+		if (!indexPath.empty()) {
 			fullPath = indexPath;
-			if (!pathInsideBase(baseDir, fullPath))
-			{
+			if (!pathInsideBase(baseDir, fullPath)) {
 				return makeErrorResponse(403, request, servConf);
 			}
 		}
-		else if (location->getAutoIndex())
-		{
+		else if (location->getAutoIndex()) {
 			return buildAutoIndexPage(request, servConf, fullPath, request.getPath());
-		}
-		else
-		{
+		} else {
 			return makeErrorResponse(403, request, servConf);
 		}
 	}
@@ -148,8 +135,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 	// if (isCgiFile(fullPath, location))
 	//     return handleCgi(request, servConf, location, fullPath);
 
-	try
-	{
+	try {
 
 		// throw std::runtime_error("Testing catch");
 
@@ -164,9 +150,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 		res.setBody(body);
 
 		return res;
-	}
-	catch (const std::exception &e)
-	{
+	} catch (const std::exception &e) {
 
 		std::cerr << "Failed to serve file: " << fullPath << ": " << e.what() << std::endl;
 		return makeErrorResponse(500, request, servConf);

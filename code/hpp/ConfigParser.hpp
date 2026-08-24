@@ -36,8 +36,7 @@ class ConfigParser {
 
 			std::vector<std::string> values;
 
-			while (i < configTokens.size() && configTokens[i] != ";")
-			{
+			while (i < configTokens.size() && configTokens[i] != ";") {
 				values.push_back(configTokens[i]);
 				i++;
 			}
