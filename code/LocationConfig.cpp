@@ -2,27 +2,27 @@
 #include "HelperFunctions.hpp"
 
 LocationConfig::LocationConfig()
-    : _uriPath(),
-      _methods(),
-      _upload_store(),
-      _rootPath(),
-      _autoIndex(false),
-      _indpaths(),
-      _cgi_extensions(),
-      _cgi_paths(),
-      _redir()
+	: _uriPath(),
+	  _methods(),
+	  _upload_store(),
+	  _rootPath(),
+	  _autoIndex(false),
+	  _indpaths(),
+	  _cgi_extensions(),
+	  _cgi_paths(),
+	  _redir()
 {
-    _methods.get = false;
-    _methods.post = false;
-    _methods.del = false;
+	_methods.get = false;
+	_methods.post = false;
+	_methods.del = false;
 }
 
 LocationConfig::~LocationConfig() {}
 
 void LocationConfig::setUriPath(std::string uripath) {
-    if (!checkUriPath(uripath))
-        throw std::runtime_error("Incorrect URI path");
-    _uriPath = uripath;
+	if (!checkUriPath(uripath))
+		throw std::runtime_error("Incorrect URI path");
+	_uriPath = uripath;
 	// printDebug("\n_uriPath: ", _uriPath);
 }
 
@@ -33,14 +33,14 @@ void LocationConfig::setAllowMethods(const std::vector<std::string>& methods) {
 	
 	for (size_t i = 0; i < methods.size(); ++i)
 	{
-	    if (methods[i] == "GET")
-	        _methods.get = true;
-	    else if (methods[i] == "POST")
-	        _methods.post = true;
-	    else if (methods[i] == "DELETE")
-	        _methods.del = true;
-	    else
-	        throw std::runtime_error("Unknown Allow methods in configuration file");
+		if (methods[i] == "GET")
+			_methods.get = true;
+		else if (methods[i] == "POST")
+			_methods.post = true;
+		else if (methods[i] == "DELETE")
+			_methods.del = true;
+		else
+			throw std::runtime_error("Unknown Allow methods in configuration file");
 	}
 	// printDebug("_methods.get > ", _methods.get);
 	// printDebug("_methods.post > ", _methods.post);
@@ -79,7 +79,7 @@ void LocationConfig::setRoot(const std::vector<std::string>& fspath){
 void LocationConfig::setIndex(const std::vector<std::string>& indpaths){
 
 	if (indpaths.empty())
-    	throw std::runtime_error("Invalid index name in location");
+		throw std::runtime_error("Invalid index name in location");
 
 	for (const std::string& index : indpaths) {
 
@@ -134,7 +134,7 @@ void LocationConfig::setRedirect(const std::vector<std::string>& redirpath){
 
 const std::string& LocationConfig::getUriPath() const
 {
-    return _uriPath;
+	return _uriPath;
 }
 
 AllowMethods LocationConfig::getAllowMethods() const
