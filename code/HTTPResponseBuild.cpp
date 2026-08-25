@@ -16,69 +16,116 @@
 //		              /      |       \
 //		            GET     POST    DELETE
 
-HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerConfig &servConf)
-{
-
-	Method method = request.getMethod();
-	std::string path = request.getPath();
-	std::string version = request.getVersion();
-
-	// std::cout << "REQUEST: " << version << std::endl;
-	
-
-	if (version != "1.0" && version != "1.1")
-		return makeErrorResponse(505, request, servConf);
-
-	switch (method)
-	{
-	// CGI function
-	case Method::GET:
-		return handleGet(request, servConf);
-
-	case Method::POST:
-		return handlePost(request, servConf);
-
-	case Method::DELETE:
-		return handleDelete(request, servConf);
-
-	default:
-		return makeErrorResponse(501, request, servConf);
-	}
-
-	return {};
-};
-
-// GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
-
-HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const ServerConfig &servConf)
-{
-
-	HTTPResponse res;
-	std::string path;
-	// std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
+int HTTPResponseBuild::prepareRequestPath(const HTTPRequest &request, const ServerConfig &servConf, 
+	std::string &path, const LocationConfig *&location) {
 
 	try {
 		path = urlDecoder(request.getPath());
 	} catch (const std::exception &e) {
-		return makeErrorResponse(400, request, servConf);
+		return 400;
+		// return makeErrorResponse(400, request, servConf);
 	}
-	// std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "-> path:  "<<  path << std::endl;
 
 	if (path.find('\0') != std::string::npos)
-		return makeErrorResponse(400, request, servConf);
+		return 400;
 
-	if (containsParentTraversal(path)) {
-		// std::cout << "path in containsParentTraversal -> " << path << std::endl;
-		return makeErrorResponse(403, request, servConf);
+	if (containsParentTraversal(path)) 
+		return 403;
+	
+	location = findBestLocation(path, servConf);
+
+	if (location == NULL) 
+		return 404;
+
+	return 0;
+}
+
+
+HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerConfig &servConf)
+{
+
+	Method method = request.getMethod();
+	// std::string path = request.getPath();
+	std::string version = request.getVersion();
+	std::string path;
+	const LocationConfig *location = NULL;
+	
+	if (version != "1.0" && version != "1.1")
+		return makeErrorResponse(505, request, servConf);
+
+	int errorCode = prepareRequestPath(request, servConf, path, location);
+
+	if(errorCode != 0) 
+		return makeErrorResponse(errorCode, request, servConf);
+
+	if (location->hasRedirect()) {
+
+		Redirection redirect = location->getRedirect();
+
+		HTTPResponse res;
+		res.setStatusCode(redirect._number);
+		res.setStatus(getStatusText(redirect._number));
+		res.setHeader("Location", redirect._redirPath);
+		res.setHeader("Content-Length", "0");
+		res.setHeader("Connection", decideConnection(request));
+		res.setVersion(request.getVersion());
+
+		return res;
 	}
 
-	const LocationConfig *location = findBestLocation(path, servConf);
-	// std::cout << "location:  " <<  location->getUriPath() << std::endl;
+	switch (method) {
 
-	if (location == NULL) {
-		// std::cout << "fileExists1" << std::endl;
-		return makeErrorResponse(400, request, servConf);
+		case Method::GET:
+			return handleGet(request, servConf, path, location);
+
+		case Method::POST:
+			return handlePost(request, servConf, path, location);
+
+		case Method::DELETE:
+			return handleDelete(request, servConf, path, location);
+
+		default:
+			return makeErrorResponse(501, request, servConf);
 	}
+
+	// return {};
+};
+
+// GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
+
+HTTPResponse HTTPResponseBuild::handleGet(
+	const HTTPRequest &request, 
+	const ServerConfig &servConf, 
+	std::string &path,  
+	const LocationConfig *&location)
+{
+
+	HTTPResponse res;
+	// std::string path;
+	// std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
+
+	// try {
+	// 	path = urlDecoder(request.getPath());
+	// } catch (const std::exception &e) {
+	// 	return makeErrorResponse(400, request, servConf);
+	// }
+	// // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "-> path:  "<<  path << std::endl;
+
+	// if (path.find('\0') != std::string::npos)
+	// 	return makeErrorResponse(400, request, servConf);
+
+	// if (containsParentTraversal(path)) {
+	// 	// std::cout << "path in containsParentTraversal -> " << path << std::endl;
+	// 	return makeErrorResponse(403, request, servConf);
+	// }
+
+	// const LocationConfig *location = findBestLocation(path, servConf);
+	// // std::cout << "location:  " <<  location->getUriPath() << std::endl;
+
+	// if (location == NULL) {
+	// 	// std::cout << "fileExists1" << std::endl;
+	// 	return makeErrorResponse(404, request, servConf);
+	// }
 
 	if (!location->isGetAllowed()) {
 		HTTPResponse erRes = makeErrorResponse(405, request, servConf);
@@ -175,13 +222,15 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST
 HTTPResponse HTTPResponseBuild::handlePost(
 	const HTTPRequest &request,
-	const ServerConfig &servConf)
+	const ServerConfig &servConf, 
+	std::string path,  
+	const LocationConfig *&location)
 {
-	const LocationConfig *location =
-		findBestLocation(request.getPath(), servConf);
+	// const LocationConfig *location =
+	// 	findBestLocation(request.getPath(), servConf);
 
-	if (location == NULL)
-		return makeErrorResponse(404, request, servConf);
+	// if (location == NULL)
+	// 	return makeErrorResponse(404, request, servConf);
 
 	if (!location->isPostAllowed())
 		return makeErrorResponse(405, request, servConf);
@@ -339,48 +388,34 @@ HTTPResponse HTTPResponseBuild::handlePost(
 
 // DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE DELETE DELETE DELETE DELETE DELETE DELETE DLETE
 
-HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest &request, const ServerConfig &servConf)
+HTTPResponse HTTPResponseBuild::handleDelete(
+	const HTTPRequest &request, 
+	const ServerConfig &servConf, 
+	std::string &path,  
+	const LocationConfig *&location)
 {
 
-	std::string path;
+	// std::string path;
 	std::string baseDir;
 	std::string fullPath;
 	struct stat targetStat;
 
-	// std::cout << "1 - DETELE -> request.getPath(): " << request.getPath() << std::endl;
-	try
-	{
-		path = urlDecoder(request.getPath());
-	}
-	catch (const std::exception &e)
-	{
-		// std::cout << "??? catch ???" << std::endl;
+	// try {
+	// 	path = urlDecoder(request.getPath());
+	// } catch (const std::exception &e) {
+	// 	return makeErrorResponse(400, request, servConf);
+	// }
 
-		return makeErrorResponse(400, request, servConf);
-	}
+	// if (path.find('\0') != std::string::npos)
+	// 	return makeErrorResponse(400, request, servConf);
 
-	// std::cout << "\t path :  " <<  path << std::endl;
+	// if (containsParentTraversal(path))
+	// 	return makeErrorResponse(403, request, servConf);
 
-	// std::cout << "2 - DETELE -> path: " << path << std::endl;
+	// const LocationConfig *location = findBestLocation(path, servConf);
 
-	// check for something after the \0 terminator?
-	if (path.find('\0') != std::string::npos)
-		return makeErrorResponse(400, request, servConf);
-
-	// check for parent traversal /../.. -> not allowed
-	// curl --path-as-is -v -X DELETE http://localhost:8080/upload/../test.txt
-	//  with --paht-as-is -> so that is not normalized...
-	if (containsParentTraversal(path))
-		return makeErrorResponse(403, request, servConf);
-
-	// std::cout << "3 - DETELE -> request.getUri(): " << request.getUri() << std::endl;
-
-	const LocationConfig *location = findBestLocation(path, servConf);
-	// std::cout << "4 - DETELE -> location: " << location->getUriPath() << std::endl;
-	// std::cout << "location->getUploadStore();" <<location->getUploadStore() <<std::endl;
-
-	if (location == NULL)
-		return makeErrorResponse(400, request, servConf);
+	// if (location == NULL)
+	// 	return makeErrorResponse(404, request, servConf);
 
 	// DELETE allowed
 	// location root ?
@@ -484,7 +519,6 @@ HTTPResponse HTTPResponseBuild::handleDelete(const HTTPRequest &request, const S
 	res.setHeader("Content-Type", getContentType(fullPath));
 	res.setHeader("Content-Length", std::to_string(body.size())); // send body for successful deleting file...
 	res.setHeader("Connection", decideConnection(request));
-
 	res.setVersion(request.getVersion());
 	res.setBody(body);
 

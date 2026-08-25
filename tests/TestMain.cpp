@@ -1111,6 +1111,315 @@ void testServerNameReplacesDefault()
     );
 }
 
+void testRedirect()
+{
+    // ---------------------------------------------------------
+    // 1. A new LocationConfig must NOT have a redirect
+    // ---------------------------------------------------------
+    {
+        LocationConfig location;
+
+        check(
+            !location.hasRedirect(),
+            "new location has no redirect by default"
+        );
+
+        check(
+            location.getRedirect()._number == 0,
+            "default redirect status code is 0"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 2. Valid 301 redirect is stored correctly
+    // ---------------------------------------------------------
+    {
+        LocationConfig location;
+
+        std::vector<std::string> redirect;
+        redirect.push_back("301");
+        redirect.push_back("/new-page");
+
+        location.setRedirect(redirect);
+
+        check(
+            location.hasRedirect(),
+            "301 redirect is detected"
+        );
+
+        check(
+            location.getRedirect()._number == 301,
+            "redirect status code is stored"
+        );
+
+        check(
+            location.getRedirect()._redirPath == "/new-page",
+            "redirect path is stored"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 3. Unsupported redirect status must be rejected
+    // ---------------------------------------------------------
+    {
+        LocationConfig location;
+
+        checkThrows(
+            [&location] {
+                std::vector<std::string> redirect;
+                redirect.push_back("302");
+                redirect.push_back("/new-page");
+
+                location.setRedirect(redirect);
+            },
+            "unsupported redirect status code is rejected"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 4. Non-numeric redirect status must be rejected
+    // ---------------------------------------------------------
+    {
+        LocationConfig location;
+
+        checkThrows(
+            [&location] {
+                std::vector<std::string> redirect;
+                redirect.push_back("abc");
+                redirect.push_back("/new-page");
+
+                location.setRedirect(redirect);
+            },
+            "non-numeric redirect status code is rejected"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 5. Invalid redirect path must be rejected
+    // ---------------------------------------------------------
+    {
+        LocationConfig location;
+
+        checkThrows(
+            [&location] {
+                std::vector<std::string> redirect;
+                redirect.push_back("301");
+                redirect.push_back("/new page");
+
+                location.setRedirect(redirect);
+            },
+            "redirect path containing whitespace is rejected"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 6. Missing redirect path must be rejected
+    // ---------------------------------------------------------
+    {
+        LocationConfig location;
+
+        checkThrows(
+            [&location] {
+                std::vector<std::string> redirect;
+                redirect.push_back("301");
+
+                location.setRedirect(redirect);
+            },
+            "redirect requires status code and path"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 7. GET request returns an actual 301 response
+    // ---------------------------------------------------------
+    {
+        ServerConfig server;
+
+        LocationConfig redirectLocation;
+        redirectLocation.setUriPath("/old-page");
+
+        std::vector<std::string> redirect;
+        redirect.push_back("301");
+        redirect.push_back("/new-page");
+
+        redirectLocation.setRedirect(redirect);
+
+        server.addLocation(redirectLocation);
+
+        const std::string raw =
+            "GET /old-page HTTP/1.1\r\n"
+            "Host: localhost\r\n"
+            "\r\n";
+
+        HTTPRequest request =
+            HTTPRequestParser().parse(raw, raw.size());
+
+        HTTPResponse response =
+            HTTPResponseBuild::build(request, server);
+
+        std::string output =
+            response.toString(response);
+
+        check(
+            output.find("HTTP/1.1 301 Moved Permanently\r\n") == 0,
+            "redirect returns 301 Moved Permanently"
+        );
+
+        check(
+            output.find("Location: /new-page\r\n") != std::string::npos,
+            "redirect response contains Location header"
+        );
+
+        check(
+            output.find("Content-Length: 0\r\n") != std::string::npos,
+            "redirect response has zero Content-Length"
+        );
+
+        check(
+            response.getBody().empty(),
+            "redirect response has no body"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 8. Redirect happens before GET method permission check
+    // ---------------------------------------------------------
+    {
+        ServerConfig server;
+
+        LocationConfig redirectLocation;
+        redirectLocation.setUriPath("/old-page");
+
+        // We deliberately DO NOT allow GET here.
+
+        std::vector<std::string> redirect;
+        redirect.push_back("301");
+        redirect.push_back("/");
+
+        redirectLocation.setRedirect(redirect);
+
+        server.addLocation(redirectLocation);
+
+        const std::string raw =
+            "GET /old-page HTTP/1.1\r\n"
+            "Host: localhost\r\n"
+            "\r\n";
+
+        HTTPRequest request =
+            HTTPRequestParser().parse(raw, raw.size());
+
+        HTTPResponse response =
+            HTTPResponseBuild::build(request, server);
+
+        std::string output =
+            response.toString(response);
+
+        check(
+            output.find("HTTP/1.1 301 Moved Permanently\r\n") == 0,
+            "redirect is evaluated before GET method permissions"
+        );
+
+        check(
+            output.find("405 Method Not Allowed") == std::string::npos,
+            "redirect location does not enter normal GET handling"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 9. Redirect happens before DELETE handling
+    // ---------------------------------------------------------
+    {
+        ServerConfig server;
+
+        LocationConfig redirectLocation;
+        redirectLocation.setUriPath("/old-page");
+
+        std::vector<std::string> redirect;
+        redirect.push_back("301");
+        redirect.push_back("/");
+
+        redirectLocation.setRedirect(redirect);
+
+        server.addLocation(redirectLocation);
+
+        const std::string raw =
+            "DELETE /old-page HTTP/1.1\r\n"
+            "Host: localhost\r\n"
+            "\r\n";
+
+        HTTPRequest request =
+            HTTPRequestParser().parse(raw, raw.size());
+
+        HTTPResponse response =
+            HTTPResponseBuild::build(request, server);
+
+        std::string output =
+            response.toString(response);
+
+        check(
+            output.find("HTTP/1.1 301 Moved Permanently\r\n") == 0,
+            "DELETE request to redirect location returns 301"
+        );
+
+        check(
+            output.find("Location: /\r\n") != std::string::npos,
+            "DELETE redirect contains correct Location header"
+        );
+    }
+
+
+    // ---------------------------------------------------------
+    // 10. Redirect happens before POST handling
+    // ---------------------------------------------------------
+    {
+        ServerConfig server;
+
+        LocationConfig redirectLocation;
+        redirectLocation.setUriPath("/old-page");
+
+        std::vector<std::string> redirect;
+        redirect.push_back("301");
+        redirect.push_back("/");
+
+        redirectLocation.setRedirect(redirect);
+
+        server.addLocation(redirectLocation);
+
+        const std::string raw =
+            "POST /old-page HTTP/1.1\r\n"
+            "Host: localhost\r\n"
+            "Content-Length: 0\r\n"
+            "\r\n";
+
+        HTTPRequest request =
+            HTTPRequestParser().parse(raw, raw.size());
+
+        HTTPResponse response =
+            HTTPResponseBuild::build(request, server);
+
+        std::string output =
+            response.toString(response);
+
+        check(
+            output.find("HTTP/1.1 301 Moved Permanently\r\n") == 0,
+            "POST request to redirect location returns 301"
+        );
+
+        check(
+            output.find("Location: /\r\n") != std::string::npos,
+            "POST redirect contains correct Location header"
+        );
+    }
+}
+
 } // namespace
 
 int main()
@@ -1137,6 +1446,7 @@ int main()
     run("Multiple server names", testMultipleServerNames);
     run("Virtual host body size limits", testVirtualHostBodySizeLimits);
     run("Server name replaces default", testServerNameReplacesDefault);
+    run("Redirect", testRedirect);
 
     if (g_failures != 0) {
         std::cerr << g_failures << " assertion(s) failed\n";

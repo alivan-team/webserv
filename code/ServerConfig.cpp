@@ -9,14 +9,14 @@ ServerConfig::ServerConfig() : _port({8080}), _server_name({"localhost"}), _root
 
 ServerConfig::~ServerConfig() {};
 
-static bool validServerNameChar(char ch)
-{
-    unsigned char c = static_cast<unsigned char>(ch);
+static bool validServerNameChar(char ch) {
+    
+	unsigned char c = static_cast<unsigned char>(ch);
     return std::isalnum(c) || c == '_' || c == '-' || c == '.';
 }
 
-static bool validServerName(const std::string& name)
-{
+static bool validServerName(const std::string& name) {
+
     if (name.empty())
         return false;
 
@@ -28,7 +28,7 @@ static bool validServerName(const std::string& name)
 }
 
 
-void ServerConfig::setPort(const std::vector<std::string>& port){
+void ServerConfig::setPort(const std::vector<std::string>& port) {
 
 	// _port.pop_back();
 	// std::cout << "Setport -> " << port.size() << "post var --> " << port[0] << port[1] << std::endl;
