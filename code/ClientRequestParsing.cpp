@@ -92,7 +92,8 @@ RequestState Client::parseHeaderClient() {
             else 
                 _host = headerValue.substr(0, colonPos);
 
-            std::cout <<" _host : " << getHost() << std::endl;
+            // std::cout <<" _host : " << getHost() << std::endl;
+
             hasHost = true;
         }
     }

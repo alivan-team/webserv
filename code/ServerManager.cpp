@@ -173,7 +173,7 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
         if (serverFd == -1)
             serverFd = createListeningSockets(servers[i]);
 
-        std::cout << "\tserversFd: " << serverFd << "\t servers[i].getPort():  " << servers[i].getPort() <<"\t servers[i].getServerName():  " << servers[i].getServerName()[0] << std::endl;
+        // std::cout << "\tserversFd: " << serverFd << "\t servers[i].getPort():  " << servers[i].getPort() <<"\t servers[i].getServerName():  " << servers[i].getServerName()[0] << std::endl;
         
         _serversMap[serverFd].push_back(servers[i]);
     }
@@ -301,7 +301,7 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
     
     const std::vector<ServerConfig>& servers = it->second;
 
-    std::cout << "HOST TO FIND: [" << host << "]" << std::endl;
+    // std::cout << "HOST TO FIND: [" << host << "]" << std::endl;
 
     for (size_t i = 0; i < servers.size(); i++) {
 
@@ -309,16 +309,16 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
 
         for (size_t j = 0; j < serverNames.size(); j++) {
 
-            std::cout << "checking server_name: ["
-                  << serverNames[j] << "]" << std::endl;
+            // std::cout << "checking server_name: [" << serverNames[j] << "]" << std::endl;
+
             if (serverNames[j] == host) {
-                std::cout << "SERVER MATCH!" << std::endl;
+                // std::cout << "SERVER MATCH!" << std::endl;
                 return servers[i];
             }
         }
     } 
 
-    std::cout << "NO MATCH -> DEFAULT SERVER" << std::endl;
+    // std::cout << "NO MATCH -> DEFAULT SERVER" << std::endl;
 
     return servers[0];
 };
@@ -389,7 +389,6 @@ bool ServerManager::writeClientData(size_t index) {
 
 RequestState ServerManager::getRequestState(Client& client, const ServerConfig*& serverConfig) {
 
-    // HTTPRequest reuqest = client.getRequest();
     serverConfig = &getClientServerManager(client.getServerFd(), "");
 
     if (!client.getHeaderIsParsed()) {
@@ -439,29 +438,29 @@ bool ServerManager::processRequestBuffer(size_t index) {
                 throw HTTPParseException(500, "Internal Server Error");
 		}
 
-        std::cout << "\n--- AFTER CHUNK DECODING ---\n";
+        // std::cout << "\n--- AFTER CHUNK DECODING ---\n";
 
-        std::cout << "bodyPos: "
-                << client.getBodyPos()
-                << std::endl;
+        // std::cout << "bodyPos: "
+        //         << client.getBodyPos()
+        //         << std::endl;
 
-        std::cout << "bodySize: "
-                << client.getBodySize()
-                << std::endl;
+        // std::cout << "bodySize: "
+        //         << client.getBodySize()
+        //         << std::endl;
 
-        std::cout << "requestEnd: "
-                << client.getRequestEnd()
-                << std::endl;
+        // std::cout << "requestEnd: "
+        //         << client.getRequestEnd()
+        //         << std::endl;
 
-        std::cout << "BODY: ["
-                << client.getRequestBuffer().substr(
-                        client.getBodyPos(),
-                        client.getBodySize()
-                    )
-                << "]"
-                << std::endl;
+        // std::cout << "BODY: ["
+        //         << client.getRequestBuffer().substr(
+        //                 client.getBodyPos(),
+        //                 client.getBodySize()
+        //             )
+        //         << "]"
+        //         << std::endl;
 
-        std::cout << "----------------------------\n";
+        // std::cout << "----------------------------\n";
 
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
         HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);

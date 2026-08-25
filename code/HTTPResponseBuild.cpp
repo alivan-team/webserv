@@ -2,6 +2,20 @@
 #include "./hpp/HTTPResponseBuild.hpp"
 #include "./hpp/HTTPResponse.hpp"
 
+//		 HTTPResponseBuild::build()
+//		         │
+//		         ├── validate HTTP version
+//		         │
+//		         ├── find location
+//		         │
+//		         ├── redirect? ───────→ return redirect response
+//		         │
+//		         └── no redirect
+//		                 ↓
+//		              switch(method)
+//		              /      |       \
+//		            GET     POST    DELETE
+
 HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerConfig &servConf)
 {
 
@@ -10,6 +24,7 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerCo
 	std::string version = request.getVersion();
 
 	// std::cout << "REQUEST: " << version << std::endl;
+	
 
 	if (version != "1.0" && version != "1.1")
 		return makeErrorResponse(505, request, servConf);
@@ -643,6 +658,8 @@ std::string HTTPResponseBuild::getStatusText(int code)
 		return "Created";
 	case 204:
 		return "No Content";
+	case 301:
+		return "Moved Permanently";
 	case 400:
 		return "Bad Request";
 	case 403:
