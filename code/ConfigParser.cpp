@@ -37,18 +37,15 @@ std::vector<std::string> tokenize(std::ifstream& file)
             while (file.get(c) && c != '\n' && c != '\r') {};
             continue;
         } if (std::isspace(static_cast<unsigned char>(c))) {
-            if (!current.empty())
-            {
+            if (!current.empty()) {
                 tokens.push_back(current);
                 current.clear();
             }
         } else if (c == '{' || c == '}' || c == ';') {
-            if (!current.empty())
-            {
+            if (!current.empty()) {
                 tokens.push_back(current);
                 current.clear();
             }
-
             tokens.push_back(std::string(1, c));
         } else {
             current += c;

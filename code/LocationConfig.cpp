@@ -15,6 +15,7 @@ LocationConfig::LocationConfig()
     _methods.get = false;
     _methods.post = false;
     _methods.del = false;
+	_redir._number = 0;
 }
 
 LocationConfig::~LocationConfig() {}
@@ -121,16 +122,27 @@ void LocationConfig::setCgiPath(const std::vector<std::string>& cgipath)
 }
 
 void LocationConfig::setRedirect(const std::vector<std::string>& redirpath){
+	
 	if (redirpath.size() != 2)
 		throw std::runtime_error("Incorrect argument number for Redirection");
 
-	if (!check_num(redirpath[0]) || !checkFSPath(redirpath[1]))
-		throw std::runtime_error("Incorrect argument value for Redirection");
-	_redir._number = std::stoi(redirpath[0]);
+	if (!check_num(redirpath[0]))
+		throw std::runtime_error("Incorrect redirect status code");
+
+	int statusCode = std::stoi(redirpath[0]);
+
+	if(statusCode != 301)
+		throw std::runtime_error("Unsupported redirect status code");
+	
+	if (!checkFSPath(redirpath[1]))
+		throw std::runtime_error("Incorrect redirect path");
+	
+	_redir._number = statusCode;
 	_redir._redirPath = redirpath[1];
+
 	// printDebug("_redir._number > ", _redir._number);
 	// printDebug("_redir._redirPath > ", _redir._redirPath);
-};
+}
 
 const std::string& LocationConfig::getUriPath() const
 {

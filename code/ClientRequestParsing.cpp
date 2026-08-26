@@ -1,6 +1,6 @@
 #include "./hpp/ClientData.hpp"
 
-RequestState Client::parseHeaders() {
+RequestState Client::parseHeaderClient() {
 
     size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 
@@ -22,9 +22,19 @@ RequestState Client::parseHeaders() {
     // if the first line is empty ??? can it be ?? 
     if (line.empty())
         return RequestState::BadRequest;
+    
+    std::istringstream requestLine(line);
+
+    std::string method;
+    std::string uri;
+    std::string version;
+
+    if (!(requestLine >> method >> uri >> version))
+        return setRequestError(400);
 
     bool hasContentLength = false;
     bool hasTransferEncoding = false;
+    bool hasHost = false;
 
     size_t parseContntLength = 0;
 
@@ -69,8 +79,27 @@ RequestState Client::parseHeaders() {
                 _requestErrorCode = 501;
                 return RequestState::BadRequest;
             }
+        } else if (headerName == "host") {
+
+            if (hasHost)
+                return  setRequestError(400);
+            if(headerValue.empty())
+                return  setRequestError(400);
+            
+            size_t colonPos = headerValue.find(":");
+            if (colonPos == std::string::npos)
+                _host = headerValue;
+            else 
+                _host = headerValue.substr(0, colonPos);
+
+            // std::cout <<" _host : " << getHost() << std::endl;
+
+            hasHost = true;
         }
     }
+
+    if (version == "HTTP/1.1" && !hasHost)
+        return setRequestError(400);
 
     if (hasContentLength && hasTransferEncoding) 
         return setRequestError(400);
@@ -86,7 +115,6 @@ RequestState Client::parseHeaders() {
     }
 
     _headersParsed = true;
-
     return RequestState::Complete;
 };
 
@@ -243,12 +271,6 @@ RequestState Client::checkChunkedBody(size_t bodyStart, size_t& requestEnd, size
 }
 
 RequestState Client::checkRequestState(size_t maxBodySize)  {
-
-    if (!_headersParsed) {
-        RequestState headerState = parseHeaders();
-        if (headerState != RequestState::Complete)
-            return headerState;
-    }
 
     if (_bodyType == BodyType::ContentLength) {
         if (_contentLength > maxBodySize)
