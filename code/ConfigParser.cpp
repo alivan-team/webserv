@@ -64,12 +64,10 @@ void ConfigParser::parse(const std::string& filename)
     std::ifstream file(filename.c_str());
     // check currect file
 
-    if (!file) {
+    if (!file)
         throw std::runtime_error("Cannot open config file");
-	}
-	std::vector<std::string> configTokens = tokenize(file);
-    //check the brakets for currectly opena and close brackets ? 
 
+	std::vector<std::string> configTokens = tokenize(file);
 
     for (size_t i = 0; i < configTokens.size(); i++) {
 
@@ -77,66 +75,46 @@ void ConfigParser::parse(const std::string& filename)
             
             ServerConfig server;
             i += 2;
-            // std::cout << "configTokens[i] " << configTokens[i] << std::endl;
+
             while (i < configTokens.size() && configTokens[i] != "}") {
 
 
                 if (configTokens[i] == "location") {
-                    // std::cout << "location -> HI " << std::endl;
 
                     i++;
+                    if (i >= configTokens.size())
+                        throw std::runtime_error("Missing location path");
+
                     std::string uripath = configTokens[i];
                     LocationConfig location;
 
-                    if (i + 2  >= configTokens.size() || configTokens[i + 1] != "{"){
+                    if (i + 1 >= configTokens.size() || configTokens[i + 1] != "{"){
                         throw std::runtime_error("Missing location sectin");
                     }
 
-                    i+=2;
+                    i += 2;
                     while (i  < configTokens.size() && configTokens[i] != "}"){
                         findKey(location, locationSetters, configTokens, i);
                     }
+
+                    if (i >= configTokens.size() || configTokens[i] != "}")
+                        throw std::runtime_error("Missing closing brace for location");
+
                     location.setUriPath(uripath);
                     server.addLocation(location);
                     i++;
-                } else { // process server information and error_pages
+                } else {
                     findKey(server, setters, configTokens, i);
                 }
 
             }
 
-            // check if the current token has "}" 
+            if (i >= configTokens.size() || configTokens[i] != "}")
+                throw std::runtime_error("Missing closing brace for server");
+
             servers.push_back(server);
+        } else {
+            throw std::runtime_error("Unexpected token at top level: " + configTokens[i]);
         }
-    
     }
-
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	// ServerConfig server;
-
-    // read file
-    // fill ServerConfig
-
-	// put the parsed object in the vector.
-
-    // return config;
 }
-
-// const std::vector<ServerConfig>& ConfigParser::getServers() const {
-
-// };
-
-
-// ~~~~~~~~~~~~~~~~~~~ PRINT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	// std::cout << "Opened file: " << filename << std::endl;
-	// std::string line;
-    // while (std::getline(file, line))
-    // {
-    //     std::cout << line << std::endl;
-    // }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	

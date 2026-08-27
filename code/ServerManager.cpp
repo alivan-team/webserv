@@ -207,6 +207,8 @@ void ServerManager::run() {
                     removeClient(i);
                     continue;
                 }
+                throw std::runtime_error("Listening socket became invalid");
+
                 // std::cerr << "Listening socket became invalid" << std::endl;;
                 // i++;
                 // continue;
@@ -231,7 +233,7 @@ void ServerManager::run() {
                     removeClient(i);
                     continue;
                 }
-                // std::cerr << "Listening socket error" << std::endl;;
+                throw std::runtime_error("Listening socket error");
                 // i++;
                 // continue;
             }
@@ -291,7 +293,8 @@ int ServerManager::createListeningSockets(const ServerConfig& server) {
     if (bind(serverFd, result->ai_addr, result->ai_addrlen) < 0) {
         freeaddrinfo(result);
         close(serverFd);
-        throw std::runtime_error("bind() failed");
+        std::string error = "bind() failed for " + host + ":" + portString + ": " + std::strerror(errno);
+        throw std::runtime_error(error);
     }
 
     freeaddrinfo(result);
