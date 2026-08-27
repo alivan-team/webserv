@@ -129,7 +129,7 @@ HTTPResponse HTTPResponseBuild::handleGet(
 
 	if (!location->isGetAllowed()) {
 		HTTPResponse erRes = makeErrorResponse(405, request, servConf);
-		erRes.setHeader("Allow: ", buildAllowHeader(*location));
+		erRes.setHeader("Allow", buildAllowHeader(*location));
 		return erRes;
 	}
 
@@ -232,6 +232,7 @@ HTTPResponse HTTPResponseBuild::handlePost(
 	// if (location == NULL)
 	// 	return makeErrorResponse(404, request, servConf);
 
+	(void)path;
 	if (!location->isPostAllowed())
 		return makeErrorResponse(405, request, servConf);
 
@@ -512,15 +513,16 @@ HTTPResponse HTTPResponseBuild::handleDelete(
 	}
 
 	HTTPResponse res;
-	std::string body = readReadFile("./site/www/delete_page/index.html");
+	// std::string body = readReadFile("./site/www/delete_page/index.html");
 
 	res.setStatusCode(204);
 	res.setStatus(getStatusText(204));
 	res.setHeader("Content-Type", getContentType(fullPath));
-	res.setHeader("Content-Length", std::to_string(body.size())); // send body for successful deleting file...
+	// res.setHeader("Content-Length", std::to_string(body.size())); // send body for successful deleting file...
+	res.setHeader("Content-Length", "0"); // send body for successful deleting file...
 	res.setHeader("Connection", decideConnection(request));
 	res.setVersion(request.getVersion());
-	res.setBody(body);
+	res.setBody("");
 
 	return res;
 };

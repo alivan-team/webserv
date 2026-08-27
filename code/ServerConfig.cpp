@@ -5,7 +5,7 @@
 
 //  SERVER CONFIG 
 
-ServerConfig::ServerConfig() : _port({8080}), _server_name({"localhost"}), _root({"./site/www"}), _index({"index.html"}), _client_max_body_size({1000000}) {};
+ServerConfig::ServerConfig() :_host("0.0.0.0"), _port(8080), _server_name({"localhost"}), _root({"./site/www"}), _index({"index.html"}), _client_max_body_size({1000000}) {};
 
 ServerConfig::~ServerConfig() {};
 
@@ -32,16 +32,42 @@ void ServerConfig::setPort(const std::vector<std::string>& port) {
 
 	// _port.pop_back();
 	// std::cout << "Setport -> " << port.size() << "post var --> " << port[0] << port[1] << std::endl;
-	if (port.size() != 1 || !check_num(port[0]))
+	if (port.size() != 1)
 		throw std::runtime_error("Incorrect port");
+
+	std::string value = port[0];
+
+	std::string host = "0.0.0.0";
+	std::string portString;
+
+	size_t colon = value.find(':');
+
+	if (colon != std::string::npos && value.find(':', colon + 1) != std::string::npos)
+	{
+		throw std::runtime_error("Invalid listening address");
+	}
+
+	if(colon == std::string::npos) {
+		portString = value;
+	} else {
+		host = value.substr(0, colon);
+		portString = value.substr(colon + 1);
+
+		if (host.empty() || portString.empty())
+			throw std::runtime_error("Invalid listening address");
+	}
+
+	if (!check_num(portString))
+		throw std::runtime_error("Invalid listening port");
     
-	int i_port = std::atoi(port[0].c_str());
+	int i_port = std::atoi(portString.c_str());
 
 	if (i_port < 1 || i_port > 65535) {
 		throw std::runtime_error("Invalid port");
 	}
 
-	_port.push_back(i_port);
+	_host = host;
+	_port = i_port;
 };
 
 void ServerConfig::setServerName(const std::vector<std::string>& server_name) {
@@ -135,18 +161,11 @@ void ServerConfig::setErrorPage(const std::vector<std::string>& error_page) {
 
 };
 
- void ServerConfig::setServerConfFD(const int fd) {
-	
-	_serverConf_fd = fd;
- };
+void ServerConfig::setServerConfFD(const int fd) { _serverConf_fd = fd; };
 
-const int& ServerConfig::getPort() const { 
+const std::string& ServerConfig::getHost() const { return _host; }
 
-	if (_port.size() == 2) {
-        return _port[1];
-    }
-	return _port[0]; 
-};
+const int& ServerConfig::getPort() const { return _port; };
 
 // const std::vector<LocationConfig>& ServerConfig::getLocations() const { return _locations; };
 

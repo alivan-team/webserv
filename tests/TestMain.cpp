@@ -1420,6 +1420,102 @@ void testRedirect()
     }
 }
 
+void testServerConfigListen()
+{
+    ServerConfig server;
+
+    // Default
+    check(
+        server.getHost() == "0.0.0.0",
+        "default listen host is 0.0.0.0"
+    );
+
+    check(
+        server.getPort() == 8080,
+        "default listen port is 8080"
+    );
+
+    // Port only
+    std::vector<std::string> listenPort;
+    listenPort.push_back("9000");
+
+    server.setPort(listenPort);
+
+    check(
+        server.getHost() == "0.0.0.0",
+        "port-only listen uses 0.0.0.0"
+    );
+
+    check(
+        server.getPort() == 9000,
+        "port-only listen sets port"
+    );
+
+    // Interface + port
+    std::vector<std::string> listenAddress;
+    listenAddress.push_back("127.0.0.1:8081");
+
+    server.setPort(listenAddress);
+
+    check(
+        server.getHost() == "127.0.0.1",
+        "listen stores configured interface"
+    );
+
+    check(
+        server.getPort() == 8081,
+        "listen stores configured port"
+    );
+}
+
+void testServerConfigInvalidListen()
+{
+    ServerConfig server;
+
+    std::vector<std::string> value;
+
+    value.push_back(":8080");
+    checkThrows(
+        [&server, &value] { server.setPort(value); },
+        "listen rejects missing host"
+    );
+
+    value.clear();
+    value.push_back("127.0.0.1:");
+    checkThrows(
+        [&server, &value] { server.setPort(value); },
+        "listen rejects missing port"
+    );
+
+    value.clear();
+    value.push_back("127.0.0.1:abc");
+    checkThrows(
+        [&server, &value] { server.setPort(value); },
+        "listen rejects non-numeric port"
+    );
+
+    value.clear();
+    value.push_back("127.0.0.1:0");
+    checkThrows(
+        [&server, &value] { server.setPort(value); },
+        "listen rejects port 0"
+    );
+
+    value.clear();
+    value.push_back("127.0.0.1:65536");
+    checkThrows(
+        [&server, &value] { server.setPort(value); },
+        "listen rejects port above 65535"
+    );
+
+    value.clear();
+    value.push_back("127.0.0.1:8080:9000");
+    checkThrows(
+        [&server, &value] { server.setPort(value); },
+        "listen rejects multiple colons"
+    );
+}
+
 } // namespace
 
 int main()
@@ -1446,6 +1542,8 @@ int main()
     run("Multiple server names", testMultipleServerNames);
     run("Virtual host body size limits", testVirtualHostBodySizeLimits);
     run("Server name replaces default", testServerNameReplacesDefault);
+    run("ServerConfig listen", testServerConfigListen);
+    run("ServerConfig invalid listen", testServerConfigInvalidListen);  
     run("Redirect", testRedirect);
 
     if (g_failures != 0) {

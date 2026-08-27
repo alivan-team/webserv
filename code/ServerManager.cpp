@@ -127,9 +127,9 @@ bool ServerManager::readClientData(size_t index) {
         return true;
 
     } else if (bytes < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            return false;
-        }
+        // if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        //     return false;
+        // }
         removeClient(index);
         return true;
     }
@@ -158,12 +158,12 @@ bool ServerManager::isServerSocket(int fd) const
     return false;
 }
 
-int ServerManager::findServerFdByPort(int port) const {
+int ServerManager::findServerFd(const std::string& host, int port) const {
 
     for(std::map<int, std::vector<ServerConfig>>::const_iterator it = _serversMap.begin();
         it != _serversMap.end(); ++it)
     {
-            if (!it->second.empty() && it->second[0].getPort() == port) {
+            if (!it->second.empty() && it->second[0].getHost() == host && it->second[0].getPort() == port) {
                 return it->first;
             }
     }
@@ -178,8 +178,9 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
     
     for (size_t i = 0; i < servers.size(); i++) {
         
+        const std::string& host = servers[i].getHost();
         int port = servers[i].getPort();
-        int serverFd = findServerFdByPort(port);
+        int serverFd = findServerFd(host, port);
 
         if (serverFd == -1)
             serverFd = createListeningSockets(servers[i]);
@@ -241,64 +242,116 @@ void ServerManager::run() {
 
 void ServerManager::setNonBlocking(int fd)
 {
-    int flags = fcntl(fd, F_GETFL, 0);
 
-    if (flags < 0)
-        throw std::runtime_error("fcntl(F_GETFL) failed");
-
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
         throw std::runtime_error("fcntl(F_SETFL) failed");
+
+    // int flags = fcntl(fd, F_GETFL, 0); / F_GETFL -> forbeen.
+
+    // if (flags < 0)
+    //     throw std::runtime_error("fcntl(F_GETFL) failed");
+
+    // if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    //     throw std::runtime_error("fcntl(F_SETFL) failed");
 }
 
 int ServerManager::createListeningSockets(const ServerConfig& server) {
 
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    const std::string& host = server.getHost();
+    int port = server.getPort();
+    std::string portString = std::to_string(port);
+    struct addrinfo hints;
+    struct addrinfo* result;
 
-    if (server_fd < 0) 
+    std::memset(&hints, 0, sizeof(hints));
+
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    int status = getaddrinfo(host.c_str(), portString.c_str(), &hints, &result);
+
+    if(status != 0) {
+        throw std::runtime_error(std::string("getaddrinfo() failed: ") + gai_strerror(status));
+    }
+
+    int serverFd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (serverFd < 0) {
+        freeaddrinfo(result);
         throw std::runtime_error("socket() failed");
-    
-    int opt = 1;
+    }
 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        close(server_fd);
+    int opt = 1;
+    if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        freeaddrinfo(result);
+        close(serverFd);
         throw std::runtime_error("setsockopt() failed");
     }
 
-    sockaddr_in addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-
-    int port = server.getPort();
-
-    addr.sin_port = htons(port);
-
-    if (bind(server_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-        close(server_fd);
+    if (bind(serverFd, result->ai_addr, result->ai_addrlen) < 0) {
+        freeaddrinfo(result);
+        close(serverFd);
         throw std::runtime_error("bind() failed");
     }
 
-    if (listen(server_fd, 128) < 0) { 
-        close(server_fd);
+    freeaddrinfo(result);
+
+    if (listen(serverFd, 128) < 0) {
+        close(serverFd);
         throw std::runtime_error("listen() failed");
     }
 
-    setNonBlocking(server_fd);
+    setNonBlocking(serverFd);
 
-    // server.setServerConfFD(server_fd);
+    _serverSockets.push_back(serverFd);
 
-    _serverSockets.push_back(server_fd);
+    // int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    // if (server_fd < 0) 
+    //     throw std::runtime_error("socket() failed");
+    
+    // int opt = 1;
+
+    // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    //     close(server_fd);
+    //     throw std::runtime_error("setsockopt() failed");
+    // }
+
+    // sockaddr_in addr;
+    // std::memset(&addr, 0, sizeof(addr));
+    // addr.sin_family = AF_INET;
+    // addr.sin_addr.s_addr = INADDR_ANY;
+
+    // int port = server.getPort();
+
+    // addr.sin_port = htons(port);
+
+    // if (bind(server_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+    //     close(server_fd);
+    //     throw std::runtime_error("bind() failed");
+    // }
+
+    // if (listen(server_fd, 128) < 0) { 
+    //     close(server_fd);
+    //     throw std::runtime_error("listen() failed");
+    // }
+
+    // setNonBlocking(server_fd);
+
+    // // server.setServerConfFD(server_fd);
+
+    // _serverSockets.push_back(server_fd);
 
     pollfd server_poll;
-    server_poll.fd = server_fd;
+    server_poll.fd = serverFd;
     server_poll.events = POLLIN;
     server_poll.revents = 0;
 
     _pollfds.push_back(server_poll);
 
-    std::cout << "Listening on port: " << port << std::endl;
+    std::cout << "Listening on  " << host << ":" << port << std::endl;
 
-    return server_fd;
+    return serverFd;
 };
 
 const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const std::string& host) const {
@@ -349,8 +402,8 @@ bool ServerManager::writeClientData(size_t index) {
     ssize_t sent = send(clientFd, response.data() + sentAlreay, response.size() - sentAlreay, MSG_NOSIGNAL);
 
     if (sent < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            return false;
+        // if (errno == EAGAIN || errno == EWOULDBLOCK)
+        //     return false;
         removeClient(index);
         return true;
     }

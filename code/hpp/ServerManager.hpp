@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <cerrno>
+#include <netdb.h>
 
 class ServerManager {
 
@@ -22,7 +23,7 @@ class ServerManager {
         std::vector<pollfd> _pollfds;
         std::map<int, Client> _clients;
         void setNonBlocking(int fd);
-        int findServerFdByPort(int port) const;
+        int findServerFd(const std::string& host, int port) const;
         int createListeningSockets(const ServerConfig& servers);
         bool isServerSocket(int fd) const;
         void acceptNewClient(int serverFd);

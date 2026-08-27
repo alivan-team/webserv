@@ -17,7 +17,8 @@ class ServerConfig {
 
     private:
         int _serverConf_fd;
-        std::vector<int> _port;
+        std::string _host;
+        int _port;
         std::vector<std::string> _server_name;
         std::vector<std::string>  _root;
         std::vector<std::string>  _index;
@@ -37,6 +38,7 @@ class ServerConfig {
         void setClientMaxBodySize(const std::vector<std::string>& client_max_body_size);
         void setErrorPage(const std::vector<std::string>& error_page);
         
+        const std::string& getHost() const;
         const int& getPort() const;
         const int& getServerConfFD() const;
         const std::vector<std::string>& getServerName() const;

@@ -63,8 +63,6 @@ const std::string& HTTPRequest::getHeader(const std::string &name) const{
 	return (it->second); 
 };
 
-const BodyContentType HTTPRequest::getBodyType() const{
-
-
+BodyContentType HTTPRequest::getBodyType() const{
 	return (_bodycontenttype); 
 };
