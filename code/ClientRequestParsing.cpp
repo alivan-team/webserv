@@ -152,36 +152,6 @@ RequestState Client::checkChunkedRequestBody(size_t maxBodySize) {
     return RequestState::Complete;
 };
 
-// POST /upload HTTP/1.1
-// Host: localhost:8080
-// Content-Type: text/plain
-// Transfer-Encoding: chunked /r/n
-// /r/n
-// 5/r/n
-// hello/r/n
-// 3/r/n
-// asd/r/n
-// /r/n
-// GET /upload HTTP/1.1
-// Host: localhost:8080
-// ...
-// decodedBodySize = 8
-// _requestEnd - _bodyPos = 24
-
-//  Test chunk : 
-//       curl -v -X POST \
-//         -H "Content-Type: text/plain" \
-//         -H "Transfer-Encoding: chunked" \
-//         --data-binary "$(printf 'A%.0s' {1..200})" \
-//         http://localhost:8080/upload
-
-// test content_length: 
-//       curl -v -X POST \
-//         -H "Content-Type: text/plain" \
-//         --data-binary "12345678901" \
-//         http://localhost:8080/upload
-
-
 bool Client::parseContentLength(const std::string& value, size_t& result) const {
 
     std::string cleanValue = trim(value);

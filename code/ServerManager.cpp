@@ -13,6 +13,17 @@ const std::map<int, std::vector<ServerConfig>>& ServerManager::getServerManager(
     return _serversMap;
 };
 
+//                         kqueue
+//                            |
+//             +--------------+--------------+
+//             |              |              |
+//        EVFILT_READ     EVFILT_WRITE   EVFILT_TIMER
+//             |              |              |
+//        socket ready     socket ready    timeout
+//        to receive       to send           |
+//             |              |              |
+//           recv()          send()      removeClient()
+
 void ServerManager::acceptNewClient(int serverFd) {
 
     int newClientFd = accept(serverFd, NULL, NULL);
@@ -437,30 +448,6 @@ bool ServerManager::processRequestBuffer(size_t index) {
 			if (!client.decodeChunkedBody())
                 throw HTTPParseException(500, "Internal Server Error");
 		}
-
-        // std::cout << "\n--- AFTER CHUNK DECODING ---\n";
-
-        // std::cout << "bodyPos: "
-        //         << client.getBodyPos()
-        //         << std::endl;
-
-        // std::cout << "bodySize: "
-        //         << client.getBodySize()
-        //         << std::endl;
-
-        // std::cout << "requestEnd: "
-        //         << client.getRequestEnd()
-        //         << std::endl;
-
-        // std::cout << "BODY: ["
-        //         << client.getRequestBuffer().substr(
-        //                 client.getBodyPos(),
-        //                 client.getBodySize()
-        //             )
-        //         << "]"
-        //         << std::endl;
-
-        // std::cout << "----------------------------\n";
 
         client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
         HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);
