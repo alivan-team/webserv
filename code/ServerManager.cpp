@@ -55,43 +55,6 @@ bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
 	return false;
 }
 
-//  while (true) in serverManager needs to make sure all the requests recieved from the 
-//	  recv(); are consumed, read, processed. If the consumption is not "Completed"
-//	  We return to the poll() waiting for more, or completed request. 
-//		  All this to keep the connection "keep-alive" and clear 
-//		  the buffer at the correct time and place
-			//	 ┌──────────────────────────┐
-			//	 │ check _requestBuffer	 │
-			//	 └────────────┬─────────────┘
-			//				  │
-			//		complete request?
-			//		 /			   \
-			//	   NO				 YES
-			//	   │				   │
-			//	   ▼				   ▼
-			// return to poll	   process it
-			// wait for bytes		   │
-			//						  ▼
-			//				   keep connection?
-			//					 /		  \
-			//				   NO			YES
-			//				   │			  │
-			//				   ▼			  ▼
-			//				close	   consumeRequest()
-			//								 │
-			//								 ▼
-			//						  buffer empty?
-			//						   /		\
-			//						 YES		 NO
-			//						 │			│
-			//						 ▼			│
-			//				   return poll		│
-			//									  │
-			//				   ┌──────────────────┘
-			//				   │
-			//				   ▼
-			//			  loop again
-
 bool ServerManager::readClientData(size_t index) {
 
 	int clientFd = _pollfds[index].fd;
@@ -349,18 +312,6 @@ bool ServerManager::writeClientData(size_t index) {
 
 	return false;
 };
-
-//	  request 1 response finishes
-//			  ↓
-//	  consume request 1
-//			  ↓
-//	  is there already data left?
-//			  |
-//		 +----+----+
-//		 |		 |
-//		no		yes
-//		 |		 |
-//	  POLLIN	processRequestBuffer()
 
 RequestState ServerManager::getRequestState(Client& client, const ServerConfig*& serverConfig) {
 
