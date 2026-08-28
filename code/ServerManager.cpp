@@ -7,22 +7,9 @@
 
 // ServerManager::ServerManager() {};
 
-
-
 const std::map<int, std::vector<ServerConfig>>& ServerManager::getServerManager() const {
 	return _serversMap;
 };
-
-//						 kqueue
-//							|
-//			 +--------------+--------------+
-//			 |			  |			  |
-//		EVFILT_READ	 EVFILT_WRITE   EVFILT_TIMER
-//			 |			  |			  |
-//		socket ready	 socket ready	timeout
-//		to receive	   to send		   |
-//			 |			  |			  |
-//		   recv()		  send()	  removeClient()
 
 void ServerManager::acceptNewClient(int serverFd) {
 
@@ -30,13 +17,6 @@ void ServerManager::acceptNewClient(int serverFd) {
 
 	if (newClientFd < 0)
 		return ;
-
-	// for Linux: without line -22 -23 -24 -25 -26  this is only for macOS protechting the while socket.
-	// int opt = 1;
-	// if (setsockopt(newClientFd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) < 0) {
-	//	 close(newClientFd);
-	//	 return ;
-	// }
 
 	setNonBlocking(newClientFd);
 
@@ -48,7 +28,6 @@ void ServerManager::acceptNewClient(int serverFd) {
 	_pollfds.push_back(client_poll);
 	_clients[newClientFd] = Client(newClientFd, serverFd);
 
-	// std::cout << "New client: fd " << newClientFd << "\n";
 };
 
 void ServerManager::removeClient(size_t index) {
@@ -127,9 +106,6 @@ bool ServerManager::readClientData(size_t index) {
 		return true;
 
 	} else if (bytes < 0) {
-		// if (errno == EAGAIN || errno == EWOULDBLOCK) {
-		//	 return false;
-		// }
 		removeClient(index);
 		return true;
 	}
@@ -208,10 +184,6 @@ void ServerManager::run() {
 					continue;
 				}
 				throw std::runtime_error("Listening socket became invalid");
-
-				// std::cerr << "Listening socket became invalid" << std::endl;;
-				// i++;
-				// continue;
 			}
 			if (_pollfds[i].revents & POLLIN) {
 
@@ -234,27 +206,15 @@ void ServerManager::run() {
 					continue;
 				}
 				throw std::runtime_error("Listening socket error");
-				// i++;
-				// continue;
 			}
 			i++;
 		}
 	}
 };
 
-void ServerManager::setNonBlocking(int fd)
-{
-
+void ServerManager::setNonBlocking(int fd) {
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
 		throw std::runtime_error("fcntl(F_SETFL) failed");
-
-	// int flags = fcntl(fd, F_GETFL, 0); / F_GETFL -> forbeen.
-
-	// if (flags < 0)
-	//	 throw std::runtime_error("fcntl(F_GETFL) failed");
-
-	// if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
-	//	 throw std::runtime_error("fcntl(F_SETFL) failed");
 }
 
 int ServerManager::createListeningSockets(const ServerConfig& server) {
@@ -308,43 +268,6 @@ int ServerManager::createListeningSockets(const ServerConfig& server) {
 
 	_serverSockets.push_back(serverFd);
 
-	// int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-	// if (server_fd < 0) 
-	//	 throw std::runtime_error("socket() failed");
-	
-	// int opt = 1;
-
-	// if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-	//	 close(server_fd);
-	//	 throw std::runtime_error("setsockopt() failed");
-	// }
-
-	// sockaddr_in addr;
-	// std::memset(&addr, 0, sizeof(addr));
-	// addr.sin_family = AF_INET;
-	// addr.sin_addr.s_addr = INADDR_ANY;
-
-	// int port = server.getPort();
-
-	// addr.sin_port = htons(port);
-
-	// if (bind(server_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-	//	 close(server_fd);
-	//	 throw std::runtime_error("bind() failed");
-	// }
-
-	// if (listen(server_fd, 128) < 0) { 
-	//	 close(server_fd);
-	//	 throw std::runtime_error("listen() failed");
-	// }
-
-	// setNonBlocking(server_fd);
-
-	// // server.setServerConfFD(server_fd);
-
-	// _serverSockets.push_back(server_fd);
-
 	pollfd server_poll;
 	server_poll.fd = serverFd;
 	server_poll.events = POLLIN;
@@ -368,24 +291,16 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
 	
 	const std::vector<ServerConfig>& servers = it->second;
 
-	// std::cout << "HOST TO FIND: [" << host << "]" << std::endl;
-
 	for (size_t i = 0; i < servers.size(); i++) {
 
 		const std::vector<std::string>& serverNames = servers[i].getServerName();
 
 		for (size_t j = 0; j < serverNames.size(); j++) {
-
-			// std::cout << "checking server_name: [" << serverNames[j] << "]" << std::endl;
-
 			if (serverNames[j] == host) {
-				// std::cout << "SERVER MATCH!" << std::endl;
 				return servers[i];
 			}
 		}
 	} 
-
-	// std::cout << "NO MATCH -> DEFAULT SERVER" << std::endl;
 
 	return servers[0];
 };
@@ -399,14 +314,9 @@ bool ServerManager::writeClientData(size_t index) {
 	const std::string& response = client.getResponseBuffer();
 	size_t sentAlreay = client.getResponseSent();
 
-	// std::cout << ">>> writeClientData CALLED" << std::endl;
-
-	// Linux:  MSG_NOSIGNAL instead of 0 at the end of send. Linux protects each send() call.
 	ssize_t sent = send(clientFd, response.data() + sentAlreay, response.size() - sentAlreay, MSG_NOSIGNAL);
 
 	if (sent < 0) {
-		// if (errno == EAGAIN || errno == EWOULDBLOCK)
-		//	 return false;
 		removeClient(index);
 		return true;
 	}
@@ -452,8 +362,6 @@ bool ServerManager::writeClientData(size_t index) {
 //		 |		 |
 //	  POLLIN	processRequestBuffer()
 
-// sdgavedsghfndfhghbaestrgfnsretdhgs
-
 RequestState ServerManager::getRequestState(Client& client, const ServerConfig*& serverConfig) {
 
 	serverConfig = &getClientServerManager(client.getServerFd(), "");
@@ -470,7 +378,6 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 	RequestState state = client.checkRequestState(maxBodySize);
 
 	return state;
-
 };
 
 
@@ -517,7 +424,6 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		return false;
 
 	} catch (const std::exception& e) {
-		// std::cerr << "Internal server error for client fd " << clientFd << ": " << e.what() << std::endl;
 		(void)e;
 		HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, *serverConfig);
 		client.setCloseAfterResponse(true);
@@ -525,5 +431,3 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		return false;
 	}
 };
-
-// printf 'GET / HTTP/1.1\r\nHost: localhost:8080\r\nConnection: keep-alive\r\n\r\n' | nc 127.0.0.1 8080
