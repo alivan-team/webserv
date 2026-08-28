@@ -2,20 +2,6 @@
 #include "./hpp/HTTPResponseBuild.hpp"
 #include "./hpp/HTTPResponse.hpp"
 
-//		 HTTPResponseBuild::build()
-//				 │
-//				 ├── validate HTTP version
-//				 │
-//				 ├── find location
-//				 │
-//				 ├── redirect? ───────→ return redirect response
-//				 │
-//				 └── no redirect
-//						 ↓
-//					  switch(method)
-//					  /	  |	   \
-//					GET	 POST	DELETE
-
 int HTTPResponseBuild::prepareRequestPath(const HTTPRequest &request, const ServerConfig &servConf, 
 	std::string &path, const LocationConfig *&location) {
 
@@ -23,7 +9,6 @@ int HTTPResponseBuild::prepareRequestPath(const HTTPRequest &request, const Serv
 		path = urlDecoder(request.getPath());
 	} catch (const std::exception &e) {
 		return 400;
-		// return makeErrorResponse(400, request, servConf);
 	}
 
 	if (path.find('\0') != std::string::npos)
@@ -41,11 +26,9 @@ int HTTPResponseBuild::prepareRequestPath(const HTTPRequest &request, const Serv
 }
 
 
-HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerConfig &servConf)
-{
+HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerConfig &servConf) {
 
 	Method method = request.getMethod();
-	// std::string path = request.getPath();
 	std::string version = request.getVersion();
 	std::string path;
 	const LocationConfig *location = NULL;
@@ -88,7 +71,6 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerCo
 			return makeErrorResponse(501, request, servConf);
 	}
 
-	// return {};
 };
 
 // GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
@@ -108,18 +90,12 @@ HTTPResponse HTTPResponseBuild::handleGet(
 		return erRes;
 	}
 
-	// std::cout << "\t location->getUriPath().size():  " <<  location->getUriPath().size() << std::endl;
-	// std::cout << "\t location->getUriPath():  " <<  location->getUriPath() << std::endl;
-	// std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
-	// std::cout << "\t path :  " <<  path << std::endl;
-
 	std::string baseDir;
 	std::string fullPath;
 	std::string relativePath = path;
 
 	if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
 		relativePath = path.substr(location->getUriPath().size());
-	// std::cout << "\t relativePath :  " <<  relativePath << std::endl;
 	if (!location->getRoot().empty()) {
 		baseDir = location->getRoot();
 		fullPath = joinPath(location->getRoot(), relativePath);
@@ -131,12 +107,8 @@ HTTPResponse HTTPResponseBuild::handleGet(
 		fullPath = joinPath(servConf.getRoot()[0], path);
 	}
 
-	// std::cout << "GET ---> fullPath :  " <<  fullPath << std::endl;
-
-	if (!fileExists(fullPath)) {
-		// std::cout << "fileExists2645" << std::endl;
+	if (!fileExists(fullPath))
 		return makeErrorResponse(404, request, servConf);
-	}
 
 	if (!pathInsideBase(baseDir, fullPath))
 		return makeErrorResponse(403, request, servConf);
@@ -144,8 +116,6 @@ HTTPResponse HTTPResponseBuild::handleGet(
 	if (isDirectory(fullPath)) {
 
 		std::string indexPath = findIndexFile(fullPath, *location, servConf);
-
-		// std::cout << "\t -> indexPath: " << indexPath << "\n\t -> fullPath: " << fullPath << "\n\t -> request.getPath(): " << request.getPath() << std::endl;
 
 		if (!indexPath.empty()) {
 			fullPath = indexPath;
@@ -159,19 +129,11 @@ HTTPResponse HTTPResponseBuild::handleGet(
 			return makeErrorResponse(403, request, servConf);
 		}
 	}
-	// std::cout << "canReadFile(fullPath) : " << canReadFile(fullPath) << std::endl;
 
 	if (!canReadFile(fullPath))
 		return makeErrorResponse(403, request, servConf);
 
-	// CGI FUNCTION and QUESTIONS -> this one was suggested from ChatGPT :D
-	// if the path end on .py -> we search in out Locations for cgi-bin ->
-	// if (isCgiFile(fullPath, location))
-	//	 return handleCgi(request, servConf, location, fullPath);
-
 	try {
-
-		// throw std::runtime_error("Testing catch");
 
 		std::string body = readReadFile(fullPath);
 
@@ -422,7 +384,6 @@ HTTPResponse HTTPResponseBuild::handleDelete(
 	if (!removed)
 		return makeErrorResponse(404, request, servConf);
 
-
 	HTTPResponse res;
 	// std::string body = readReadFile("./site/www/delete_page/index.html");
 
@@ -445,14 +406,12 @@ std::string HTTPResponseBuild::buildAllowHeader(const LocationConfig &location)
 
 	if (location.isGetAllowed())
 		allow += "GET";
-	if (location.isPostAllowed())
-	{
+	if (location.isPostAllowed()) {
 		if (!allow.empty())
 			allow += ", ";
 		allow += "POST";
 	}
-	if (location.isDeleteAllowed())
-	{
+	if (location.isDeleteAllowed()) {
 		if (!allow.empty())
 			allow += ", ";
 		allow += "DELETE";
@@ -490,16 +449,12 @@ bool HTTPResponseBuild::deleteParentInsideBase(const std::string &base, const st
 
 // ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR
 
-HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest &request, const ServerConfig &servConf)
-{
+HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest &request, const ServerConfig &servConf) {
 
 	HTTPResponse res;
 
 	std::string text = getStatusText(code);
 	std::string body = buildErrorBody(code, servConf);
-
-	// std::cout << "	:	BODY	: \n" << "code:  "<<  code << std::endl;
-	// std::cout << "Code: " << code << std::endl;
 
 	res.setStatusCode(code);
 	res.setVersion(request.getVersion());
@@ -512,8 +467,7 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest &r
 	return res;
 };
 
-HTTPResponse HTTPResponseBuild::makeEarlyErrorResponse(int code, const ServerConfig &servConf)
-{
+HTTPResponse HTTPResponseBuild::makeEarlyErrorResponse(int code, const ServerConfig &servConf) {
 
 	HTTPRequest errRequest;
 
@@ -523,13 +477,8 @@ HTTPResponse HTTPResponseBuild::makeEarlyErrorResponse(int code, const ServerCon
 	return makeErrorResponse(code, errRequest, servConf);
 };
 
-std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &servConf)
-{
+std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &servConf) {
 
-	// std::cout << "\nCode: " << code << std::endl;
-	// std::cout << "servConf.hasErrorPage(code): " << servConf.hasErrorPage(code) << std::endl;
-	// std::cout << "error_path from servConf: " << servConf.getOneErrorPage(code) << std::endl;
-	// std::cout << "ROOT from servConf: " << servConf.getRoot().back() << std::endl;
 	std::string error_message = getStatusText(code);
 
 	if (servConf.hasErrorPage(code)) {
@@ -538,15 +487,9 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 		std::string root = servConf.getRoot().back();
 		std::string fullPath = joinPath(root, error_path);
 
-		// std::cout << "\tfileExists(fullPath) : " << fileExists(fullPath)
-		// << "\n\t canReadFile(fullPath) : " <<  canReadFile(fullPath) << std::endl;
 		try {
 
-			// throw std::runtime_error("Forced error");
 			if (fileExists(fullPath) && canReadFile(fullPath)) {
-				// std::cout << "\tFULL PATH : " << fullPath << std::endl;
-
-				// cgi -> child -> execute that file with query -> return result -> we put that result in body -> and send it
 				return readReadFile(fullPath);
 			}
 		} catch (const std::exception &e) {
@@ -568,12 +511,9 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 	std::string text = getStatusText(code);
 
 	return readReadFile("./site/www/error_pages/index.html");
-	//	 "<html><body><h1>" +
-	//	std::to_string(code) + " " + text +
-	//	"</h1></body></html>";
 };
 
-std::string HTTPResponseBuild::getStatusText(int code)
+std::string HTTPResponseBuild::getStatusText(int code) 
 {
 	switch (code) {
 		case 200: return "OK";
@@ -592,8 +532,7 @@ std::string HTTPResponseBuild::getStatusText(int code)
 	}
 }
 
-std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request)
-{
+std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request) {
 
 	std::string version = request.getVersion();
 	std::string connection;
@@ -604,14 +543,12 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request)
 	if (version == "1.0") {
 		if (connection == "keep-alive")
 			return "keep-alive";
-
 		return "close";
 	}
 
 	if (version == "1.1") {
 		if (connection == "close")
 			return "close";
-
 		return "keep-alive";
 	}
 
@@ -619,15 +556,12 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request)
 };
 
 // HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER
-// HELPER ERROR Functions that maybe we can use later for other requests ??
 
 //  AUTO INDEX
-// This is for autoIndex in Location
 
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, const ServerConfig &servConf, const std::string &fullPath, const std::string &requestPath) {
 
 	HTTPResponse res;
-	// std::cout << " Hello from HTTPResponseBuild " << std::endl;
 
 	DIR *dir = opendir(fullPath.c_str());
 
@@ -649,8 +583,7 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 
 	struct dirent *entry;
 
-	while ((entry = readdir(dir)) != NULL)
-	{
+	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
 		// std::cout << "\t\t name --> " << name << std::endl;
 
@@ -664,19 +597,12 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 			extension = name.substr(dot);
 
 		std::string href = requestPath;
-		// std::cout << "\t\thref --> " << href << std::endl;
 
 		if (href.empty() || href[href.size() - 1] != '/')
 			href += "/";
 
 		href += name;
-
-		// if (checkExtensionOfFile(extension)) {
-		//	 body += "		<li><img src=\"" + href + "\" width=\"200\"><br></li>\n";
-		// } else {
 		body += "		<li><a href=\"" + href + "\">" + name + "</a><br>";
-		// }
-		// std::cout << "\t\t body --> " << body << std::endl;
 	}
 
 	body += "	</ul>\n";
@@ -697,22 +623,13 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 	return res;
 }
 
-const LocationConfig *HTTPResponseBuild::findBestLocation(const std::string &path, const ServerConfig &servConf)
-{
+const LocationConfig *HTTPResponseBuild::findBestLocation(const std::string &path, const ServerConfig &servConf) {
 
 	const std::vector<LocationConfig> &locations = servConf.getLocations();
-	// /////////////////////////////////////////
-	// std::cout << "LOCATIONS " << "\n" << std::endl;
 
 	const LocationConfig *bestLoc = NULL;
 
-	for (const auto &loc : locations)
-	{
-
-		// std::cout << "LOCATIONS " << loc.getUriPath() << std::endl;
-		// std::cout << "LOCATIONS path : " << path << std::endl;
-		// std::cout << "LOCATIONS loc. : " << loc.getUriPath() << std::endl;
-
+	for (const auto &loc : locations) {
 		if (startsWithLocation(path, loc.getUriPath()))
 		{
 			if (!bestLoc || loc.getUriPath().size() > bestLoc->getUriPath().size())
@@ -726,8 +643,7 @@ const LocationConfig *HTTPResponseBuild::findBestLocation(const std::string &pat
 	return bestLoc;
 };
 
-bool HTTPResponseBuild::startsWithLocation(const std::string &path, const std::string &loc)
-{
+bool HTTPResponseBuild::startsWithLocation(const std::string &path, const std::string &loc) {
 
 	if (loc.empty())
 		return false;
@@ -744,11 +660,7 @@ bool HTTPResponseBuild::startsWithLocation(const std::string &path, const std::s
 	return path[loc.size()] == '/';
 }
 
-std::string HTTPResponseBuild::joinPath(const std::string &root, const std::string &path)
-{
-
-	// std::cout << "root: " << root << std::endl;
-	// std::cout << "path: " << path << std::endl;
+std::string HTTPResponseBuild::joinPath(const std::string &root, const std::string &path) {
 
 	if (root.empty())
 		return path;
@@ -768,17 +680,14 @@ std::string HTTPResponseBuild::joinPath(const std::string &root, const std::stri
 	return root + path;
 };
 
-bool HTTPResponseBuild::fileExists(const std::string &file)
-{
+bool HTTPResponseBuild::fileExists(const std::string &file) {
 
 	struct stat st;
 	return stat(file.c_str(), &st) == 0;
 };
 
-bool HTTPResponseBuild::canReadFile(const std::string &file)
-{
-	// std::cout << "file -> canReadFile : " << file << std::endl;
-
+bool HTTPResponseBuild::canReadFile(const std::string &file) {
+	
 	return access(file.c_str(), R_OK) == 0;
 };
 
@@ -792,12 +701,8 @@ bool HTTPResponseBuild::isDirectory(const std::string &path)
 	return S_ISDIR(st.st_mode); // S_ISDIR(st.st_mode) asks -> "Do the type bits inside st_mode indicate a directory?"
 }
 
-std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const LocationConfig &location, const ServerConfig &servConf)
-{
-
-	// std::cout << "location.getIndex().empty() : " << location.getIndex().empty() << std::endl;
-	// std::cout << "servConf.getIndex()[0] : " << servConf.getIndex()[0] << std::endl;
-
+std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const LocationConfig &location, const ServerConfig &servConf) {
+	
 	const std::vector<std::string> *indexes;
 
 	if (!location.getIndex().empty()) {
@@ -809,9 +714,6 @@ std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const Locatio
 	for (size_t i = 0; i < indexes->size(); i++) {
 		std::string indexCandidate = joinPath(fullPath, (*indexes)[i]);
 
-		// std::cout << "Trying index: " << indexCandidate << std::endl;
-		// std::cout << "exists: " << fileExists(indexCandidate) << " readable: " << canReadFile(indexCandidate) << std::endl;
-
 		if (fileExists(indexCandidate) && canReadFile(indexCandidate))
 			return indexCandidate;
 	}
@@ -819,12 +721,9 @@ std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const Locatio
 	return "";
 };
 
-std::string HTTPResponseBuild::readReadFile(const std::string &file)
-{
+std::string HTTPResponseBuild::readReadFile(const std::string &file) {
 
 	std::ifstream inputFile(file.c_str(), std::ios::binary);
-
-	////////////////////// HERE ////////////////////////////////
 
 	if (!inputFile)
 		throw std::runtime_error("Could not open file: " + file);
@@ -857,7 +756,6 @@ std::string HTTPResponseBuild::getContentType(const std::string &contenPath)
 		return "application/octet-stream";
 
 	std::string extension = contenPath.substr(dot + 1);
-	// std::cout << " extension: --> " << extension << std::endl;
 
 	if (extension == "html" || extension == "htm")
 		return "text/html";
@@ -890,8 +788,7 @@ bool HTTPResponseBuild::containsParentTraversal(const std::string &path)
 	std::stringstream stream(path);
 	std::string component;
 
-	while (std::getline(stream, component, '/'))
-	{
+	while (std::getline(stream, component, '/')) {
 		if (component == "..")
 			return true;
 	}
@@ -903,15 +800,12 @@ bool HTTPResponseBuild::pathInsideBase(const std::string &base, const std::strin
 {
 
 	std::error_code ec;
-
 	std::filesystem::path resolveBase = std::filesystem::weakly_canonical(base, ec);
 	if (ec)
 		return false;
-	
 	ec.clear();
-
 	std::filesystem::path resolveTarget = std::filesystem::weakly_canonical(target, ec);
-	if(ec)
+	if (ec)
 		return false;
 
 	std::string canonicalBase = resolveBase.string();
@@ -926,18 +820,14 @@ bool HTTPResponseBuild::pathInsideBase(const std::string &base, const std::strin
 	return canonicalTarget.compare(0, canonicalBase.size(), canonicalBase) == 0;
 }
 
-std::string HTTPResponseBuild::urlDecoder(std::string urlPath)
-{
+std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 
 	std::string decodedUrl;
 
-	// std::cout << "urlDecoder HERE" << std::endl;
 
-	for (size_t i = 0; i < urlPath.length(); i++)
-	{
+	for (size_t i = 0; i < urlPath.length(); i++) {
 
-		if (urlPath[i] == '%')
-		{
+		if (urlPath[i] == '%') {
 			if (i + 2 >= urlPath.size())
 				throw std::runtime_error("Invalid percent encoding");
 
@@ -958,9 +848,7 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath)
 
 			decodedUrl += decodedChar;
 			i += 2;
-		}
-		else
-		{
+		} else {
 			decodedUrl += urlPath[i];
 		}
 	}
