@@ -14,10 +14,10 @@
 
 class LocationConfig {
 
-    private:
-        std::string _uriPath;                  // "/upload" -> CGI
-        AllowMethods _methods;  // GET POST DELETE
-        std::string _upload_store;
+	private:
+		std::string _uriPath;				  // "/upload" -> CGI
+		AllowMethods _methods;  // GET POST DELETE
+		std::string _upload_store;
 		// bool _autoIndex;
 		std::string _rootPath;
 		bool _autoIndex;
@@ -30,12 +30,12 @@ class LocationConfig {
 		// bool checkUriPath(const std::string &uripath);
 		// bool checkFSPath(const std::string &fspath);
 
-    public:
-        LocationConfig();
-        ~LocationConfig();
+	public:
+		LocationConfig();
+		~LocationConfig();
 
 		// settings Location parameters
-        void setUriPath(std::string uripath);
+		void setUriPath(std::string uripath);
 		void setAllowMethods(const std::vector<std::string>& methods);
 		void setUploadStore(const std::vector<std::string>& fspath);
 		void setAutoIndex(const std::vector<std::string>& indexes); // Index from Location can override Index from server

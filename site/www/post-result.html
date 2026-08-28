@@ -1,31 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POST upload result</title>
-    <style>
-        body { max-width: 640px; margin: 4rem auto; padding: 0 1rem; font: 16px/1.5 Arial, sans-serif; color: #1f2937; }
-        main { padding: 2rem; border: 1px solid #86efac; border-radius: 12px; background: #f0fdf4; }
-        code { overflow-wrap: anywhere; }
-        a { color: #0069b9; }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>POST upload result</title>
+	<style>
+		body { max-width: 640px; margin: 4rem auto; padding: 0 1rem; font: 16px/1.5 Arial, sans-serif; color: #1f2937; }
+		main { padding: 2rem; border: 1px solid #86efac; border-radius: 12px; background: #f0fdf4; }
+		code { overflow-wrap: anywhere; }
+		a { color: #0069b9; }
+	</style>
 </head>
 <body>
-    <main>
-        <h1>✓ POST request completed</h1>
-        <p>The server returned <strong>201 Created</strong>.</p>
-        <p id="bytes"></p>
-        <p id="location"></p>
-        <p>The file is stored in the configured <code>upload_store</code> directory. This response page does not require CGI or a multipart parser.</p>
-        <p><a href="/post-demo.html">Upload another body</a> · <a href="/">Home</a></p>
-    </main>
-    <script>
-        const parameters = new URLSearchParams(window.location.search);
-        const bytes = parameters.get('bytes');
-        const location = parameters.get('location');
-        document.getElementById('bytes').textContent = bytes === null ? 'Body size is unknown.' : 'Sent body size: ' + bytes + ' byte(s).';
-        document.getElementById('location').textContent = location ? 'Server Location: ' + location : 'The server did not return a Location header.';
-    </script>
+	<main>
+		<h1>✓ POST request completed</h1>
+		<p>The server returned <strong>201 Created</strong>.</p>
+		<p id="bytes"></p>
+		<p id="location"></p>
+		<p>The file is stored in the configured <code>upload_store</code> directory. This response page does not require CGI or a multipart parser.</p>
+		<p><a href="/post-demo.html">Upload another body</a> · <a href="/">Home</a></p>
+	</main>
+	<script>
+		const parameters = new URLSearchParams(window.location.search);
+		const bytes = parameters.get('bytes');
+		const location = parameters.get('location');
+		document.getElementById('bytes').textContent = bytes === null ? 'Body size is unknown.' : 'Sent body size: ' + bytes + ' byte(s).';
+		document.getElementById('location').textContent = location ? 'Server Location: ' + location : 'The server did not return a Location header.';
+	</script>
 </body>
 </html>

@@ -3,18 +3,18 @@
 #include "./hpp/HTTPResponse.hpp"
 
 //		 HTTPResponseBuild::build()
-//		         │
-//		         ├── validate HTTP version
-//		         │
-//		         ├── find location
-//		         │
-//		         ├── redirect? ───────→ return redirect response
-//		         │
-//		         └── no redirect
-//		                 ↓
-//		              switch(method)
-//		              /      |       \
-//		            GET     POST    DELETE
+//				 │
+//				 ├── validate HTTP version
+//				 │
+//				 ├── find location
+//				 │
+//				 ├── redirect? ───────→ return redirect response
+//				 │
+//				 └── no redirect
+//						 ↓
+//					  switch(method)
+//					  /	  |	   \
+//					GET	 POST	DELETE
 
 int HTTPResponseBuild::prepareRequestPath(const HTTPRequest &request, const ServerConfig &servConf, 
 	std::string &path, const LocationConfig *&location) {
@@ -101,31 +101,6 @@ HTTPResponse HTTPResponseBuild::handleGet(
 {
 
 	HTTPResponse res;
-	// std::string path;
-	// std::cout << "    :    Request    : \n"  << "code:  "<<  request.getUri() << std::endl;
-
-	// try {
-	// 	path = urlDecoder(request.getPath());
-	// } catch (const std::exception &e) {
-	// 	return makeErrorResponse(400, request, servConf);
-	// }
-	// // std::cout << "\n    ~~~~~~~~~~~~~    GET    ~~~~~~~~~~~~~\n" << "-> path:  "<<  path << std::endl;
-
-	// if (path.find('\0') != std::string::npos)
-	// 	return makeErrorResponse(400, request, servConf);
-
-	// if (containsParentTraversal(path)) {
-	// 	// std::cout << "path in containsParentTraversal -> " << path << std::endl;
-	// 	return makeErrorResponse(403, request, servConf);
-	// }
-
-	// const LocationConfig *location = findBestLocation(path, servConf);
-	// // std::cout << "location:  " <<  location->getUriPath() << std::endl;
-
-	// if (location == NULL) {
-	// 	// std::cout << "fileExists1" << std::endl;
-	// 	return makeErrorResponse(404, request, servConf);
-	// }
 
 	if (!location->isGetAllowed()) {
 		HTTPResponse erRes = makeErrorResponse(405, request, servConf);
@@ -145,13 +120,10 @@ HTTPResponse HTTPResponseBuild::handleGet(
 	if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
 		relativePath = path.substr(location->getUriPath().size());
 	// std::cout << "\t relativePath :  " <<  relativePath << std::endl;
-	if (!location->getRoot().empty())
-	{
+	if (!location->getRoot().empty()) {
 		baseDir = location->getRoot();
 		fullPath = joinPath(location->getRoot(), relativePath);
-	}
-	else
-	{
+	} else {
 		if (servConf.getRoot().empty() || servConf.getRoot()[0].empty())
 			return makeErrorResponse(500, request, servConf);
 
@@ -195,7 +167,7 @@ HTTPResponse HTTPResponseBuild::handleGet(
 	// CGI FUNCTION and QUESTIONS -> this one was suggested from ChatGPT :D
 	// if the path end on .py -> we search in out Locations for cgi-bin ->
 	// if (isCgiFile(fullPath, location))
-	//     return handleCgi(request, servConf, location, fullPath);
+	//	 return handleCgi(request, servConf, location, fullPath);
 
 	try {
 
@@ -350,7 +322,8 @@ HTTPResponse HTTPResponseBuild::handlePost(
 		if (result <= 0)
 		{
 			close(outputFd);
-			unlink(outputPath.c_str());
+			std::error_code ec;
+			std::filesystem::remove(outputPath, ec);
 
 			return makeErrorResponse(500, request, servConf);
 		}
@@ -396,121 +369,59 @@ HTTPResponse HTTPResponseBuild::handleDelete(
 	const LocationConfig *&location)
 {
 
-	// std::string path;
 	std::string baseDir;
 	std::string fullPath;
-	struct stat targetStat;
 
-	// try {
-	// 	path = urlDecoder(request.getPath());
-	// } catch (const std::exception &e) {
-	// 	return makeErrorResponse(400, request, servConf);
-	// }
-
-	// if (path.find('\0') != std::string::npos)
-	// 	return makeErrorResponse(400, request, servConf);
-
-	// if (containsParentTraversal(path))
-	// 	return makeErrorResponse(403, request, servConf);
-
-	// const LocationConfig *location = findBestLocation(path, servConf);
-
-	// if (location == NULL)
-	// 	return makeErrorResponse(404, request, servConf);
-
-	// DELETE allowed
-	// location root ?
-	// then -> server root
-
-	if (!location->isDeleteAllowed())
-	{
+	if (!location->isDeleteAllowed()) {
 		HTTPResponse res = makeErrorResponse(405, request, servConf);
 		res.setHeader("Allow", buildAllowHeader(*location));
 		return res;
 	}
 
-	// if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
-	//     relativePath = path.substr(location->getUriPath().size());
-	// // std::cout << "\t relativePath :  " <<  relativePath << std::endl;
-	// if (!location->getRoot().empty())
-	//     fullPath = joinPath(location->getRoot(), relativePath);
-	// else
-	//     fullPath = joinPath(servConf.getRoot()[0], path);
-
-	if (!location->getRoot().empty())
-	{
-		// std::cout << "\t location->getRoot() :  " <<  location->getRoot() << std::endl;
-		// std::cout << "\t location->getUriPath() :  " <<  location->getUriPath() << std::endl;
-		// std::cout << "\t location->getPath() :  " <<  location->getRoot << std::endl;
-
+	if (!location->getRoot().empty()) {
 		baseDir = location->getRoot();
 		std::string fileName = path.substr(location->getUriPath().size());
 		fullPath = joinPath(baseDir, fileName);
-		// std::cout << "4-A -> - path.substr(location->getUriPath().size()): " << location->getUriPath() << std::endl;
-		// std::cout << "4-BBB ---> fileName: " << fileName << std::endl;
-	}
-	else
-	{
+	} else {
 		if (servConf.getRoot().empty() || servConf.getRoot()[0].empty())
 			return makeErrorResponse(500, request, servConf);
 		baseDir = servConf.getRoot()[0];
 		fullPath = joinPath(baseDir, path);
 	}
 
-	// std::cout << "5 - location->getRoot();: " << location->getRoot() << std::endl;
-	// std::cout << "6 - servConf.getRoot()[0];: " << servConf.getRoot()[0] << std::endl;
-	// std::cout << "7 - result: " << baseDir << std::endl;
-	// std::cout << "8 - fullPath: " << fullPath << std::endl;
-	// std::cout << "8 - location->getUriPath : " << location->getUriPath() << std::endl;
-	// location->getUriPath
+	std::error_code ec;
+	std::filesystem::file_status targetStatus = std::filesystem::symlink_status(fullPath, ec);
 
-	if (lstat(fullPath.c_str(), &targetStat) == -1)
-	{
-
-		// std::cout << "9: " << std::endl;
-		// std::cout << "lstat FAILED" << std::endl;
-		// std::cout << "fullPath: " << fullPath << std::endl;
-		// std::cout << "errno: " << errno << std::endl;
-		// std::cout << "error: " << strerror(errno) << std::endl;
-
-		if (errno == ENOENT || errno == ENOTDIR)
+	if (ec) {
+		if (ec == std::errc::no_such_file_or_directory || ec == std::errc::not_a_directory)
 			return makeErrorResponse(404, request, servConf);
-		if (errno == EACCES)
+		if (ec == std::errc::permission_denied)
 			return makeErrorResponse(403, request, servConf);
 		return makeErrorResponse(500, request, servConf);
 	}
 
-	if (S_ISDIR(targetStat.st_mode))
+	if (std::filesystem::is_directory(targetStatus))
 		return makeErrorResponse(403, request, servConf);
-	// ?? is we want to reject totally symbolic links and check is we have a regular file
-	// Check the subject and ask peers from Codam . :)
-	// if (!S_ISREG(targetStat.st_mode) && !S_ISLNK(targetStat.st_mode))
-	//     return makeErrorResponse(403, request, servConf);
-
-	// std::cout << "before sending --- baseDir -> base :  " << baseDir << std::endl;
-	// std::cout << "before sending --- fullPath -> target :  " << fullPath << std::endl;
 
 	if (!deleteParentInsideBase(baseDir, fullPath))
 		return makeErrorResponse(403, request, servConf);
 
-	if (unlink(fullPath.c_str()) == -1)
-	{
+	ec.clear();
 
-		// std::cerr << "unlink() failed for: " << fullPath << std::endl;
-		// std::cerr << "errno: " << errno << std::endl;
-		// std::cerr << "error: " << strerror(errno) << std::endl;
+	bool removed = std::filesystem::remove(fullPath, ec);
 
-		if (errno == ENOENT || errno == ENOTDIR)
+	if (ec) {
+		if (ec == std::errc::no_such_file_or_directory)
 			return makeErrorResponse(404, request, servConf);
-
-		if (errno == EACCES || errno == EPERM)
-			return makeErrorResponse(403, request, servConf);
-
-		if (errno == EISDIR)
+		if (ec == std::errc::permission_denied || ec == std::errc::operation_not_permitted)
 			return makeErrorResponse(403, request, servConf);
 
 		return makeErrorResponse(500, request, servConf);
 	}
+
+	if (!removed)
+		return makeErrorResponse(404, request, servConf);
+
 
 	HTTPResponse res;
 	// std::string body = readReadFile("./site/www/delete_page/index.html");
@@ -550,46 +461,29 @@ std::string HTTPResponseBuild::buildAllowHeader(const LocationConfig &location)
 	return allow;
 };
 
-bool HTTPResponseBuild::deleteParentInsideBase(const std::string &base, const std::string &target)
-{
+bool HTTPResponseBuild::deleteParentInsideBase(const std::string &base, const std::string &target) {
 
-	char resolvedBase[PATH_MAX];
-	char resolvedParent[PATH_MAX];
-
-	if (realpath(base.c_str(), resolvedBase) == NULL)
+	std::error_code ec;
+	std::filesystem::path resolvedBase = std::filesystem::weakly_canonical(base, ec);
+	if(ec)
 		return false;
 
-	// realpath(base.c_str(), resolvedBase);
-	// std::cout << "base AFTER ->resolvedBase<- realpath:  " << resolvedBase << std::endl;
-	// return false;
+	std::filesystem::path targetPath(target);
+	std::filesystem::path parentString = targetPath.parent_path();
 
-	size_t slash = target.find_last_of('/');
-
-	std::string parentPath;
-
-	if (slash == std::string::npos)
-		parentPath = ".";
-	else if (slash == 0)
-		parentPath = "/";
-	else
-		parentPath = target.substr(0, slash);
-
-	// std::cout << "base ->parentPath<-  :  " << parentPath << std::endl;
-
-	if (realpath(parentPath.c_str(), resolvedParent) == NULL)
+	ec.clear();
+	std::filesystem::path resolvedParent = std::filesystem::weakly_canonical(parentString, ec);
+	if (ec)
 		return false;
-	// std::cout << "2 - base AFTER ->resolvedParent<- realpath():  " << resolvedParent << std::endl;
 
-	std::string canonicalBase(resolvedBase);
-	std::string canonicalParent(resolvedParent);
+	std::string canonicalBase = resolvedBase.string();
+	std::string canonicalParent = resolvedParent.string();
 
 	if (canonicalParent == canonicalBase)
 		return true;
 
-	if (!canonicalBase.empty() && canonicalBase[canonicalBase.size() - 1] != '/')
-	{
+	if (!canonicalBase.empty() && canonicalBase[canonicalBase.size() - 1] != '/') 
 		canonicalBase += '/';
-	}
 
 	return canonicalParent.compare(0, canonicalBase.size(), canonicalBase) == 0;
 }
@@ -604,7 +498,7 @@ HTTPResponse HTTPResponseBuild::makeErrorResponse(int code, const HTTPRequest &r
 	std::string text = getStatusText(code);
 	std::string body = buildErrorBody(code, servConf);
 
-	// std::cout << "    :    BODY    : \n" << "code:  "<<  code << std::endl;
+	// std::cout << "	:	BODY	: \n" << "code:  "<<  code << std::endl;
 	// std::cout << "Code: " << code << std::endl;
 
 	res.setStatusCode(code);
@@ -638,8 +532,7 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 	// std::cout << "ROOT from servConf: " << servConf.getRoot().back() << std::endl;
 	std::string error_message = getStatusText(code);
 
-	if (servConf.hasErrorPage(code))
-	{
+	if (servConf.hasErrorPage(code)) {
 
 		std::string error_path = servConf.getOneErrorPage(code);
 		std::string root = servConf.getRoot().back();
@@ -647,20 +540,16 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 
 		// std::cout << "\tfileExists(fullPath) : " << fileExists(fullPath)
 		// << "\n\t canReadFile(fullPath) : " <<  canReadFile(fullPath) << std::endl;
-		try
-		{
+		try {
 
 			// throw std::runtime_error("Forced error");
-			if (fileExists(fullPath) && canReadFile(fullPath))
-			{
+			if (fileExists(fullPath) && canReadFile(fullPath)) {
 				// std::cout << "\tFULL PATH : " << fullPath << std::endl;
 
 				// cgi -> child -> execute that file with query -> return result -> we put that result in body -> and send it
 				return readReadFile(fullPath);
 			}
-		}
-		catch (const std::exception &e)
-		{
+		} catch (const std::exception &e) {
 			std::cerr << "Could not read custom error page " << error_path << ": " << e.what() << std::endl;
 		}
 
@@ -679,41 +568,27 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 	std::string text = getStatusText(code);
 
 	return readReadFile("./site/www/error_pages/index.html");
-	//     "<html><body><h1>" +
-	//    std::to_string(code) + " " + text +
-	//    "</h1></body></html>";
+	//	 "<html><body><h1>" +
+	//	std::to_string(code) + " " + text +
+	//	"</h1></body></html>";
 };
 
 std::string HTTPResponseBuild::getStatusText(int code)
 {
-	switch (code)
-	{
-	case 200:
-		return "OK";
-	case 201:
-		return "Created";
-	case 204:
-		return "No Content";
-	case 301:
-		return "Moved Permanently";
-	case 400:
-		return "Bad Request";
-	case 403:
-		return "Forbidden";
-	case 404:
-		return "Not Found";
-	case 405:
-		return "Method Not Allowed";
-	case 413:
-		return "Payload Too Large";
-	case 500:
-		return "Internal Server Error";
-	case 501:
-		return "Not Implemented";
-	case 505:
-		return "HTTP Version Not Supported";
-	default:
-		return "Error";
+	switch (code) {
+		case 200: return "OK";
+		case 201: return "Created";
+		case 204: return "No Content";
+		case 301: return "Moved Permanently";
+		case 400: return "Bad Request";
+		case 403: return "Forbidden";
+		case 404: return "Not Found";
+		case 405: return "Method Not Allowed";
+		case 413: return "Payload Too Large";
+		case 500: return "Internal Server Error";
+		case 501: return "Not Implemented";
+		case 505: return "HTTP Version Not Supported";
+		default: return "Error";
 	}
 }
 
@@ -726,16 +601,14 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request)
 	if (request.hasHeader("connection"))
 		connection = toLower(trim(request.getHeader("connection")));
 
-	if (version == "1.0")
-	{
+	if (version == "1.0") {
 		if (connection == "keep-alive")
 			return "keep-alive";
 
 		return "close";
 	}
 
-	if (version == "1.1")
-	{
+	if (version == "1.1") {
 		if (connection == "close")
 			return "close";
 
@@ -751,8 +624,7 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request)
 //  AUTO INDEX
 // This is for autoIndex in Location
 
-HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, const ServerConfig &servConf, const std::string &fullPath, const std::string &requestPath)
-{
+HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, const ServerConfig &servConf, const std::string &fullPath, const std::string &requestPath) {
 
 	HTTPResponse res;
 	// std::cout << " Hello from HTTPResponseBuild " << std::endl;
@@ -767,13 +639,13 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 	body += "<!DOCTYPE html>\n";
 	body += "<html>\n";
 	body += "<head>\n";
-	body += "    <meta charset=\"UTF-8\">\n";
-	body += "    <title>Index of " + requestPath + "</title>\n";
+	body += "	<meta charset=\"UTF-8\">\n";
+	body += "	<title>Index of " + requestPath + "</title>\n";
 	body += "</head>\n";
 	body += "<body>\n";
-	body += "    <h1>Index of " + requestPath + "</h1>\n";
-	body += "    <hr>\n";
-	body += "    <ul>\n";
+	body += "	<h1>Index of " + requestPath + "</h1>\n";
+	body += "	<hr>\n";
+	body += "	<ul>\n";
 
 	struct dirent *entry;
 
@@ -800,15 +672,15 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 		href += name;
 
 		// if (checkExtensionOfFile(extension)) {
-		//     body += "        <li><img src=\"" + href + "\" width=\"200\"><br></li>\n";
+		//	 body += "		<li><img src=\"" + href + "\" width=\"200\"><br></li>\n";
 		// } else {
-		body += "        <li><a href=\"" + href + "\">" + name + "</a><br>";
+		body += "		<li><a href=\"" + href + "\">" + name + "</a><br>";
 		// }
 		// std::cout << "\t\t body --> " << body << std::endl;
 	}
 
-	body += "    </ul>\n";
-	body += "    <hr>\n";
+	body += "	</ul>\n";
+	body += "	<hr>\n";
 	body += "</body>\n";
 	body += "</html>\n";
 
@@ -928,17 +800,13 @@ std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const Locatio
 
 	const std::vector<std::string> *indexes;
 
-	if (!location.getIndex().empty())
-	{
+	if (!location.getIndex().empty()) {
 		indexes = &location.getIndex();
-	}
-	else
-	{
+	} else {
 		indexes = &servConf.getIndex();
 	}
 
-	for (size_t i = 0; i < indexes->size(); i++)
-	{
+	for (size_t i = 0; i < indexes->size(); i++) {
 		std::string indexCandidate = joinPath(fullPath, (*indexes)[i]);
 
 		// std::cout << "Trying index: " << indexCandidate << std::endl;
@@ -1034,17 +902,20 @@ bool HTTPResponseBuild::containsParentTraversal(const std::string &path)
 bool HTTPResponseBuild::pathInsideBase(const std::string &base, const std::string &target)
 {
 
-	char resolveBase[PATH_MAX];
-	char resolveTarget[PATH_MAX];
+	std::error_code ec;
 
-	if (realpath(base.c_str(), resolveBase) == NULL)
+	std::filesystem::path resolveBase = std::filesystem::weakly_canonical(base, ec);
+	if (ec)
+		return false;
+	
+	ec.clear();
+
+	std::filesystem::path resolveTarget = std::filesystem::weakly_canonical(target, ec);
+	if(ec)
 		return false;
 
-	if (realpath(target.c_str(), resolveTarget) == NULL)
-		return false;
-
-	std::string canonicalBase(resolveBase);
-	std::string canonicalTarget(resolveTarget);
+	std::string canonicalBase = resolveBase.string();
+	std::string canonicalTarget = resolveTarget.string();
 
 	if (canonicalTarget == canonicalBase)
 		return true;

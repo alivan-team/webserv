@@ -10,21 +10,21 @@ ServerConfig::ServerConfig() :_host("0.0.0.0"), _port(8080), _server_name({"loca
 ServerConfig::~ServerConfig() {};
 
 static bool validServerNameChar(char ch) {
-    
+	
 	unsigned char c = static_cast<unsigned char>(ch);
-    return std::isalnum(c) || c == '_' || c == '-' || c == '.';
+	return std::isalnum(c) || c == '_' || c == '-' || c == '.';
 }
 
 static bool validServerName(const std::string& name) {
 
-    if (name.empty())
-        return false;
+	if (name.empty())
+		return false;
 
-    for (char ch : name) {
-        if (!validServerNameChar(ch))
-            return false;
-    }
-    return true;
+	for (char ch : name) {
+		if (!validServerNameChar(ch))
+			return false;
+	}
+	return true;
 }
 
 
@@ -59,7 +59,7 @@ void ServerConfig::setPort(const std::vector<std::string>& port) {
 
 	if (!check_num(portString))
 		throw std::runtime_error("Invalid listening port");
-    
+	
 	int i_port = std::atoi(portString.c_str());
 
 	if (i_port < 1 || i_port > 65535) {
@@ -73,27 +73,27 @@ void ServerConfig::setPort(const std::vector<std::string>& port) {
 void ServerConfig::setServerName(const std::vector<std::string>& server_name) {
 
 	if (server_name.empty())
-        throw std::runtime_error("Invalid server name");
+		throw std::runtime_error("Invalid server name");
 
 	for (const std::string& name : server_name) {
-        if (!validServerName(name))
-            throw std::runtime_error("Invalid server name");
-    }
+		if (!validServerName(name))
+			throw std::runtime_error("Invalid server name");
+	}
 
 	_server_name.clear();
 
-    _server_name.insert(_server_name.end(), server_name.begin(), server_name.end());
+	_server_name.insert(_server_name.end(), server_name.begin(), server_name.end());
 };
 
 void ServerConfig::setRoot(const std::vector<std::string>& root) {
 
 	if (root.empty() || root.size() != 1)
-    	throw std::runtime_error("Invalid root");
+		throw std::runtime_error("Invalid root");
 
 	for (const std::string& r : root) {
 
 		if (r.empty())
-    			throw std::runtime_error("Invalid root");
+				throw std::runtime_error("Invalid root");
 
 		if (hasControlChar(r)) {
 			throw std::runtime_error("Invalid root");
@@ -107,7 +107,7 @@ void ServerConfig::setRoot(const std::vector<std::string>& root) {
 void ServerConfig::setIndex(const std::vector<std::string>& index_name) {
 
 	if (index_name.empty())
-    	throw std::runtime_error("Invalid index name");
+		throw std::runtime_error("Invalid index name");
 
 	for (const std::string& index : index_name) {
 

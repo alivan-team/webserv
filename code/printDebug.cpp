@@ -6,70 +6,70 @@
 void printDebug(std::string title, const bool& value) {
 
 	std::cout << title;
-    std::cout << (value? "true" : "false") << " ";
-    std::cout << "\n";
+	std::cout << (value? "true" : "false") << " ";
+	std::cout << "\n";
 }
 
 void printDebug(std::string title, const int& value) {
 
 	std::cout << title;
-    std::cout << value << " ";
-    std::cout << "\n";
+	std::cout << value << " ";
+	std::cout << "\n";
 }
 
 void printDebug(std::string title, const size_t& value) {
 
 	std::cout << title;
-    std::cout << value;
+	std::cout << value;
 }
 
 void printDebug(std::string title, const std::string& str) {
 	std::cout << title;
-    // for (int value : str)
-        std::cout << str << " ";
+	// for (int value : str)
+		std::cout << str << " ";
 
-    std::cout << "\n";
+	std::cout << "\n";
 }
 
 void printDebug(std::string title, const std::vector<int>& vec) {
 	std::cout << title;
-    for (int value : vec)
-        std::cout << value << " ";
+	for (int value : vec)
+		std::cout << value << " ";
 
-    std::cout << "\n";
+	std::cout << "\n";
 }
 
 void printDebug(std::string title, const std::vector<unsigned int>& vec) {
 	std::cout << title;
-    for (int value : vec)
-        std::cout << value << " ";
+	for (int value : vec)
+		std::cout << value << " ";
 
-    std::cout << "\n";
+	std::cout << "\n";
 }
 
 void printDebug(std::string title, const std::vector<std::string>& vec) {
 	std::cout << title;
-    for (const auto& value : vec)
-        std::cout << value << " ";
+	for (const auto& value : vec)
+		std::cout << value << " ";
 
-    std::cout << "\n";
+	std::cout << "\n";
 }
 
 void printDebug(std::string title, const std::map<int, std::string>& vec) {
 	std::cout << title;
-    for (const auto& value : vec) {
-        std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
-        std::cout << "\n";
-    }
+	for (const auto& value : vec) {
+		std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
+		std::cout << "\n";
+	}
 
 }
 
 void printDebug(std::string title, const std::map<std::string, std::string>& vec) {
 	std::cout << title;
-    for (const auto& value : vec) {
-        std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
-        std::cout << "\n";
-    }
+	for (const auto& value : vec) {
+		std::cout << "\t code: " << value.first << " | path: " << value.second << " ";
+		std::cout << "\n";
+	}
 
 }
 

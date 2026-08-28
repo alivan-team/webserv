@@ -14,8 +14,8 @@ class ConfigParser {
 		using Setter = void (ServerConfig::*)(const std::vector<std::string>&);
 		using LocationSetter = void (LocationConfig::*)(const std::vector<std::string>&);
 
-    	std::map<std::string, Setter> setters;
-    	std::map<std::string, LocationSetter> locationSetters;
+		std::map<std::string, Setter> setters;
+		std::map<std::string, LocationSetter> locationSetters;
 
 		template <typename ObjectType, typename SetterType>
 		void findKey(ObjectType& object, std::map<std::string, SetterType>& settersMap, 
@@ -53,7 +53,7 @@ class ConfigParser {
 			i++;
 		}
 
-	    std::vector<ServerConfig> servers;
+		std::vector<ServerConfig> servers;
 	
 	public:
 		ConfigParser();

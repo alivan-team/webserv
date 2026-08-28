@@ -25,17 +25,17 @@ private:
 	) const;
 
 public:
-    MultipartParser();
-    MultipartParser(
-        const std::string& buffer,
-        size_t bodyOffset,
-        size_t bodySize,
-        const std::string& boundary
-    );
+	MultipartParser();
+	MultipartParser(
+		const std::string& buffer,
+		size_t bodyOffset,
+		size_t bodySize,
+		const std::string& boundary
+	);
 
-    MultipartParser(const MultipartParser& other);
-    MultipartParser& operator=(const MultipartParser& other);
-    ~MultipartParser();
+	MultipartParser(const MultipartParser& other);
+	MultipartParser& operator=(const MultipartParser& other);
+	~MultipartParser();
 
 	std::vector<MultipartPart> parse() const;
 };

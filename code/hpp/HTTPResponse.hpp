@@ -42,18 +42,18 @@ class HTTPResponse {
 
 #endif
 
-    // std::string response =
-    // "HTTP/1.1 200 OK\r\n"
-    // "Content-Type: text/plain\r\n"
-    // "Content-Length: " + std::to_string(body.size()) + "\r\n"
-    // "\r\n" +
-    // body;
+	// std::string response =
+	// "HTTP/1.1 200 OK\r\n"
+	// "Content-Type: text/plain\r\n"
+	// "Content-Length: " + std::to_string(body.size()) + "\r\n"
+	// "\r\n" +
+	// body;
 
 	// HTTP/version status reason
 	// Content-Type
 	// Content-Length
 	// Connection
-    
+	
 
 
 
@@ -61,7 +61,7 @@ class HTTPResponse {
 // .html  -> text/html
 // .htm   -> text/html
 // .css   -> text/css
-// .js    -> application/javascript
+// .js	-> application/javascript
 // .png   -> image/png
 // .jpg   -> image/jpeg
 // .jpeg  -> image/jpeg

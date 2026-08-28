@@ -31,8 +31,8 @@ make
 
 ```nginx
 location /upload {
-    allow_methods GET POST DELETE;
-    upload_store ./site/www/uploads;
+	allow_methods GET POST DELETE;
+	upload_store ./site/www/uploads;
 }
 ```
 

@@ -40,12 +40,12 @@ void HTTPRequestParser::parseRequestLine(
 
 	std::string strMethod = line.substr(0, firstSpace);
 	if (strMethod.empty())
-        throw HTTPParseException(400, "Empty HTTP method");
+		throw HTTPParseException(400, "Empty HTTP method");
 	request.setMethod(parseMethod(strMethod));
 
 	std::string strUri = line.substr(firstSpace + 1, secondSpace - firstSpace - 1);
 	if (strUri.empty())
-        throw HTTPParseException(400, "Empty request URI");
+		throw HTTPParseException(400, "Empty request URI");
 	request.setUri(strUri);
 
 	std::string strVer = line.substr(secondSpace + 1);
@@ -60,19 +60,19 @@ void HTTPRequestParser::parseRequestLine(
 };
 
 void HTTPRequestParser::parseHeaders(
-    const std::string &headers,
-    HTTPRequest &request) const {
+	const std::string &headers,
+	HTTPRequest &request) const {
 
 		size_t begin = 0;
 
 		while (begin < headers.length())
 		{
-		    size_t end = headers.find("\r\n", begin);
+			size_t end = headers.find("\r\n", begin);
 
-		    if (end == std::string::npos)
-		        end = headers.length();
+			if (end == std::string::npos)
+				end = headers.length();
 
-		    std::string line = headers.substr(begin, end - begin);
+			std::string line = headers.substr(begin, end - begin);
 			size_t colon = line.find(':');
 
 			if (colon == std::string::npos)
@@ -81,8 +81,8 @@ void HTTPRequestParser::parseHeaders(
 			std::string name = trim(line.substr(0, colon));
 			std::string value = trim(line.substr(colon + 1));
 			std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
-        		return std::tolower(c);
-    		});
+				return std::tolower(c);
+			});
 
 			request.addHeader(name, value);
 
@@ -91,8 +91,8 @@ void HTTPRequestParser::parseHeaders(
 	};
 
 void HTTPRequestParser::parseUri(
-    const std::string &uri,
-    HTTPRequest &request) const {
+	const std::string &uri,
+	HTTPRequest &request) const {
 
 	size_t questMark = uri.find('?');
 
