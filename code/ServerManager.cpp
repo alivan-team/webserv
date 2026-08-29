@@ -74,6 +74,7 @@ bool ServerManager::readClientData(size_t index) {
 	}
 
 	Client& client = _clients.at(clientFd);
+    client.updateLastActivity();
 	client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
 	return processRequestBuffer(index);
@@ -134,7 +135,7 @@ void ServerManager::run() {
 
 	while (true) {
 		
-		int ready = poll(_pollfds.data(), _pollfds.size(), -1);
+		int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
 		if (ready < 0)
 			throw std::runtime_error("poll() failed");
 
@@ -172,6 +173,7 @@ void ServerManager::run() {
 			}
 			i++;
 		}
+        removeTimeOutClients();
 	}
 };
 
@@ -284,8 +286,10 @@ bool ServerManager::writeClientData(size_t index) {
 		return true;
 	}
 
-	if (sent > 0) 
+	if (sent > 0) {
+        client.updateLastActivity();
 		client.setResponseSent(sentAlreay + static_cast<size_t>(sent));
+    }
 
 	if (client.getResponseSent() == response.size()) {
 		_pollfds[index].events &= ~POLLOUT;
@@ -312,6 +316,38 @@ bool ServerManager::writeClientData(size_t index) {
 
 	return false;
 };
+
+void ServerManager::removeTimeOutClients() {
+
+    const std::chrono::steady_clock::time_point now = 
+            std::chrono::steady_clock::now();
+    std::map<int, Client>::iterator it = _clients.begin();
+    std::vector<int> timeOutFds;
+    
+    // std::cout << "TIMEOUT client fd: " << std::endl;
+
+    while (it != _clients.end()) {
+        
+        std::chrono::seconds timeLeft = 
+            std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActiviry());
+        
+            if (timeLeft.count() > 30) 
+            timeOutFds.push_back(it->first);
+
+        ++it;
+    }
+
+    for (size_t i = 0; i < timeOutFds.size(); i++) {
+        for (size_t j = 0; j < _pollfds.size(); j++) {
+            if (_pollfds[j].fd == timeOutFds[i]) {
+                // std::cout << "TIMEOUT client fd: " << timeOutFds[i] << std::endl;
+                removeClient(j);
+                break ;
+            }
+        }
+    }
+};
+
 
 RequestState ServerManager::getRequestState(Client& client, const ServerConfig*& serverConfig) {
 

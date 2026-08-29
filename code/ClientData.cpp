@@ -2,14 +2,20 @@
 
 Client::Client() :  _responseSent(0), _client_fd(-1), _server_fd(-1), _headersParsed(false),
 		_bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
-		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false) {
+		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
+        _lastActivity(std::chrono::steady_clock::now()) {
 	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
 
 Client::Client(int client_fd, int server_fd) :  _responseSent(0), _client_fd(client_fd), _server_fd(server_fd), 
 		_headersParsed(false), _bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
-		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false) {
+		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
+        _lastActivity(std::chrono::steady_clock::now()) {
 	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
+};
+
+void Client::updateLastActivity() {
+    _lastActivity = std::chrono::steady_clock::now();
 };
 
 void Client::appendToRequestBuffer(const char* buffer, size_t bytes) {
@@ -87,6 +93,8 @@ const HTTPRequest& Client::getRequest() const { return _request; };
 size_t Client::getRequestEnd() const { return _requestEnd; };
 int Client::getRequestErrorCode() const { return _requestErrorCode; };
 bool Client::getHeaderIsParsed() const {return _headersParsed; };
+const std::chrono::steady_clock::time_point& Client::getLastActiviry() { return _lastActivity; };
+
 
 
 void Client::clearResponse() {

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iostream>
 #include <limits>
+#include <chrono>
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 #include "./HelperFunctions.hpp"
@@ -46,6 +47,7 @@ class Client {
 		HTTPRequest _request;
 		bool _closeAfterResoinse;
 		std::string _host;
+		std::chrono::steady_clock::time_point _lastActivity;
 		// HTTPResponse _response;
 		
 		bool parseContentLength(const std::string& value, size_t& result) const;
@@ -87,6 +89,8 @@ class Client {
 		bool decodeChunkedBody();
 		bool getHeaderIsParsed() const;
 		const std::string& getHost() const;
+		void updateLastActivity();
+		const std::chrono::steady_clock::time_point& getLastActiviry();
 		
 };
 

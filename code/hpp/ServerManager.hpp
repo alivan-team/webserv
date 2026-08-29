@@ -35,6 +35,7 @@ class ServerManager {
 		// bool sendWholeResponse(int clinetFd, const std::string& respone) const;
 		bool processRequestBuffer(size_t index);
 		RequestState getRequestState(Client& client, const ServerConfig*& serverConfig);
+        void removeTimeOutClients();
 
 	public: 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);
