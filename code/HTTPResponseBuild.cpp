@@ -167,8 +167,11 @@ HTTPResponse HTTPResponseBuild::handlePost(
 	// 	return makeErrorResponse(404, request, servConf);
 
 	(void)path;
-	if (!location->isPostAllowed())
-		return makeErrorResponse(405, request, servConf);
+	if (!location->isPostAllowed()) {
+		HTTPResponse erRes = makeErrorResponse(405, request, servConf);
+		erRes.setHeader("Allow", buildAllowHeader(*location));
+		return erRes;
+	}
 
 	const std::string &uploadStore = location->getUploadStore();
 
@@ -278,7 +281,7 @@ HTTPResponse HTTPResponseBuild::handlePost(
 			requestBuffer.data() + dataOffset + written,
 			dataSize - written);
 
-		if (result < 0 && errno == EINTR)
+		if (result < 0 && errno == EINTR) // After write and read checking errno is forbiden from the subject :D
 			continue;
 
 		if (result <= 0)
