@@ -160,11 +160,6 @@ HTTPResponse HTTPResponseBuild::handlePost(
 	std::string path,  
 	const LocationConfig *&location)
 {
-	// const LocationConfig *location =
-	// 	findBestLocation(request.getPath(), servConf);
-
-	// if (location == NULL)
-	// 	return makeErrorResponse(404, request, servConf);
 
 	(void)path;
 	if (!location->isPostAllowed()) {
@@ -281,12 +276,12 @@ HTTPResponse HTTPResponseBuild::handlePost(
 			requestBuffer.data() + dataOffset + written,
 			dataSize - written);
 
-		if (result < 0 && errno == EINTR) // After write and read checking errno is forbiden from the subject :D
+		if (result < 0 && errno == EINTR)
 			continue;
 
 		if (result <= 0)
 		{
-			close(outputFd);
+			close(outputFd); 
 			std::error_code ec;
 			std::filesystem::remove(outputPath, ec);
 

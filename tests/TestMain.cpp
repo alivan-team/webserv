@@ -164,106 +164,6 @@ void testServerConfig()
 	std::cout << "PASS ServerConfig" << std::endl;
 }
 
-// void testServerConfig()
-// {
-//	 ServerConfig server;
-
-//	 check(
-//		 server.getServerName().size() == 1,
-//		 "default server name exists"
-//	 );
-
-//	 check(
-//		 server.getServerName().at(0) == "localhost",
-//		 "default server name is localhost"
-//	 );
-
-//	 std::vector<std::string> serverNames;
-//	 serverNames.push_back("example.test");
-//	 serverNames.push_back("api-example");
-
-//	 server.setServerName(serverNames);
-
-//	 check(
-//		 server.getServerName().size() == 2,
-//		 "configured server names replace the default"
-//	 );
-
-//	 check(
-//		 server.getServerName().at(0) == "example.test",
-//		 "first configured server name is stored"
-//	 );
-
-//	 check(
-//		 server.getServerName().at(1) == "api-example",
-//		 "second configured server name is stored"
-//	 );
-
-//	 std::vector<std::string> roots;
-//	 roots.push_back("./site/www");
-
-//	 server.setRoot(roots);
-
-//	 check(
-//		 !server.getRoot().empty(),
-//		 "server root is stored"
-//	 );
-
-//	 check(
-//		 server.getRoot().back() == "./site/www",
-//		 "configured server root is correct"
-//	 );
-
-//	 std::vector<std::string> indexes;
-//	 indexes.push_back("index.html");
-//	 indexes.push_back("home.html");
-
-//	 server.setIndex(indexes);
-
-//	 check(
-//		 server.getIndex().size() == 2,
-//		 "configured indexes are stored"
-//	 );
-
-//	 check(
-//		 server.getIndex().at(0) == "index.html",
-//		 "first configured index is correct"
-//	 );
-
-//	 check(
-//		 server.getIndex().at(1) == "home.html",
-//		 "second configured index is correct"
-//	 );
-
-//	 std::cout << "PASS ServerConfig" << std::endl;
-// }
-
-// void testServerConfig()
-// {
-//	 ServerConfig server;
-//	 server.setPort(std::vector<std::string>{"9090"});
-//	 server.setServerName(std::vector<std::string>{"example.test", "api-example"});
-//	 server.setRoot(std::vector<std::string>{"./public"});
-//	 server.setIndex(std::vector<std::string>{"home.html"});
-//	 server.setClientMaxBodySize(std::vector<std::string>{"2048"});
-//	 server.setErrorPage(std::vector<std::string>{"404", "500", "/errors/error.html"});
-
-//	 check(server.getPort() == 9090, "configured port overrides the default");
-//	 check(server.getServerName().size() == 3, "server names are appended to defaults");
-//	 check(server.getRoot().at(0) == "./public", "server root is replaced");
-//	 check(server.getIndex().back() == "home.html", "server index is appended");
-//	 check(server.getClientMaxBodySize().back() == 2048U, "body-size limit is parsed");
-//	 check(server.hasErrorPage(404) && server.getOneErrorPage(500) == "/errors/error.html",
-//		   "error pages are mapped to every specified status");
-
-//	 checkThrows([&server] { server.setPort(std::vector<std::string>{"70000"}); },
-//				 "ports above 65535 are rejected");
-//	 checkThrows([&server] { server.setServerName(std::vector<std::string>{"bad name"}); },
-//				 "server names with whitespace are rejected");
-//	 checkThrows([&server] { server.setClientMaxBodySize(std::vector<std::string>{"12KB"}); },
-//				 "non-numeric body-size limits are rejected");
-// }
-
 void testConfigParser()
 {
 	ConfigParser parser;
@@ -439,90 +339,6 @@ void testClientCloseAfterResponse()
 	);
 }
 
-// void testClientConsumeRequestPreservesNextRequest()
-// {
-//	 Client client(42, 7);
-
-//	 const std::string firstRequest =
-//		 "GET /one HTTP/1.1\r\n"
-//		 "Host: unit.test\r\n"
-//		 "\r\n";
-
-//	 const std::string secondRequest =
-//		 "GET /two HTTP/1.1\r\n"
-//		 "Host: unit.test\r\n"
-//		 "\r\n";
-
-//	 const std::string combined =
-//		 firstRequest + secondRequest;
-
-//	 client.appendToRequestBuffer(
-//		 combined.c_str(),
-//		 combined.size()
-//	 );
-
-//	 check(
-//		 client.checkRequestState() == RequestState::Complete,
-//		 "first request is detected when two requests are buffered"
-//	 );
-
-//	 check(
-//		 client.getRequestEnd() == firstRequest.size(),
-//		 "request end points to the end of only the first request"
-//	 );
-
-//	 client.consumeRequest();
-
-//	 check(
-//		 client.getRequestBuffer() == secondRequest,
-//		 "consumeRequest preserves an already-buffered next request"
-//	 );
-
-//	 check(
-//		 client.checkRequestState() == RequestState::Complete,
-//		 "preserved second request can immediately be processed"
-//	 );
-// }
-
-// void testClientConsumeRequestPreservesPartialNextRequest()
-// {
-//	 Client client(42, 7);
-
-//	 const std::string firstRequest =
-//		 "GET /one HTTP/1.1\r\n"
-//		 "Host: unit.test\r\n"
-//		 "\r\n";
-
-//	 const std::string partialSecondRequest =
-//		 "GET /two HTTP/1.1\r\n"
-//		 "Host:";
-
-//	 const std::string combined =
-//		 firstRequest + partialSecondRequest;
-
-//	 client.appendToRequestBuffer(
-//		 combined.c_str(),
-//		 combined.size()
-//	 );
-
-//	 check(
-//		 client.checkRequestState() == RequestState::Complete,
-//		 "first request completes even when part of the next request is buffered"
-//	 );
-
-//	 client.consumeRequest();
-
-//	 check(
-//		 client.getRequestBuffer() == partialSecondRequest,
-//		 "consumeRequest preserves partial bytes belonging to the next request"
-//	 );
-
-//	 check(
-//		 client.checkRequestState() == RequestState::Incomplete,
-//		 "partial preserved request correctly waits for more POLLIN data"
-//	 );
-// }
-
 void testClientNewResponseResetsProgress()
 {
 	Client client(42, 7);
@@ -548,25 +364,6 @@ void testClientNewResponseResetsProgress()
 		"queueing a new response replaces the previous response"
 	);
 }
-
-// void testClientRequestBuffer()
-// {
-//	 Client client(42, 7);
-//	 const std::string firstPart = "POST /upload HTTP/1.1\r\nContent-Length: 5\r\n\r\nhe";
-//	 const std::string secondPart = "llo";
-
-//	 client.appendToRequestBuffer(firstPart.c_str(), firstPart.size());
-//	 check(!client.hasCompleteRequest(), "a request waits until Content-Length bytes arrive");
-//	 client.appendToRequestBuffer(secondPart.c_str(), secondPart.size());
-//	 check(client.hasCompleteRequest(), "a complete request is detected across recv chunks");
-//	 check(client.getFullBodyRequest() == "hello", "the complete request body is retained");
-//	 check(client.getPartBodyRequest(1, 99) == "ello", "body slices are bounded to available data");
-
-//	 client.clearRequestBuffer();
-//	 const std::string headerOnly = "GET / HTTP/1.1\r\nHost: unit.test\r\n\r\n";
-//	 client.appendToRequestBuffer(headerOnly.c_str(), headerOnly.size());
-//	 check(client.hasCompleteRequest(), "header-only requests are complete after CRLF CRLF");
-// }
 
 void run(const std::string& name, void (*test)())
 {
@@ -1570,16 +1367,12 @@ int main()
 	run("HTTPRequestParser", testHttpRequestParser);
 	run("HTTPRequest body location", testHttpRequestBodyLocation);
 	run("POST upload", testPostUpload);
-	// run("Client request buffer", testClientRequestBuffer);
 	run("HTTPResponse", testHttpResponse);
 	run("Client response buffer", testClientResponseBuffer);
 	run("Client new response resets progress", testClientNewResponseResetsProgress);
 	run("Client close after response", testClientCloseAfterResponse);
 	run("Client chunked body decoding", testClientDecodeChunkedBody); // 
 	run("Client Content-Length request", testClientContentLengthUnaffected);
-	// run("Client consume preserves next request", testClientConsumeRequestPreservesNextRequest);
-	// run("Client consume preserves partial next request", testClientConsumeRequestPreservesPartialNextRequest);
-
 	run("Virtual host server configs", testVirtualHostServerConfigs);
 	run("Multiple server names", testMultipleServerNames);
 	run("Virtual host body size limits", testVirtualHostBodySizeLimits);
