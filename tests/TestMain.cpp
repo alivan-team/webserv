@@ -19,6 +19,8 @@
 #include <iterator>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <chrono>
+#include <thread>
 
 namespace {
 
@@ -1516,6 +1518,47 @@ void testServerConfigInvalidListen()
 	);
 }
 
+void testClientLastActivityInitialized()
+{
+    const std::chrono::steady_clock::time_point before =
+        std::chrono::steady_clock::now();
+
+    Client client(42, 7);
+
+    const std::chrono::steady_clock::time_point after =
+        std::chrono::steady_clock::now();
+
+    const std::chrono::steady_clock::time_point& activity =
+        client.getLastActivity();
+
+    check(
+        activity >= before && activity <= after,
+        "Client last activity is initialized when client is created"
+    );
+}
+
+void testClientLastActivityUpdates()
+{
+    Client client(42, 7);
+
+    const std::chrono::steady_clock::time_point first =
+        client.getLastActivity();
+
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(20)
+    );
+
+    client.updateLastActivity();
+
+    const std::chrono::steady_clock::time_point second =
+        client.getLastActivity();
+
+    check(
+        second > first,
+        "Client last activity is refreshed when activity occurs"
+    );
+}
+
 } // namespace
 
 int main()
@@ -1529,7 +1572,6 @@ int main()
 	run("POST upload", testPostUpload);
 	// run("Client request buffer", testClientRequestBuffer);
 	run("HTTPResponse", testHttpResponse);
-	// added on 20 Aug - Ivan - for log:
 	run("Client response buffer", testClientResponseBuffer);
 	run("Client new response resets progress", testClientNewResponseResetsProgress);
 	run("Client close after response", testClientCloseAfterResponse);
@@ -1545,6 +1587,8 @@ int main()
 	run("ServerConfig listen", testServerConfigListen);
 	run("ServerConfig invalid listen", testServerConfigInvalidListen);  
 	run("Redirect", testRedirect);
+	run("Client activity initialized", testClientLastActivityInitialized);
+	run("Client activity updates", testClientLastActivityUpdates);
 
 	if (g_failures != 0) {
 		std::cerr << g_failures << " assertion(s) failed\n";

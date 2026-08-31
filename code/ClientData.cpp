@@ -93,7 +93,7 @@ const HTTPRequest& Client::getRequest() const { return _request; };
 size_t Client::getRequestEnd() const { return _requestEnd; };
 int Client::getRequestErrorCode() const { return _requestErrorCode; };
 bool Client::getHeaderIsParsed() const {return _headersParsed; };
-const std::chrono::steady_clock::time_point& Client::getLastActiviry() { return _lastActivity; };
+const std::chrono::steady_clock::time_point& Client::getLastActivity() { return _lastActivity; };
 
 
 

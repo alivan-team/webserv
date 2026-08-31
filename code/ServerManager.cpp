@@ -329,7 +329,7 @@ void ServerManager::removeTimeOutClients() {
     while (it != _clients.end()) {
         
         std::chrono::seconds timeLeft = 
-            std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActiviry());
+            std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActivity());
         
             if (timeLeft.count() > 30) 
             timeOutFds.push_back(it->first);

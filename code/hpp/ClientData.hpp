@@ -90,7 +90,7 @@ class Client {
 		bool getHeaderIsParsed() const;
 		const std::string& getHost() const;
 		void updateLastActivity();
-		const std::chrono::steady_clock::time_point& getLastActiviry();
+		const std::chrono::steady_clock::time_point& getLastActivity();
 		
 };
 
