@@ -178,6 +178,7 @@ void ServerManager::run() {
 };
 
 void ServerManager::setNonBlocking(int fd) {
+    
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
 		throw std::runtime_error("fcntl(F_SETFL) failed");
 }
