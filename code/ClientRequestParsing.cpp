@@ -2,13 +2,21 @@
 
 RequestState Client::parseHeaderClient() {
 
+	static const size_t MAX_HEADER_SIZE = 32 * 1024;
+
 	size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 
-	if (headerEnd == std::string::npos) 
+	if (headerEnd == std::string::npos) {
+
+		if (_requestBuffer.size() > MAX_HEADER_SIZE)
+			return setRequestError(431);
 		return RequestState::Incomplete;
+	}
+
+	if (headerEnd + 4 > MAX_HEADER_SIZE)
+		return setRequestError(431);
 
 	_bodyPos = headerEnd + 4;
-
 	std::string headerSection = _requestBuffer.substr(0, headerEnd);
 	std::istringstream headerStreamSection(headerSection);
 	std::string line;
@@ -19,7 +27,6 @@ RequestState Client::parseHeaderClient() {
 	if (!line.empty() && line[line.size() - 1] == '\r')
 		line.erase(line.size() - 1);
 
-	// if the first line is empty ??? can it be ?? 
 	if (line.empty())
 		return RequestState::BadRequest;
 	

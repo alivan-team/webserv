@@ -1356,6 +1356,77 @@ void testClientLastActivityUpdates()
     );
 }
 
+void testClientHeaderSizeLimit()
+{
+	static const size_t maxHeaderSize = 32 * 1024;
+	const std::string prefix =
+		"GET / HTTP/1.1\r\n"
+		"Host: unit.test\r\n"
+		"X-Large-Test: ";
+	const std::string suffix = "\r\n\r\n";
+
+	{
+		Client client(42, 7);
+		std::string request = prefix;
+		request.append(maxHeaderSize, 'A');
+
+		client.appendToRequestBuffer(request.data(), request.size());
+
+		check(
+			client.parseHeaderClient() == RequestState::BadRequest,
+			"an incomplete header larger than 32 KiB is rejected"
+		);
+		check(
+			client.getRequestErrorCode() == 431,
+			"an incomplete oversized header returns 431"
+		);
+	}
+
+	{
+		Client client(42, 7);
+		std::string request = prefix;
+		request.append(maxHeaderSize, 'A');
+		request += suffix;
+
+		client.appendToRequestBuffer(request.data(), request.size());
+
+		check(
+			client.parseHeaderClient() == RequestState::BadRequest,
+			"a complete header larger than 32 KiB is rejected"
+		);
+		check(
+			client.getRequestErrorCode() == 431,
+			"a complete oversized header returns 431"
+		);
+	}
+
+	{
+		Client client(42, 7);
+		std::string request = prefix;
+		request.append(
+			maxHeaderSize - prefix.size() - suffix.size(),
+			'A'
+		);
+		request += suffix;
+
+		check(
+			request.size() == maxHeaderSize,
+			"the header boundary fixture is exactly 32 KiB"
+		);
+
+		client.appendToRequestBuffer(request.data(), request.size());
+
+		check(
+			client.parseHeaderClient() == RequestState::Complete,
+			"a complete header exactly 32 KiB is accepted"
+		);
+		check(
+			client.getRequestErrorCode() == 0,
+			"an accepted boundary-size header has no request error"
+		);
+	}
+}
+
 } // namespace
 
 int main()
@@ -1370,6 +1441,7 @@ int main()
 	run("HTTPResponse", testHttpResponse);
 	run("Client response buffer", testClientResponseBuffer);
 	run("Client new response resets progress", testClientNewResponseResetsProgress);
+	run("Client header size limit", testClientHeaderSizeLimit);
 	run("Client close after response", testClientCloseAfterResponse);
 	run("Client chunked body decoding", testClientDecodeChunkedBody); // 
 	run("Client Content-Length request", testClientContentLengthUnaffected);
