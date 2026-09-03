@@ -130,6 +130,77 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 		_serversMap[serverFd].push_back(servers[i]);
 	}
 };
+/*
+
+enum class FdType
+{
+    ServerSocket,
+    ClientSocket,
+    CgiInput,   // Parent writes to child
+    CgiOutput   // Parent reads from child
+};
+
+Store information about every polled FD:
+
+struct FdInfo
+{
+    FdType type;
+    int clientFd;
+};
+
+std::map<int, FdInfo> _fdInfo;
+
+
+            void ServerManager::run()
+            {
+                while (true)
+                {
+                    int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
+
+                    if (ready < 0)
+                        throw std::runtime_error("poll() failed");
+
+                    size_t i = 0;
+
+                    while (i < _pollfds.size())
+                    {
+                        int fd = _pollfds[i].fd;
+                        short revents = _pollfds[i].revents;
+
+                        FdInfo info = _fdInfo.at(fd);
+
+                        if (info.type == FdType::ServerSocket)
+                        {
+                            if (revents & POLLIN)
+                                acceptNewClient(fd);
+                        }
+                        else if (info.type == FdType::ClientSocket)
+                        {
+                            if (revents & POLLIN)
+                                readClientData(i);
+
+                            if (revents & POLLOUT)
+                                writeClientData(i);
+                        }
+                        else if (info.type == FdType::CgiInput)
+                        {
+                            if (revents & POLLOUT)
+                                writeToCgi(fd, info.clientFd);
+                        }
+                        else if (info.type == FdType::CgiOutput)
+                        {
+                            if (revents & (POLLIN | POLLHUP))
+                                readFromCgi(fd, info.clientFd);
+                        }
+
+                        ++i;
+                    }
+
+                    checkCgiTimeouts();
+                    removeTimeOutClients();
+                }
+            }
+*/
 
 void ServerManager::run() {
 
@@ -178,7 +249,7 @@ void ServerManager::run() {
 };
 
 void ServerManager::setNonBlocking(int fd) {
-    
+
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
 		throw std::runtime_error("fcntl(F_SETFL) failed");
 }
@@ -401,7 +472,71 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		}
 
 		client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
-		HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);
+		// cgi detection.
+        /*
+            if (resolveCgiRoute(request, *serverConfig, cgiRoute))
+            {
+                if (!startCgi(clientFd, request, cgiRoute))
+                {
+                    HTTPResponse errorResponse =
+                        HTTPResponseBuild::makeEarlyErrorResponse(
+                            500,
+                            *serverConfig
+                        );
+
+                    client.setCloseAfterResponse(true);
+                    queueResponse(index, client, errorResponse);
+                }
+
+                return false;
+            }
+                            bool ServerManager::startCgi(
+                                int clientFd,
+                                const HTTPRequest& request,
+                                const CgiRoute& route)
+                            {
+                                int inputPipe[2];
+                                int outputPipe[2];
+
+                                // 1. Create pipes.
+                                if (pipe(inputPipe) < 0)
+                                    return false;
+
+                                if (pipe(outputPipe) < 0)
+                                {
+                                    close(inputPipe[0]);
+                                    close(inputPipe[1]);
+                                    return false;
+                                }
+
+                                // 2. Create child.
+                                pid_t pid = fork();
+
+                                if (pid < 0)
+                                {
+                                    // Close all four pipe descriptors.
+                                    return false;
+                                }
+
+                                if (pid == 0)
+                                {
+                                    // Child branch.
+                                    check path
+                                    create envierment 
+                                    send to execvec().
+                                    exit(1);
+                                }
+                                else
+                                {
+                                    // Parent branch.
+                                    // which on recieve or sent to know in the poll() what this 
+                                    // client is waiting for ?
+                                }
+
+                                return true;
+                            }
+        */
+        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);
 		queueResponse(index, client, ClassResponse);
 		return false;
 
