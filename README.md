@@ -45,8 +45,6 @@ make
 Without arguments, the server reads `./config/default.conf`. To use another
 configuration file:
 
-```sh
-./webserv path/to/webserv.conf
 ```
 
 The default configuration listens on port `8080`. With the supplied site

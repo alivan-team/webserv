@@ -9,63 +9,33 @@
 
 int main(int argc, char **argv) {
 
-    std::string configPath;
-    if (argc == 1)
-        configPath = "./config/default.conf";
-    else if (argc == 2)
-        configPath = argv[1];
-    else {
-        std::cerr << "Usage: ./webserv [config_file]\n";
-        return 1;
-    }
+	std::string configPath;
+	if (argc == 1)
+		configPath = "./config/default.conf";
+	else if (argc == 2)
+		configPath = argv[1];
+	else {
+		std::cerr << "Usage: ./webserv [config_file]\n";
+		return 1;
+	}
 
-    ConfigParser config;
+	ConfigParser config;
 
-    try {
-        config.parse(configPath);
-        ServerManager socketManager;
-        socketManager.initialize(config.getServers());
-        // std::cout << " END " << std::endl;
-        // exit(1);
-        socketManager.run();
+	try {
+		config.parse(configPath);
+		ServerManager socketManager;
+		socketManager.initialize(config.getServers());
+		socketManager.run();
+	} catch (const std::exception& e) {
+		std::cerr << "Error: " << e.what() << "\n";
+		return 1;
+	}
 
+	return 0;
 
-        // const std::map<int, std::vector<ServerConfig>>& servers = socketManager.getServerManager();
-
-        // for (auto serv : servers)
-        // {
-        //     std::cout << "-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-\n"; 
-
-        //     std::cout << "Server " << serv.second.getServerConfFD() << "\n";
-
-        //     printDebug("Ports: ", serv.second.getPort());
-
-        //     printDebug("Server names: ", serv.second.getServerName());
-
-        //     printDebug("Roots: ", serv.second.getRoot());
-
-        //     printDebug("Indexes: ", serv.second.getIndex());
-
-        //     printDebug("Client max body size: ", serv.second.getClientMaxBodySize());
-
-        //     printDebug("Error page: ", serv.second.getErrorPage());
-
-        //     std::cout << "Locations \n";
-        //     for (size_t j = 0; j < serv.second.getLocations().size(); ++j) {
-
-        //         printDebug("(", j);
-        //         std::cout << ")\n";
-        //         printDebug("", serv.second.getLocations()[j]);
-        //     }
-
-        //     std::cout << "-----------------\n";
-        // }
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        return 1;
-    }
-
-    return 0;
-
-    
+	
 }
+
+// Add client/request timeouts. This is the clearest mandatory issue.
+// Add a maximum HTTP-header/request-buffer size.
+// Make the final error-page fallback independent of disk files.

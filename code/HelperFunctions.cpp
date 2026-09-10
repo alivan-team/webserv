@@ -14,12 +14,12 @@
 bool check_num(const std::string& value) { 
 
 	if (value.empty())
-        return false;
+		return false;
 
-    for (size_t i = 0; i < value.size(); i++) {
-        if (!std::isdigit(static_cast<unsigned char>(value[i])))
-            return false;
-    }
+	for (size_t i = 0; i < value.size(); i++) {
+		if (!std::isdigit(static_cast<unsigned char>(value[i])))
+			return false;
+	}
 	return true;
 }
 
@@ -36,15 +36,15 @@ bool check_num(const std::string& value) {
  */
 bool checkUriPath(const std::string& uripath)
 {
-    if (uripath.empty() || uripath[0] != '/')
-        return false;
+	if (uripath.empty() || uripath[0] != '/')
+		return false;
 
-    for (std::string::size_type i = 0; i < uripath.size(); ++i) {
-        unsigned char ch = static_cast<unsigned char>(uripath[i]);
-        if (std::isspace(ch) || std::iscntrl(ch))
-            return false;
-    }
-    return true;
+	for (std::string::size_type i = 0; i < uripath.size(); ++i) {
+		unsigned char ch = static_cast<unsigned char>(uripath[i]);
+		if (std::isspace(ch) || std::iscntrl(ch))
+			return false;
+	}
+	return true;
 }
 
 /**
@@ -63,15 +63,15 @@ bool checkUriPath(const std::string& uripath)
  */
 bool checkFSPath(const std::string &fspath)
 {
-    if (fspath.empty())
-        return false;
+	if (fspath.empty())
+		return false;
 
-    for (std::string::size_type i = 0; i < fspath.size(); ++i) {
-        unsigned char ch = static_cast<unsigned char>(fspath[i]);
-        if (std::isspace(ch) || std::iscntrl(ch))
-            return false;
-    }
-    return true;
+	for (std::string::size_type i = 0; i < fspath.size(); ++i) {
+		unsigned char ch = static_cast<unsigned char>(fspath[i]);
+		if (std::isspace(ch) || std::iscntrl(ch))
+			return false;
+	}
+	return true;
 }
 
 /**
@@ -85,11 +85,11 @@ bool checkFSPath(const std::string &fspath)
  */
 bool hasControlChar(const std::string& s)
 {
-    for (char ch : s) {
-        if (std::iscntrl(static_cast<unsigned char>(ch)))
-            return true;
-    }
-    return false;
+	for (char ch : s) {
+		if (std::iscntrl(static_cast<unsigned char>(ch)))
+			return true;
+	}
+	return false;
 }
 
 /**
@@ -102,19 +102,19 @@ bool hasControlChar(const std::string& s)
  * @return A new string without leading or trailing spaces and tabs.
  */
 std::string Client::trim(const std::string& value) const {
-    size_t start = 0;
+	size_t start = 0;
 
-    while (start < value.size() && (value[start] == ' ' || value[start] == '\t')) {
-        ++start;
-    }
+	while (start < value.size() && (value[start] == ' ' || value[start] == '\t')) {
+		++start;
+	}
 
-    size_t end = value.size();
+	size_t end = value.size();
 
-    while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t')) {
-        --end;
-    }
+	while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t')) {
+		--end;
+	}
 
-    return value.substr(start, end - start);
+	return value.substr(start, end - start);
 }
 
 // /**
@@ -124,37 +124,37 @@ std::string Client::trim(const std::string& value) const {
 //  * @return A lowercase copy of the string.
 //  */
 // std::string Client::toLower(const std::string& value) const {
-//     std::string result = value;
+//	 std::string result = value;
 
-//     for (size_t i = 0; i < result.size(); ++i) {
-//         result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
-//     }
+//	 for (size_t i = 0; i < result.size(); ++i) {
+//		 result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
+//	 }
 
-//     return result;
+//	 return result;
 // }
 
 std::string toLower(const std::string& value) {
-    std::string result = value;
+	std::string result = value;
 
-    for (size_t i = 0; i < result.size(); ++i) {
-        result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
-    }
+	for (size_t i = 0; i < result.size(); ++i) {
+		result[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(result[i])));
+	}
 
-    return result;
+	return result;
 }
 
 std::string trim(const std::string& value) {
-    size_t start = 0;
+	size_t start = 0;
 
-    while (start < value.size() && (value[start] == ' ' || value[start] == '\t')) {
-        ++start;
-    }
+	while (start < value.size() && (value[start] == ' ' || value[start] == '\t')) {
+		++start;
+	}
 
-    size_t end = value.size();
+	size_t end = value.size();
 
-    while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t')) {
-        --end;
-    }
+	while (end > start && (value[end - 1] == ' ' || value[end - 1] == '\t')) {
+		--end;
+	}
 
-    return value.substr(start, end - start);
+	return value.substr(start, end - start);
 }
