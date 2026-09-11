@@ -148,6 +148,21 @@ struct FdInfo
     int clientFd;
 };
 
+class CgiProcess
+{
+private:
+    pid_t _pid;
+    int _clientFd;
+
+    int _inputFd;
+    int _outputFd;
+
+    std::string _input;
+    size_t _inputWritten;
+
+    std::string _output;
+};
+
 std::map<int, FdInfo> _fdInfo;
 
 
@@ -502,8 +517,7 @@ bool ServerManager::processRequestBuffer(size_t index) {
                                 if (pipe(inputPipe) < 0)
                                     return false;
 
-                                if (pipe(outputPipe) < 0)
-                                {
+                                if (pipe(outputPipe) < 0) {
                                     close(inputPipe[0]);
                                     close(inputPipe[1]);
                                     return false;
@@ -512,22 +526,18 @@ bool ServerManager::processRequestBuffer(size_t index) {
                                 // 2. Create child.
                                 pid_t pid = fork();
 
-                                if (pid < 0)
-                                {
+                                if (pid < 0) {
                                     // Close all four pipe descriptors.
                                     return false;
                                 }
 
-                                if (pid == 0)
-                                {
+                                if (pid == 0) {
                                     // Child branch.
                                     check path
-                                    create envierment 
+                                    create envierment -> new list of parameters 
                                     send to execvec().
                                     exit(1);
-                                }
-                                else
-                                {
+                                } else {
                                     // Parent branch.
                                     // which on recieve or sent to know in the poll() what this 
                                     // client is waiting for ?
