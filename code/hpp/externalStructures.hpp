@@ -18,18 +18,18 @@ struct Redirection{
 
 enum class Method
 {
-    UNKNOWN,
-    GET,
-    POST,
-    DELETE,
-    HEAD
+	UNKNOWN,
+	GET,
+	POST,
+	DELETE,
+	HEAD
 };
 
 enum BodyContentType
 {
-    BODY_UNKNOWN,
-    BODY_MULTIPART,
-    BODY_RAW
+	BODY_UNKNOWN,
+	BODY_MULTIPART,
+	BODY_RAW
 };
 
 #endif

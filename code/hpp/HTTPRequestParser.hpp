@@ -8,11 +8,11 @@
 class HTTPRequestParser{
 	private:
 		void parseHeaders(
-		    const std::string &headers,
-		    HTTPRequest &request) const;
+			const std::string &headers,
+			HTTPRequest &request) const;
 		void parseUri(
-		    const std::string &uri,
-		    HTTPRequest &request) const;
+			const std::string &uri,
+			HTTPRequest &request) const;
 
 		Method parseMethod(const std::string &method) const;
 		std::string trim(const std::string &text) const;

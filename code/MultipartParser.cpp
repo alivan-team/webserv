@@ -9,7 +9,7 @@ MultipartParser::MultipartParser()
 }
 
 MultipartParser::MultipartParser(
-	const MultipartParser &other)
+		const MultipartParser& other)
 	: _buffer(other._buffer),
 	  _bodyOffset(other._bodyOffset),
 	  _bodySize(other._bodySize),
@@ -18,10 +18,10 @@ MultipartParser::MultipartParser(
 }
 
 MultipartParser::MultipartParser(
-	const std::string &buffer,
-	size_t bodyOffset,
-	size_t bodySize,
-	const std::string &boundary)
+		const std::string& buffer,
+		size_t bodyOffset,
+		size_t bodySize,
+		const std::string& boundary)
 	: _buffer(&buffer),
 	  _bodyOffset(bodyOffset),
 	  _bodySize(bodySize),
@@ -29,8 +29,8 @@ MultipartParser::MultipartParser(
 {
 }
 
-MultipartParser &MultipartParser::operator=(
-	const MultipartParser &other)
+MultipartParser& MultipartParser::operator=(
+		const MultipartParser& other)
 {
 	if (this != &other)
 	{
@@ -59,13 +59,16 @@ size_t MultipartParser::findBoundary(size_t start) const
 
 	while (position != std::string::npos)
 	{
-		if (position < _bodyOffset || position + delimiter.size() > bodyEnd)
+		if (position < _bodyOffset
+			|| position + delimiter.size() > bodyEnd)
 			return std::string::npos;
 
 		if (position == _bodyOffset)
 			return position;
 
-		if (position >= _bodyOffset + 2 && (*_buffer)[position - 2] == '\r' && (*_buffer)[position - 1] == '\n')
+		if (position >= _bodyOffset + 2
+			&& (*_buffer)[position - 2] == '\r'
+			&& (*_buffer)[position - 1] == '\n')
 			return position;
 
 		position = _buffer->find(delimiter, position + 1);
@@ -86,7 +89,8 @@ bool MultipartParser::isClosingBoundary(size_t position) const
 	if (closingStart + 2 > bodyEnd)
 		return false;
 
-	return (*_buffer)[closingStart] == '-' && (*_buffer)[closingStart + 1] == '-';
+	return (*_buffer)[closingStart] == '-'
+		&& (*_buffer)[closingStart + 1] == '-';
 }
 
 size_t MultipartParser::findHeadersEnd(size_t start) const
@@ -108,8 +112,8 @@ size_t MultipartParser::findHeadersEnd(size_t start) const
 	return position;
 }
 void MultipartParser::parseContentDisposition(
-	const std::string &headers,
-	MultipartPart &part) const
+	const std::string& headers,
+	MultipartPart& part) const
 {
 	const std::string headerName = "Content-Disposition:";
 	const size_t headerStart = headers.find(headerName);
@@ -124,13 +128,15 @@ void MultipartParser::parseContentDisposition(
 	if (lineEnd == std::string::npos)
 	{
 		value = headers.substr(
-			headerStart + headerName.size());
+			headerStart + headerName.size()
+		);
 	}
 	else
 	{
 		value = headers.substr(
 			headerStart + headerName.size(),
-			lineEnd - headerStart - headerName.size());
+			lineEnd - headerStart - headerName.size()
+		);
 	}
 
 	size_t namePosition = value.find("name=");
@@ -139,7 +145,8 @@ void MultipartParser::parseContentDisposition(
 	{
 		namePosition += 5;
 
-		if (namePosition < value.size() && value[namePosition] == '"')
+		if (namePosition < value.size()
+			&& value[namePosition] == '"')
 		{
 			++namePosition;
 
@@ -149,7 +156,9 @@ void MultipartParser::parseContentDisposition(
 				part.setName(
 					value.substr(
 						namePosition,
-						nameEnd - namePosition));
+						nameEnd - namePosition
+					)
+				);
 		}
 	}
 
@@ -159,7 +168,8 @@ void MultipartParser::parseContentDisposition(
 	{
 		filenamePosition += 9;
 
-		if (filenamePosition < value.size() && value[filenamePosition] == '"')
+		if (filenamePosition < value.size()
+			&& value[filenamePosition] == '"')
 		{
 			++filenamePosition;
 
@@ -171,7 +181,9 @@ void MultipartParser::parseContentDisposition(
 				part.setFilename(
 					value.substr(
 						filenamePosition,
-						filenameEnd - filenamePosition));
+						filenameEnd - filenamePosition
+					)
+				);
 			}
 		}
 	}
@@ -208,7 +220,8 @@ std::vector<MultipartPart> MultipartParser::parse() const
 		if (afterBoundary + 2 > bodyEnd)
 			break;
 
-		if ((*_buffer)[afterBoundary] != '\r' || (*_buffer)[afterBoundary + 1] != '\n')
+		if ((*_buffer)[afterBoundary] != '\r'
+			|| (*_buffer)[afterBoundary + 1] != '\n')
 			break;
 
 		const size_t headersStart = afterBoundary + 2;
@@ -222,7 +235,8 @@ std::vector<MultipartPart> MultipartParser::parse() const
 		const std::string headers =
 			_buffer->substr(
 				headersStart,
-				headersEnd - headersStart);
+				headersEnd - headersStart
+			);
 
 		MultipartPart part;
 

@@ -50,7 +50,7 @@ class HTTPRequest{
 		
 		bool hasHeader(const std::string &name) const;
 		const std::string &getHeader(const std::string &name) const;
-		const BodyContentType getBodyType() const;
+		BodyContentType getBodyType() const;
 };
 
 #endif
