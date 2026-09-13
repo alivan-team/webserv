@@ -3,6 +3,7 @@
 Client::Client() :  _responseSent(0), _client_fd(-1), _server_fd(-1), _headersParsed(false),
 		_bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
 		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
+		_cgiState(CGI_NONE), _cgiInputFd(-1), _cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(),
         _lastActivity(std::chrono::steady_clock::now()) {
 	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
@@ -10,6 +11,7 @@ Client::Client() :  _responseSent(0), _client_fd(-1), _server_fd(-1), _headersPa
 Client::Client(int client_fd, int server_fd) :  _responseSent(0), _client_fd(client_fd), _server_fd(server_fd), 
 		_headersParsed(false), _bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
 		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
+		_cgiState(CGI_NONE), _cgiInputFd(-1), _cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(),
         _lastActivity(std::chrono::steady_clock::now()) {
 	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
@@ -154,4 +156,54 @@ bool Client::decodeChunkedBody()
 	_requestEnd = newRequestEnd;
 
 	return true;
+}
+
+CgiState Client::getCgiState() const
+{
+	return _cgiState;
+}
+
+int Client::getCgiInputFd() const
+{
+	return _cgiInputFd;
+}
+
+int Client::getCgiOutputFd() const
+{
+	return _cgiOutputFd;
+}
+
+size_t Client::getCgiInputOffset() const
+{
+	return _cgiInputOffset;
+}
+
+const std::string& Client::getCgiOutput() const
+{
+	return _cgiOutput;
+}
+
+void Client::setCgiState(CgiState state)
+{
+	_cgiState = state;
+}
+
+void Client::setCgiInputFd(int fd)
+{
+	_cgiInputFd = fd;
+}
+
+void Client::setCgiOutputFd(int fd)
+{
+	_cgiOutputFd = fd;
+}
+
+void Client::setCgiInputOffset(size_t offset)
+{
+	_cgiInputOffset = offset;
+}
+
+void Client::setCgiOutput(const std::string& output)
+{
+	_cgiOutput = output;
 }

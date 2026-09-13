@@ -25,6 +25,77 @@ int HTTPResponseBuild::prepareRequestPath(const HTTPRequest &request, const Serv
 	return 0;
 }
 
+bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const ServerConfig& servConf,
+	CgiRoute& route, int& errorCode)
+{
+	std::string path;
+	errorCode = 0;
+	const LocationConfig* location = NULL;
+
+	int result = prepareRequestPath(request, servConf, path, location);
+	if (result != 0) {
+		errorCode = result;
+		return false;
+	}
+
+	std::string baseDir;
+	std::string fullPath;
+	std::string relativePath = path;
+
+	if (path.compare(0, location->getUriPath().size(), location->getUriPath()) == 0)
+		relativePath = path.substr(location->getUriPath().size());
+
+	if (!location->getRoot().empty())
+	{
+		baseDir = location->getRoot();
+		fullPath = joinPath(location->getRoot(), relativePath);
+	}
+	else
+	{
+		if (servConf.getRoot().empty() || servConf.getRoot()[0].empty())
+			return false;
+
+		baseDir = servConf.getRoot()[0];
+		fullPath = joinPath(servConf.getRoot()[0], path);
+	}
+
+	if (!fileExists(fullPath))
+		return false;
+
+	if (!pathInsideBase(baseDir, fullPath))
+		return false;
+
+	if (isDirectory(fullPath))
+		return false;
+
+	size_t dot = fullPath.find_last_of('.');
+	if (dot == std::string::npos)
+		return false;
+
+	std::string extension = fullPath.substr(dot);
+
+	const std::vector<std::string>& extensions = location->getCgiExtension();
+	const std::vector<std::string>& cgiPaths = location->getCgiPath();
+
+	for (size_t i = 0; i < extensions.size(); ++i)
+	{
+		if (extensions[i] == extension)
+		{
+			route.scriptPath = fullPath;
+			route.cgiPath = cgiPaths[i];
+
+			size_t slash = fullPath.find_last_of('/');
+			if (slash == std::string::npos)
+				route.workingDirectory = ".";
+			else
+				route.workingDirectory = fullPath.substr(0, slash);
+
+			return true;
+		}
+	}
+
+	return false;
+}
 
 HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerConfig &servConf) {
 
@@ -853,3 +924,4 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 	}
 	return decodedUrl;
 }
+

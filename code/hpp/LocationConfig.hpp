@@ -53,6 +53,7 @@ class LocationConfig {
 		const std::string& getUploadStore() const;
 		const std::string& getRoot() const;
 		const std::vector<std::string>& getIndex() const;
+		const std::vector<std::string>& getCgiPath() const;
 		const std::vector<std::string>& getCgiExtension() const;
 		Redirection getRedirect() const;
 		bool isGetAllowed() const;

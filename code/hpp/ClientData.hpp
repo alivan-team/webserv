@@ -26,6 +26,13 @@ enum class BodyType {
 	Chunked
 };
 
+enum CgiState
+{
+	CGI_NONE,
+	CGI_WRITING,
+	CGI_READING
+};
+
 class Client {
 
 	private:
@@ -34,6 +41,7 @@ class Client {
 		
 		std::string _body;
 		
+
 		size_t _responseSent;
 		int _client_fd;
 		int _server_fd;
@@ -49,6 +57,12 @@ class Client {
 		std::string _host;
 		std::chrono::steady_clock::time_point _lastActivity;
 		// HTTPResponse _response;
+
+		CgiState _cgiState;
+		int _cgiInputFd;
+		int _cgiOutputFd;
+		size_t _cgiInputOffset;
+		std::string _cgiOutput;
 		
 		bool parseContentLength(const std::string& value, size_t& result) const;
 		bool parseHexSize(const std::string& value, size_t& result) const;
@@ -91,6 +105,18 @@ class Client {
 		const std::string& getHost() const;
 		void updateLastActivity();
 		const std::chrono::steady_clock::time_point& getLastActivity();
+
+		CgiState getCgiState() const;
+		int getCgiInputFd() const;
+		int getCgiOutputFd() const;
+		size_t getCgiInputOffset() const;
+		const std::string& getCgiOutput() const;
+
+		void setCgiState(CgiState state);
+		void setCgiInputFd(int fd);
+		void setCgiOutputFd(int fd);
+		void setCgiInputOffset(size_t offset);
+		void setCgiOutput(const std::string& output);
 		
 };
 

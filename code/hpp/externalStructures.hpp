@@ -32,4 +32,11 @@ enum BodyContentType
 	BODY_RAW
 };
 
+struct CgiRoute
+{
+	std::string scriptPath;
+	std::string cgiPath;
+	std::string workingDirectory;
+};
+
 #endif
