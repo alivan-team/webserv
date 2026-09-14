@@ -20,12 +20,18 @@ void ServerManager::acceptNewClient(int serverFd) {
 
 	setNonBlocking(newClientFd);
 
-	pollfd client_poll;
-	client_poll.fd = newClientFd;
-	client_poll.events = POLLIN;
-	client_poll.revents = 0;
+	// Old manual pollfd registration.
+	// Replaced by addFd() to keep _pollfds and _fdInfo synchronized.
+	// commented and replaced when adding CGI
+	// pollfd client_poll;
+	// client_poll.fd = newClientFd;
+	// client_poll.events = POLLIN;
+	// client_poll.revents = 0;
 
-	_pollfds.push_back(client_poll);
+	// _pollfds.push_back(client_poll);
+	// _fdInfo[serverFd] = FdInfo{FD_SERVER_SOCKET, -1};
+
+	addFd(newClientFd, FD_CLIENT_SOCKET, newClientFd);
 	_clients[newClientFd] = Client(newClientFd, serverFd);
 
 };
@@ -37,7 +43,12 @@ void ServerManager::removeClient(size_t index) {
 	int clientFd = _pollfds[index].fd;
 	close(clientFd);
 	_clients.erase(clientFd);
-	_pollfds.erase(_pollfds.begin() + index);
+	removeFd(clientFd);
+	// Old manual pollfd registration.
+	// Replaced by removeFd() to keep _pollfds and _fdInfo synchronized.
+	// commented and replaced when adding CGI
+	// _fdInfo.erase(clientFd);
+	// _pollfds.erase(_pollfds.begin() + index);
 }
 
 bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
@@ -74,7 +85,7 @@ bool ServerManager::readClientData(size_t index) {
 	}
 
 	Client& client = _clients.at(clientFd);
-    client.updateLastActivity();
+	client.updateLastActivity();
 	client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
 	return processRequestBuffer(index);
@@ -134,18 +145,18 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 
 enum class FdType
 {
-    ServerSocket,
-    ClientSocket,
-    CgiInput,   // Parent writes to child
-    CgiOutput   // Parent reads from child
+	ServerSocket,
+	ClientSocket,
+	CgiInput,   // Parent writes to child
+	CgiOutput   // Parent reads from child
 };
 
 Store information about every polled FD:
 
 struct FdInfo
 {
-    FdType type;
-    int clientFd;
+	FdType type;
+	int clientFd;
 };
 
 class CgiProcess
@@ -166,55 +177,55 @@ private:
 std::map<int, FdInfo> _fdInfo;
 
 
-            void ServerManager::run()
-            {
-                while (true)
-                {
-                    int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
+			void ServerManager::run()
+			{
+				while (true)
+				{
+					int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
 
-                    if (ready < 0)
-                        throw std::runtime_error("poll() failed");
+					if (ready < 0)
+						throw std::runtime_error("poll() failed");
 
-                    size_t i = 0;
+					size_t i = 0;
 
-                    while (i < _pollfds.size())
-                    {
-                        int fd = _pollfds[i].fd;
-                        short revents = _pollfds[i].revents;
+					while (i < _pollfds.size())
+					{
+						int fd = _pollfds[i].fd;
+						short revents = _pollfds[i].revents;
 
-                        FdInfo info = _fdInfo.at(fd);
+						FdInfo info = _fdInfo.at(fd);
 
-                        if (info.type == FdType::ServerSocket)
-                        {
-                            if (revents & POLLIN)
-                                acceptNewClient(fd);
-                        }
-                        else if (info.type == FdType::ClientSocket)
-                        {
-                            if (revents & POLLIN)
-                                readClientData(i);
+						if (info.type == FdType::ServerSocket)
+						{
+							if (revents & POLLIN)
+								acceptNewClient(fd);
+						}
+						else if (info.type == FdType::ClientSocket)
+						{
+							if (revents & POLLIN)
+								readClientData(i);
 
-                            if (revents & POLLOUT)
-                                writeClientData(i);
-                        }
-                        else if (info.type == FdType::CgiInput)
-                        {
-                            if (revents & POLLOUT)
-                                writeToCgi(fd, info.clientFd);
-                        }
-                        else if (info.type == FdType::CgiOutput)
-                        {
-                            if (revents & (POLLIN | POLLHUP))
-                                readFromCgi(fd, info.clientFd);
-                        }
+							if (revents & POLLOUT)
+								writeClientData(i);
+						}
+						else if (info.type == FdType::CgiInput)
+						{
+							if (revents & POLLOUT)
+								writeToCgi(fd, info.clientFd);
+						}
+						else if (info.type == FdType::CgiOutput)
+						{
+							if (revents & (POLLIN | POLLHUP))
+								readFromCgi(fd, info.clientFd);
+						}
 
-                        ++i;
-                    }
+						++i;
+					}
 
-                    checkCgiTimeouts();
-                    removeTimeOutClients();
-                }
-            }
+					checkCgiTimeouts();
+					removeTimeOutClients();
+				}
+			}
 */
 
 void ServerManager::run() {
@@ -226,40 +237,52 @@ void ServerManager::run() {
 			throw std::runtime_error("poll() failed");
 
 		size_t i = 0;
-		while (i < _pollfds.size()) {
+		while (i < _pollfds.size())
+		{
+			int fd = _pollfds[i].fd;
 
-			if (_pollfds[i].revents & POLLNVAL) {
-				if (!isServerSocket(_pollfds[i].fd)) {
+			if (_pollfds[i].revents & POLLNVAL)
+			{
+				if (_fdInfo[fd].type != FD_SERVER_SOCKET)
+				{
 					removeClient(i);
 					continue;
 				}
 				throw std::runtime_error("Listening socket became invalid");
 			}
-			if (_pollfds[i].revents & POLLIN) {
 
-				if (isServerSocket(_pollfds[i].fd)) {
-					acceptNewClient(_pollfds[i].fd);
-				} else {
+			if (_pollfds[i].revents & POLLIN)
+			{
+				if (_fdInfo[fd].type == FD_SERVER_SOCKET)
+					acceptNewClient(i);
+				else if (_fdInfo[fd].type == FD_CLIENT_SOCKET)
+				{
 					bool removed = readClientData(i);
 					if (removed)
 						continue;
 				}
 			}
-			if (_pollfds[i].revents & POLLOUT) {
+
+			if (_pollfds[i].revents & POLLOUT)
+			{
 				bool removed = writeClientData(i);
-				if(removed)
+				if (removed)
 					continue;
 			}
-			if (_pollfds[i].revents & (POLLERR | POLLHUP)) {
-				if (!isServerSocket(_pollfds[i].fd)) {
+
+			if (_pollfds[i].revents & (POLLERR | POLLHUP))
+			{
+				if (_fdInfo[fd].type != FD_SERVER_SOCKET)
+				{
 					removeClient(i);
 					continue;
 				}
 				throw std::runtime_error("Listening socket error");
 			}
+
 			i++;
 		}
-        removeTimeOutClients();
+		removeTimeOutClients();
 	}
 };
 
@@ -320,12 +343,16 @@ int ServerManager::createListeningSockets(const ServerConfig& server) {
 
 	_serverSockets.push_back(serverFd);
 
-	pollfd server_poll;
-	server_poll.fd = serverFd;
-	server_poll.events = POLLIN;
-	server_poll.revents = 0;
+	// Old manual pollfd registration.
+	// Replaced by addFd() to keep _pollfds and _fdInfo synchronized.
+	// commented and replaced when adding CGI
+	// pollfd server_poll;
+	// server_poll.fd = serverFd;
+	// server_poll.events = POLLIN;
+	// server_poll.revents = 0;
 
-	_pollfds.push_back(server_poll);
+	// _pollfds.push_back(server_poll);
+	addFd(serverFd, FD_SERVER_SOCKET, -1);
 
 	std::cout << "Listening on  " << host << ":" << port << std::endl;
 
@@ -374,9 +401,9 @@ bool ServerManager::writeClientData(size_t index) {
 	}
 
 	if (sent > 0) {
-        client.updateLastActivity();
+		client.updateLastActivity();
 		client.setResponseSent(sentAlreay + static_cast<size_t>(sent));
-    }
+	}
 
 	if (client.getResponseSent() == response.size()) {
 		_pollfds[index].events &= ~POLLOUT;
@@ -406,35 +433,70 @@ bool ServerManager::writeClientData(size_t index) {
 
 void ServerManager::removeTimeOutClients() {
 
-    const std::chrono::steady_clock::time_point now = 
-            std::chrono::steady_clock::now();
-    std::map<int, Client>::iterator it = _clients.begin();
-    std::vector<int> timeOutFds;
-    
-    // std::cout << "TIMEOUT client fd: " << std::endl;
+	const std::chrono::steady_clock::time_point now = 
+			std::chrono::steady_clock::now();
+	std::map<int, Client>::iterator it = _clients.begin();
+	std::vector<int> timeOutFds;
+	
+	// std::cout << "TIMEOUT client fd: " << std::endl;
 
-    while (it != _clients.end()) {
-        
-        std::chrono::seconds timeLeft = 
-            std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActivity());
-        
-            if (timeLeft.count() > 30) 
-            timeOutFds.push_back(it->first);
+	while (it != _clients.end()) {
+		
+		std::chrono::seconds timeLeft = 
+			std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActivity());
+		
+			if (timeLeft.count() > 30) 
+			timeOutFds.push_back(it->first);
 
-        ++it;
-    }
+		++it;
+	}
 
-    for (size_t i = 0; i < timeOutFds.size(); i++) {
-        for (size_t j = 0; j < _pollfds.size(); j++) {
-            if (_pollfds[j].fd == timeOutFds[i]) {
-                // std::cout << "TIMEOUT client fd: " << timeOutFds[i] << std::endl;
-                removeClient(j);
-                break ;
-            }
-        }
-    }
+	for (size_t i = 0; i < timeOutFds.size(); i++) {
+		for (size_t j = 0; j < _pollfds.size(); j++) {
+			if (_pollfds[j].fd == timeOutFds[i]) {
+				// std::cout << "TIMEOUT client fd: " << timeOutFds[i] << std::endl;
+				removeClient(j);
+				break ;
+			}
+		}
+	}
 };
 
+bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route)
+{
+
+	(void)request;
+	(void)route;
+
+	int inputPipe[2];
+	int outputPipe[2];
+
+	if (pipe(inputPipe) < 0)
+		return false;
+
+	if (pipe(outputPipe) < 0)
+	{
+		close(inputPipe[0]);
+		close(inputPipe[1]);
+		return false;
+	}
+
+	setNonBlocking(inputPipe[1]);
+	setNonBlocking(outputPipe[0]);
+
+	client.setCgiInputFd(inputPipe[1]);
+	client.setCgiOutputFd(outputPipe[0]);
+	client.setCgiState(CGI_WRITING);
+
+	addFd(inputPipe[1], FD_CGI_INPUT, client.getClientFd());
+	addFd(outputPipe[0], FD_CGI_OUTPUT, client.getClientFd());
+
+	setFdEvents(inputPipe[1], POLLOUT);
+
+	// CGI process creation will be implemented here.
+
+	return true;
+}
 
 RequestState ServerManager::getRequestState(Client& client, const ServerConfig*& serverConfig) {
 
@@ -488,65 +550,97 @@ bool ServerManager::processRequestBuffer(size_t index) {
 
 		client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
 		// cgi detection.
-        /*
-            if (resolveCgiRoute(request, *serverConfig, cgiRoute))
-            {
-                if (!startCgi(clientFd, request, cgiRoute))
-                {
-                    HTTPResponse errorResponse =
-                        HTTPResponseBuild::makeEarlyErrorResponse(
-                            500,
-                            *serverConfig
-                        );
+		/*
+			if (resolveCgiRoute(request, *serverConfig, cgiRoute))
+			{
+				if (!startCgi(clientFd, request, cgiRoute))
+				{
+					HTTPResponse errorResponse =
+						HTTPResponseBuild::makeEarlyErrorResponse(
+							500,
+							*serverConfig
+						);
 
-                    client.setCloseAfterResponse(true);
-                    queueResponse(index, client, errorResponse);
-                }
+					client.setCloseAfterResponse(true);
+					queueResponse(index, client, errorResponse);
+				}
 
-                return false;
-            }
-                            bool ServerManager::startCgi(
-                                int clientFd,
-                                const HTTPRequest& request,
-                                const CgiRoute& route)
-                            {
-                                int inputPipe[2];
-                                int outputPipe[2];
+				return false;
+			}
+							bool ServerManager::startCgi(
+								int clientFd,
+								const HTTPRequest& request,
+								const CgiRoute& route)
+							{
+								int inputPipe[2];
+								int outputPipe[2];
 
-                                // 1. Create pipes.
-                                if (pipe(inputPipe) < 0)
-                                    return false;
+								// 1. Create pipes.
+								if (pipe(inputPipe) < 0)
+									return false;
 
                                 if (pipe(outputPipe) < 0) {
                                     close(inputPipe[0]);
                                     close(inputPipe[1]);
                                     return false;
                                 }
+								if (pipe(outputPipe) < 0)
+								{
+									close(inputPipe[0]);
+									close(inputPipe[1]);
+									return false;
+								}
 
-                                // 2. Create child.
-                                pid_t pid = fork();
+								// 2. Create child.
+								pid_t pid = fork();
 
                                 if (pid < 0) {
                                     // Close all four pipe descriptors.
                                     return false;
                                 }
 
-                                if (pid == 0) {
-                                    // Child branch.
-                                    check path
-                                    create envierment -> new list of parameters 
-                                    send to execvec().
-                                    exit(1);
-                                } else {
-                                    // Parent branch.
-                                    // which on recieve or sent to know in the poll() what this 
-                                    // client is waiting for ?
-                                }
+								if (pid == 0)
+								{
+									// Child branch.
+									check path
+									create envierment 
+									send to execvec().
+									exit(1);
+								}
+								else
+								{
+									// Parent branch.
+									// which on recieve or sent to know in the poll() what this 
+									// client is waiting for ?
+								}
 
-                                return true;
-                            }
-        */
-        HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);
+								return true;
+							}
+		*/
+
+		CgiRoute cgiRoute;
+		int cgiError = 0;
+
+		if (HTTPResponseBuild::resolveCgiRoute(client.getRequest(), *serverConfig, cgiRoute, cgiError))
+		{
+			if (!startCgi(client, client.getRequest(), cgiRoute))
+			{
+				HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, *serverConfig);
+				client.setCloseAfterResponse(true);
+				queueResponse(index, client, errorResponse);
+			}
+			return false;
+		}
+		if (cgiError != 0)
+		{
+			HTTPResponse errorResponse =
+				HTTPResponseBuild::makeEarlyErrorResponse(cgiError, *serverConfig);
+			client.setCloseAfterResponse(true);
+			queueResponse(index, client, errorResponse);
+			return false;
+		}
+
+		HTTPResponse ClassResponse = HTTPResponseBuild::build(client.getRequest(), *serverConfig);
 		queueResponse(index, client, ClassResponse);
 		return false;
 
@@ -564,3 +658,41 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		return false;
 	}
 };
+
+void ServerManager::addFd(int fd, FdType type, int clientFd)
+{
+	struct pollfd pollFd;
+
+	pollFd.fd = fd;
+	pollFd.events = POLLIN;
+	pollFd.revents = 0;
+
+	_pollfds.push_back(pollFd);
+	_fdInfo[fd] = FdInfo{type, clientFd};
+}
+
+void ServerManager::removeFd(int fd)
+{
+	for (size_t i = 0; i < _pollfds.size(); ++i)
+	{
+		if (_pollfds[i].fd == fd)
+		{
+			_pollfds.erase(_pollfds.begin() + i);
+			break;
+		}
+	}
+
+	_fdInfo.erase(fd);
+}
+
+void ServerManager::setFdEvents(int fd, short events)
+{
+	for (size_t i = 0; i < _pollfds.size(); ++i)
+	{
+		if (_pollfds[i].fd == fd)
+		{
+			_pollfds[i].events = events;
+			return;
+		}
+	}
+}

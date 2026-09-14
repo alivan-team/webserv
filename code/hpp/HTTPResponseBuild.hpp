@@ -8,6 +8,7 @@
 #include "MultipartPart.hpp"
 #include "MultipartParser.hpp"
 #include <fstream>
+#include <filesystem>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <iostream>
@@ -21,7 +22,6 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <ctime>
-#include <filesystem>
 
 class HTTPResponseBuild {
 
@@ -58,7 +58,8 @@ class HTTPResponseBuild {
 		static std::string decideConnection(const HTTPRequest& request);
 		static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
 		static HTTPResponse makeEarlyErrorResponse(int code, const ServerConfig& servConf);
-
+		static bool resolveCgiRoute(const HTTPRequest& request, const ServerConfig& servConf, 
+			CgiRoute& route, int& errorCode);
 };
 
 #endif

@@ -2,8 +2,8 @@ NAME		:= webserv
 TEST_NAME	:= webserv_tests
 
 CXX			:= c++
-CXXFLAGS	:= -Wall -Wextra -Werror -std=c++17
-CPPFLAGS	:= -Icode/hpp -g
+# CXXFLAGS	:= -Wall -Wextra -Werror
+CPPFLAGS	:= -Icode/hpp -g -std=c++17
 
 OBJ_DIR		:= build
 

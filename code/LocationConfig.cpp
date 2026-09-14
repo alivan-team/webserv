@@ -179,6 +179,11 @@ const std::vector<std::string>& LocationConfig::getIndex() const
 	return _indpaths;
 }
 
+const std::vector<std::string>& LocationConfig::getCgiPath() const
+{
+	return _cgi_paths;
+}
+
 const std::vector<std::string>& LocationConfig::getCgiExtension() const
 {
 	return _cgi_extensions;
