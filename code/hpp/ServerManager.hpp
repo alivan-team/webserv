@@ -52,8 +52,8 @@ class ServerManager {
 		bool processRequestBuffer(size_t index);
 		RequestState getRequestState(Client& client, const ServerConfig*& serverConfig);
         void removeTimeOutClients();
-		bool startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route);
-
+		bool startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf);
+		std::vector<std::string> buildCgiEnvironment(const HTTPRequest& request, const ServerConfig& servConf);
 
 	public: 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);

@@ -232,6 +232,7 @@ void ServerManager::run() {
 
 	while (true) {
 		
+		// std::cout << "HELLO from the run manager" << std::endl;
 		int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
 		if (ready < 0)
 			throw std::runtime_error("poll() failed");
@@ -239,51 +240,94 @@ void ServerManager::run() {
 		size_t i = 0;
 		while (i < _pollfds.size())
 		{
+
 			int fd = _pollfds[i].fd;
+			short revents = _pollfds[i].revents;
+			FdInfo info = _fdInfo.at(fd);
+			bool removed = false;
 
-			if (_pollfds[i].revents & POLLNVAL)
-			{
-				if (_fdInfo[fd].type != FD_SERVER_SOCKET)
-				{
+			if (info.type == FD_SERVER_SOCKET) {
+
+				if (revents & (POLLERR | POLLHUP | POLLNVAL))
+					throw std::runtime_error("Listening socket error");
+
+				if (revents & POLLIN)
+					acceptNewClient(fd);
+
+			} else if (info.type == FD_CLIENT_SOCKET) {
+
+				if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
 					removeClient(i);
-					continue;
+					removed = true;
+				} else {
+
+					if (revents & POLLIN)
+						removed = readClientData(i);
+					if (!removed && (revents & POLLOUT))
+						removed = writeClientData(i);
 				}
-				throw std::runtime_error("Listening socket became invalid");
+			} 
+			else if (info.type == FD_CGI_INPUT) {
+				// std::cout << "Hello you should write in a pipe" << std::endl;
+				// if (revents & POLLOUT)
+					// writeToCgi(fd, info.clientFd);
+			} else if (info.type == FD_CGI_OUTPUT) {
+				// std::cout << "Hello you should read from a pipe" << std::endl;
+				// if (revents & (POLLIN | POLLHUP))
+					// readFromCgi(fd, info.clientFd);
 			}
 
-			if (_pollfds[i].revents & POLLIN)
-			{
-				if (_fdInfo[fd].type == FD_SERVER_SOCKET)
-					acceptNewClient(i);
-				else if (_fdInfo[fd].type == FD_CLIENT_SOCKET)
-				{
-					bool removed = readClientData(i);
-					if (removed)
-						continue;
-				}
-			}
-
-			if (_pollfds[i].revents & POLLOUT)
-			{
-				bool removed = writeClientData(i);
-				if (removed)
-					continue;
-			}
-
-			if (_pollfds[i].revents & (POLLERR | POLLHUP))
-			{
-				if (_fdInfo[fd].type != FD_SERVER_SOCKET)
-				{
-					removeClient(i);
-					continue;
-				}
-				throw std::runtime_error("Listening socket error");
-			}
-
-			i++;
+			if (!removed)
+				i++;
 		}
+
+		// checkCgiTimeouts();
 		removeTimeOutClients();
 	}
+
+	// 		if (_pollfds[i].revents & POLLNVAL)
+	// 		{
+	// 			if (_fdInfo[fd].type != FD_SERVER_SOCKET)
+	// 			{
+	// 				removeClient(i);
+	// 				continue;
+	// 			}
+	// 			throw std::runtime_error("Listening socket became invalid");
+	// 		}
+
+	// 		if (_pollfds[i].revents & POLLIN)
+	// 		{
+	// 			if (_fdInfo[fd].type == FD_SERVER_SOCKET)
+	// 				acceptNewClient(fd);
+	// 			else if (_fdInfo[fd].type == FD_CLIENT_SOCKET)
+	// 			{
+	// 				bool removed = readClientData(i);
+	// 				if (removed)
+	// 					continue;
+	// 			}
+	// 		}
+
+	// 		if (_pollfds[i].revents & POLLOUT)
+	// 		{
+	// 			bool removed = writeClientData(i);
+	// 			if (removed)
+	// 				continue;
+	// 		}
+
+	// 		if (_pollfds[i].revents & (POLLERR | POLLHUP))
+	// 		{
+	// 			if (_fdInfo[fd].type != FD_SERVER_SOCKET)
+	// 			{
+	// 				removeClient(i);
+	// 				continue;
+	// 			}
+	// 			throw std::runtime_error("Listening socket error");
+	// 		}
+
+	// 		i++;
+	// 	}
+	// 	removeTimeOutClients();
+	// }
 };
 
 void ServerManager::setNonBlocking(int fd) {
@@ -462,7 +506,7 @@ void ServerManager::removeTimeOutClients() {
 	}
 };
 
-bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route)
+bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf)
 {
 
 	(void)request;
@@ -479,6 +523,61 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		close(inputPipe[0]);
 		close(inputPipe[1]);
 		return false;
+	}
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		close(inputPipe[0]);
+		close(inputPipe[1]);
+		close(outputPipe[0]);
+		close(outputPipe[1]);
+		return false;
+	}
+
+	if (pid == 0) {
+		close(inputPipe[1]);
+		close(outputPipe[0]);
+
+		if (dup2(inputPipe[0], STDIN_FILENO) < 0)
+			_exit(1);
+		if (dup2(outputPipe[1], STDOUT_FILENO) < 0)
+			_exit(1);
+
+		close(inputPipe[0]);
+		close(outputPipe[1]);
+
+		if (chdir(route.workingDirectory.c_str()) < 0)
+			_exit(1);
+		
+		std::vector<std::string> cgiEnvironment = buildCgiEnvironment(request, servConf);
+		
+		// SEEEEEEE //
+			for (size_t i = 0; i < cgiEnvironment.size(); i++) {
+				std::cerr << i << " " << cgiEnvironment[i] << std::endl;
+			}
+
+			std::cerr <<"\t route.cgiPath.c_str() " << route.cgiPath.c_str() << std::endl;
+			std::cerr <<"\t route.scriptPath.c_str() " << route.scriptPath.c_str() << std::endl;
+			std::cerr <<"\t route.workingDirectory.c_str() " << route.workingDirectory.c_str() << std::endl;
+
+		// SEEEEEEE //
+		
+		std::vector<char*> evnp;
+		std::vector<char*> argv;
+
+		for (size_t i = 0; i < cgiEnvironment.size(); i++) 
+			evnp.push_back(cgiEnvironment[i].data());
+
+		evnp.push_back(NULL);
+
+		std::string scriptName = std::filesystem::path(route.scriptPath).filename().string();
+		// std::cerr <<"\t\t scriptName " << scriptName << std::endl;
+		argv.push_back(const_cast<char*>(route.cgiPath.c_str()));
+		argv.push_back(scriptName.data());
+		argv.push_back(NULL);
+		// _exit(0);
+		execve(route.cgiPath.c_str(), argv.data() , evnp.data());
+		_exit(1);
 	}
 
 	setNonBlocking(inputPipe[1]);
@@ -547,7 +646,7 @@ bool ServerManager::processRequestBuffer(size_t index) {
 			if (!client.decodeChunkedBody())
 				throw HTTPParseException(500, "Internal Server Error");
 		}
-
+		// std::cout << "Hello from try " << std::endl;
 		client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
 		// cgi detection.
 		/*
@@ -623,7 +722,7 @@ bool ServerManager::processRequestBuffer(size_t index) {
 
 		if (HTTPResponseBuild::resolveCgiRoute(client.getRequest(), *serverConfig, cgiRoute, cgiError))
 		{
-			if (!startCgi(client, client.getRequest(), cgiRoute))
+			if (!startCgi(client, client.getRequest(), cgiRoute, *serverConfig))
 			{
 				HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(500, *serverConfig);
 				client.setCloseAfterResponse(true);
@@ -696,3 +795,69 @@ void ServerManager::setFdEvents(int fd, short events)
 		}
 	}
 }
+
+std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& request,const ServerConfig& servConf) {
+
+	std::vector<std::string> cgiEnv;
+	std::string method;
+
+	cgiEnv.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	if (request.getMethod() == Method::GET)
+		method = "GET";
+	else if (request.getMethod() == Method::POST)
+		method = "POST";
+	else 
+		method = "DELETE";
+	cgiEnv.push_back("REQUEST_METHOD=" + method);
+	cgiEnv.push_back("SERVER_PROTOCOL=HTTP/" + request.getVersion());
+	cgiEnv.push_back("SCRIPT_NAME=" + request.getPath());
+	cgiEnv.push_back("QUERY_STRING=" + request.getQuery());
+	cgiEnv.push_back("SERVER_NAME=" + servConf.getServerName()[0]);
+	cgiEnv.push_back("SERVER_PORT=" + std::to_string(servConf.getPort()));
+
+	const std::map<std::string, std::string>& headers = request.getHeaders();
+
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); it++) {
+		std::string firstName = it->first;
+		std::string secondValue = it->second;
+
+		if (firstName == "content-type") {
+			cgiEnv.push_back("CONTENT_TYPE=" + secondValue);
+			continue;
+		}
+		if (firstName == "content-length") {
+			cgiEnv.push_back("CONTENT_LENGTH=" + secondValue);
+			continue;
+		}
+		for (size_t i = 0; i < firstName.size(); i++) {
+			
+			if (firstName[i] == '-') 
+				firstName[i] = '_';
+			else
+				firstName[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(firstName[i])));
+		}
+		cgiEnv.push_back("HTTP_" + firstName + "=" + secondValue);
+	}
+
+	return cgiEnv;
+};
+
+		// build argv/envp
+			// GATEWAY_INTERFACE=CGI/1.1
+			// REQUEST_METHOD=GET
+			// SERVER_PROTOCOL=HTTP/1.1
+			// SCRIPT_NAME=/cgi-bin/test.py
+			// QUERY_STRING=name=Ivan
+			// SERVER_NAME=localhost
+			// SERVER_PORT=8080
+
+			// Again, Content-Type and Content-Length are special:
+			// Content-Type   → CONTENT_TYPE
+			// Content-Length → CONTENT_LENGTH
+
+			// Header:
+				// HTTP_HOST=localhost
+				// HTTP_USER_AGENT=curl/8.7
+				// HTTP_ACCEPT=*/*
+				// HTTP_COOKIE=id=123
+				// HTTP_X_HELLO=test
