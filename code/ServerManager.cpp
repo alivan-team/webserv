@@ -162,16 +162,16 @@ struct FdInfo
 class CgiProcess
 {
 private:
-    pid_t _pid;
-    int _clientFd;
+	pid_t _pid;
+	int _clientFd;
 
-    int _inputFd;
-    int _outputFd;
+	int _inputFd;
+	int _outputFd;
 
-    std::string _input;
-    size_t _inputWritten;
+	std::string _input;
+	size_t _inputWritten;
 
-    std::string _output;
+	std::string _output;
 };
 
 std::map<int, FdInfo> _fdInfo;
@@ -268,13 +268,45 @@ void ServerManager::run() {
 				}
 			} 
 			else if (info.type == FD_CGI_INPUT) {
-				// std::cout << "Hello you should write in a pipe" << std::endl;
-				// if (revents & POLLOUT)
-					// writeToCgi(fd, info.clientFd);
+				std::cout << "Hello you should write in a pipe" << std::endl;
+				if (revents & POLLOUT)
+				{
+					if (writeToCgi(fd, info.clientFd))
+					{
+						Client& client = _clients.at(info.clientFd);
+
+						close(fd);
+						removeFd(fd);
+
+						client.setCgiInputFd(-1);
+						client.setCgiState(CGI_READING);
+					}
+				}
 			} else if (info.type == FD_CGI_OUTPUT) {
-				// std::cout << "Hello you should read from a pipe" << std::endl;
-				// if (revents & (POLLIN | POLLHUP))
-					// readFromCgi(fd, info.clientFd);
+				std::cout << "Hello you should read from a pipe" << std::endl;
+				if (revents & (POLLIN | POLLHUP))
+					if (readFromCgi(fd, info.clientFd)){
+						// CGI inform EOF
+						int clientFd = info.clientFd;
+						size_t clientIndex = findClientIndex(clientFd);
+
+						if (clientIndex < _pollfds.size())
+						{
+							Client& client = _clients.at(clientFd);
+							HTTPResponse response = buildCgiResponse(client);
+
+							close(fd);
+							removeFd(fd);
+
+							client.setCgiOutputFd(-1);
+							client.setCgiState(CGI_DONE);
+
+							std::cerr << "CGI: queue response" << std::endl;
+							queueResponse(clientIndex, client, response);
+
+							continue;
+						}
+					}
 			}
 
 			if (!removed)
@@ -580,6 +612,9 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		_exit(1);
 	}
 
+	close(inputPipe[0]);
+	close(outputPipe[1]);
+
 	setNonBlocking(inputPipe[1]);
 	setNonBlocking(outputPipe[0]);
 
@@ -678,11 +713,11 @@ bool ServerManager::processRequestBuffer(size_t index) {
 								if (pipe(inputPipe) < 0)
 									return false;
 
-                                if (pipe(outputPipe) < 0) {
-                                    close(inputPipe[0]);
-                                    close(inputPipe[1]);
-                                    return false;
-                                }
+								if (pipe(outputPipe) < 0) {
+									close(inputPipe[0]);
+									close(inputPipe[1]);
+									return false;
+								}
 								if (pipe(outputPipe) < 0)
 								{
 									close(inputPipe[0]);
@@ -693,10 +728,10 @@ bool ServerManager::processRequestBuffer(size_t index) {
 								// 2. Create child.
 								pid_t pid = fork();
 
-                                if (pid < 0) {
-                                    // Close all four pipe descriptors.
-                                    return false;
-                                }
+								if (pid < 0) {
+									// Close all four pipe descriptors.
+									return false;
+								}
 
 								if (pid == 0)
 								{
@@ -796,6 +831,69 @@ void ServerManager::setFdEvents(int fd, short events)
 	}
 }
 
+bool ServerManager::writeToCgi(int fd, int clientFd)
+{
+	Client& client = _clients.at(clientFd);
+	const HTTPRequest& request = client.getRequest();
+
+	size_t bodySize = request.getBodySize();
+	size_t inputOffset = client.getCgiInputOffset();
+
+	if (inputOffset >= bodySize)
+		return true;
+
+	size_t bodyOffset = request.getBodyOffset();
+	size_t writeOffset = bodyOffset + inputOffset;
+	size_t remaining = bodySize - inputOffset;
+
+	const std::string& buffer = request.getRequestBuffer();
+
+	ssize_t written = write(fd, buffer.data() + writeOffset, remaining);
+
+	if (written > 0)
+	{
+		inputOffset += static_cast<size_t>(written);
+		client.setCgiInputOffset(inputOffset);
+
+		return inputOffset >= bodySize;
+	}
+
+	return false;
+}
+
+bool ServerManager::readFromCgi(int fd, int clientFd)
+{
+	Client& client = _clients.at(clientFd);
+
+	char buffer[4096];
+	ssize_t bytes = read(fd, buffer, sizeof(buffer));
+	std::cerr << "CGI read bytes: " << bytes << std::endl;
+
+	if (bytes > 0)
+	{
+		std::string output = client.getCgiOutput();
+		output.append(buffer, static_cast<size_t>(bytes));
+		client.setCgiOutput(output);
+		return false;
+	}
+
+	if (bytes == 0)
+		return true;
+
+	return false;
+}
+
+size_t ServerManager::findClientIndex(int clientFd) const
+{
+	for (size_t i = 0; i < _pollfds.size(); ++i)
+	{
+		if (_pollfds[i].fd == clientFd)
+			return i;
+	}
+
+	return _pollfds.size();
+}
+
 std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& request,const ServerConfig& servConf) {
 
 	std::vector<std::string> cgiEnv;
@@ -861,3 +959,95 @@ std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& r
 				// HTTP_ACCEPT=*/*
 				// HTTP_COOKIE=id=123
 				// HTTP_X_HELLO=test
+
+
+HTTPResponse ServerManager::buildCgiResponse(const Client& client)
+{
+	const std::string& output = client.getCgiOutput();
+	
+	std::cerr << "CGI OUTPUT SIZE: " << output.size() << std::endl;
+	std::cerr << "CGI OUTPUT [" << output << "]" << std::endl;
+	for (size_t i = 0; i < output.size(); ++i)
+	{
+		if (output[i] == '\r')
+			std::cerr << "\\r";
+		else if (output[i] == '\n')
+			std::cerr << "\\n";
+		else
+			std::cerr << output[i];
+	}
+
+	std::cerr << std::endl;
+
+
+	HTTPResponse response;
+	response.setVersion("1.1");
+	response.setStatusCode(200);
+	response.setStatus("OK");
+
+	size_t separatorLength = 4;
+	size_t headerEnd = output.find("\r\n\r\n");
+
+	if (headerEnd == std::string::npos)
+	{
+		headerEnd = output.find("\n\n");
+		separatorLength = 2;
+	}
+
+	if (headerEnd == std::string::npos)
+	{
+		response.setStatusCode(502);
+		response.setStatus("Bad Gateway");
+		return response;
+	}
+
+	std::string headers = output.substr(0, headerEnd);
+	std::string body = output.substr(headerEnd + separatorLength);
+
+	response.setBody(body);
+	response.setHeader("Content-Length", std::to_string(body.size()));
+
+	size_t start = 0;
+
+	while (start < headers.size())
+	{
+		size_t end = headers.find("\r\n", start);
+
+		if (end == std::string::npos)
+			end = headers.size();
+
+		std::string line = headers.substr(start, end - start);
+
+		size_t colon = line.find(':');
+
+		if (colon != std::string::npos)
+		{
+			std::string name = line.substr(0, colon);
+			std::string value = line.substr(colon + 1);
+
+			while (!value.empty() && value[0] == ' ')
+				value.erase(0, 1);
+
+			if (name == "Status")
+			{
+				size_t space = value.find(' ');
+
+				if (space != std::string::npos)
+				{
+					response.setStatusCode(
+						std::atoi(value.substr(0, space).c_str()));
+					response.setStatus(value.substr(space + 1));
+				}
+			}
+			else
+				response.setHeader(name, value);
+		}
+
+		if (end == headers.size())
+			break;
+
+		start = end + 2;
+	}
+
+	return response;
+}

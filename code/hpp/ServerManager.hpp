@@ -54,7 +54,10 @@ class ServerManager {
         void removeTimeOutClients();
 		bool startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf);
 		std::vector<std::string> buildCgiEnvironment(const HTTPRequest& request, const ServerConfig& servConf);
-
+		bool writeToCgi(int fd, int clientFd);
+		bool readFromCgi(int fd, int clientFd);
+		size_t findClientIndex(int clientFd) const;
+		
 	public: 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);
 		const std::map<int, std::vector<ServerConfig>>& getServerManager() const;
@@ -66,6 +69,8 @@ class ServerManager {
 		void addFd(int fd, FdType type, int clientFd);
 		void removeFd(int fd);
 		void setFdEvents(int fd, short events);
+		HTTPResponse buildCgiResponse(const Client& client);
+
 };
 
 #endif

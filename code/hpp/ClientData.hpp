@@ -30,7 +30,8 @@ enum CgiState
 {
 	CGI_NONE,
 	CGI_WRITING,
-	CGI_READING
+	CGI_READING,
+	CGI_DONE
 };
 
 class Client {
