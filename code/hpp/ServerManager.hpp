@@ -30,6 +30,13 @@ struct FdInfo
     int clientFd;
 };
 
+struct CgiResult {
+	bool valid;
+	int statusCode;
+	std::map<std::string, std::string> headers;
+	std::string body;
+};
+
 class ServerManager {
 
 	private:
@@ -54,6 +61,10 @@ class ServerManager {
         void removeTimeOutClients();
 		bool startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf);
 		std::vector<std::string> buildCgiEnvironment(const HTTPRequest& request, const ServerConfig& servConf);
+		bool writeToCgi(int fd, int clientFdInfo);
+		bool readFromCgi(int fd, int clientFdInfo);
+		CgiResult parseCgiOutput(const std::string& cgiOutput);
+		std::string buildCgiResponse(const CgiResult& result);
 
 	public: 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);

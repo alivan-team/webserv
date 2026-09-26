@@ -205,5 +205,5 @@ void Client::setCgiInputOffset(size_t offset)
 
 void Client::setCgiOutput(const std::string& output)
 {
-	_cgiOutput = output;
+	_cgiOutput += output;
 }

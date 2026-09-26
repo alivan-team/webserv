@@ -20,20 +20,8 @@ void ServerManager::acceptNewClient(int serverFd) {
 
 	setNonBlocking(newClientFd);
 
-	// Old manual pollfd registration.
-	// Replaced by addFd() to keep _pollfds and _fdInfo synchronized.
-	// commented and replaced when adding CGI
-	// pollfd client_poll;
-	// client_poll.fd = newClientFd;
-	// client_poll.events = POLLIN;
-	// client_poll.revents = 0;
-
-	// _pollfds.push_back(client_poll);
-	// _fdInfo[serverFd] = FdInfo{FD_SERVER_SOCKET, -1};
-
 	addFd(newClientFd, FD_CLIENT_SOCKET, newClientFd);
 	_clients[newClientFd] = Client(newClientFd, serverFd);
-
 };
 
 void ServerManager::removeClient(size_t index) {
@@ -44,11 +32,6 @@ void ServerManager::removeClient(size_t index) {
 	close(clientFd);
 	_clients.erase(clientFd);
 	removeFd(clientFd);
-	// Old manual pollfd registration.
-	// Replaced by removeFd() to keep _pollfds and _fdInfo synchronized.
-	// commented and replaced when adding CGI
-	// _fdInfo.erase(clientFd);
-	// _pollfds.erase(_pollfds.begin() + index);
 }
 
 bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
@@ -141,92 +124,6 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 		_serversMap[serverFd].push_back(servers[i]);
 	}
 };
-/*
-
-enum class FdType
-{
-	ServerSocket,
-	ClientSocket,
-	CgiInput,   // Parent writes to child
-	CgiOutput   // Parent reads from child
-};
-
-Store information about every polled FD:
-
-struct FdInfo
-{
-	FdType type;
-	int clientFd;
-};
-
-class CgiProcess
-{
-private:
-    pid_t _pid;
-    int _clientFd;
-
-    int _inputFd;
-    int _outputFd;
-
-    std::string _input;
-    size_t _inputWritten;
-
-    std::string _output;
-};
-
-std::map<int, FdInfo> _fdInfo;
-
-
-			void ServerManager::run()
-			{
-				while (true)
-				{
-					int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
-
-					if (ready < 0)
-						throw std::runtime_error("poll() failed");
-
-					size_t i = 0;
-
-					while (i < _pollfds.size())
-					{
-						int fd = _pollfds[i].fd;
-						short revents = _pollfds[i].revents;
-
-						FdInfo info = _fdInfo.at(fd);
-
-						if (info.type == FdType::ServerSocket)
-						{
-							if (revents & POLLIN)
-								acceptNewClient(fd);
-						}
-						else if (info.type == FdType::ClientSocket)
-						{
-							if (revents & POLLIN)
-								readClientData(i);
-
-							if (revents & POLLOUT)
-								writeClientData(i);
-						}
-						else if (info.type == FdType::CgiInput)
-						{
-							if (revents & POLLOUT)
-								writeToCgi(fd, info.clientFd);
-						}
-						else if (info.type == FdType::CgiOutput)
-						{
-							if (revents & (POLLIN | POLLHUP))
-								readFromCgi(fd, info.clientFd);
-						}
-
-						++i;
-					}
-
-					checkCgiTimeouts();
-					removeTimeOutClients();
-				}
-			}
-*/
 
 void ServerManager::run() {
 
@@ -266,15 +163,14 @@ void ServerManager::run() {
 					if (!removed && (revents & POLLOUT))
 						removed = writeClientData(i);
 				}
-			} 
-			else if (info.type == FD_CGI_INPUT) {
-				// std::cout << "Hello you should write in a pipe" << std::endl;
-				// if (revents & POLLOUT)
-					// writeToCgi(fd, info.clientFd);
+			} else if (info.type == FD_CGI_INPUT) {
+				if (revents & POLLOUT)
+					removed = writeToCgi(fd, info.clientFd);
+				std::cout << "Hello you should write in a pipe" << std::endl;
 			} else if (info.type == FD_CGI_OUTPUT) {
-				// std::cout << "Hello you should read from a pipe" << std::endl;
-				// if (revents & (POLLIN | POLLHUP))
-					// readFromCgi(fd, info.clientFd);
+				if (revents & (POLLIN | POLLHUP))
+					removed = readFromCgi(fd, info.clientFd);
+				std::cout << "Hello you should read from a pipe" << std::endl;
 			}
 
 			if (!removed)
@@ -285,49 +181,6 @@ void ServerManager::run() {
 		removeTimeOutClients();
 	}
 
-	// 		if (_pollfds[i].revents & POLLNVAL)
-	// 		{
-	// 			if (_fdInfo[fd].type != FD_SERVER_SOCKET)
-	// 			{
-	// 				removeClient(i);
-	// 				continue;
-	// 			}
-	// 			throw std::runtime_error("Listening socket became invalid");
-	// 		}
-
-	// 		if (_pollfds[i].revents & POLLIN)
-	// 		{
-	// 			if (_fdInfo[fd].type == FD_SERVER_SOCKET)
-	// 				acceptNewClient(fd);
-	// 			else if (_fdInfo[fd].type == FD_CLIENT_SOCKET)
-	// 			{
-	// 				bool removed = readClientData(i);
-	// 				if (removed)
-	// 					continue;
-	// 			}
-	// 		}
-
-	// 		if (_pollfds[i].revents & POLLOUT)
-	// 		{
-	// 			bool removed = writeClientData(i);
-	// 			if (removed)
-	// 				continue;
-	// 		}
-
-	// 		if (_pollfds[i].revents & (POLLERR | POLLHUP))
-	// 		{
-	// 			if (_fdInfo[fd].type != FD_SERVER_SOCKET)
-	// 			{
-	// 				removeClient(i);
-	// 				continue;
-	// 			}
-	// 			throw std::runtime_error("Listening socket error");
-	// 		}
-
-	// 		i++;
-	// 	}
-	// 	removeTimeOutClients();
-	// }
 };
 
 void ServerManager::setNonBlocking(int fd) {
@@ -550,17 +403,7 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 			_exit(1);
 		
 		std::vector<std::string> cgiEnvironment = buildCgiEnvironment(request, servConf);
-		
-		// SEEEEEEE //
-			for (size_t i = 0; i < cgiEnvironment.size(); i++) {
-				std::cerr << i << " " << cgiEnvironment[i] << std::endl;
-			}
-
-			std::cerr <<"\t route.cgiPath.c_str() " << route.cgiPath.c_str() << std::endl;
-			std::cerr <<"\t route.scriptPath.c_str() " << route.scriptPath.c_str() << std::endl;
-			std::cerr <<"\t route.workingDirectory.c_str() " << route.workingDirectory.c_str() << std::endl;
-
-		// SEEEEEEE //
+	
 		
 		std::vector<char*> evnp;
 		std::vector<char*> argv;
@@ -575,10 +418,32 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		argv.push_back(const_cast<char*>(route.cgiPath.c_str()));
 		argv.push_back(scriptName.data());
 		argv.push_back(NULL);
-		// _exit(0);
+
+		// SEEEEEEE //
+			// for (size_t i = 0; i < cgiEnvironment.size(); i++) {
+			// 	std::cerr << i << " " << cgiEnvironment[i] << std::endl;
+			// }
+
+			// std::cerr <<"\t route.cgiPath.c_str() " << route.cgiPath.c_str() << std::endl;
+			// std::cerr <<"\t route.scriptPath.c_str() " << route.scriptPath.c_str() << std::endl;
+			// std::cerr <<"\t route.workingDirectory.c_str() " << route.workingDirectory.c_str() << std::endl;
+
+			// for (size_t i = 0; i < cgiEnvironment.size(); ++i)
+			// std::cerr << i << " " << cgiEnvironment[i] << std::endl;
+
+			// std::cerr << "argv[0] = " << argv[0] << std::endl;
+			// std::cerr << "argv[1] = " << argv[1] << std::endl;
+
+			// _exit(0);
+
+		// SEEEEEEE //
+
 		execve(route.cgiPath.c_str(), argv.data() , evnp.data());
 		_exit(1);
 	}
+
+	close(inputPipe[0]);
+	close(outputPipe[1]);
 
 	setNonBlocking(inputPipe[1]);
 	setNonBlocking(outputPipe[0]);
@@ -648,75 +513,6 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		}
 		// std::cout << "Hello from try " << std::endl;
 		client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
-		// cgi detection.
-		/*
-			if (resolveCgiRoute(request, *serverConfig, cgiRoute))
-			{
-				if (!startCgi(clientFd, request, cgiRoute))
-				{
-					HTTPResponse errorResponse =
-						HTTPResponseBuild::makeEarlyErrorResponse(
-							500,
-							*serverConfig
-						);
-
-					client.setCloseAfterResponse(true);
-					queueResponse(index, client, errorResponse);
-				}
-
-				return false;
-			}
-							bool ServerManager::startCgi(
-								int clientFd,
-								const HTTPRequest& request,
-								const CgiRoute& route)
-							{
-								int inputPipe[2];
-								int outputPipe[2];
-
-								// 1. Create pipes.
-								if (pipe(inputPipe) < 0)
-									return false;
-
-                                if (pipe(outputPipe) < 0) {
-                                    close(inputPipe[0]);
-                                    close(inputPipe[1]);
-                                    return false;
-                                }
-								if (pipe(outputPipe) < 0)
-								{
-									close(inputPipe[0]);
-									close(inputPipe[1]);
-									return false;
-								}
-
-								// 2. Create child.
-								pid_t pid = fork();
-
-                                if (pid < 0) {
-                                    // Close all four pipe descriptors.
-                                    return false;
-                                }
-
-								if (pid == 0)
-								{
-									// Child branch.
-									check path
-									create envierment 
-									send to execvec().
-									exit(1);
-								}
-								else
-								{
-									// Parent branch.
-									// which on recieve or sent to know in the poll() what this 
-									// client is waiting for ?
-								}
-
-								return true;
-							}
-		*/
-
 		CgiRoute cgiRoute;
 		int cgiError = 0;
 
@@ -782,6 +578,7 @@ void ServerManager::removeFd(int fd)
 	}
 
 	_fdInfo.erase(fd);
+	close(fd); // added by Ivan :) -> dunno if for future removeFd we should not need the close the fd... lets see. 
 }
 
 void ServerManager::setFdEvents(int fd, short events)
@@ -842,22 +639,223 @@ std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& r
 	return cgiEnv;
 };
 
-		// build argv/envp
-			// GATEWAY_INTERFACE=CGI/1.1
-			// REQUEST_METHOD=GET
-			// SERVER_PROTOCOL=HTTP/1.1
-			// SCRIPT_NAME=/cgi-bin/test.py
-			// QUERY_STRING=name=Ivan
-			// SERVER_NAME=localhost
-			// SERVER_PORT=8080
+bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
 
-			// Again, Content-Type and Content-Length are special:
-			// Content-Type   → CONTENT_TYPE
-			// Content-Length → CONTENT_LENGTH
+	Client& client = _clients.at(clientFdInfo);
+	const HTTPRequest& request = client.getRequest();
+	size_t bodySize = request.getBodySize();
+	// std::cerr << " HERE ___> write to cgi written-> " << std::endl;
 
-			// Header:
-				// HTTP_HOST=localhost
-				// HTTP_USER_AGENT=curl/8.7
-				// HTTP_ACCEPT=*/*
-				// HTTP_COOKIE=id=123
-				// HTTP_X_HELLO=test
+	if (bodySize == 0) {
+		
+		removeFd(fd);
+		client.setCgiInputFd(-1);
+		client.setCgiState(CGI_READING);
+		return true;
+	}
+
+	const std::string& buffer = request.getRequestBuffer();
+	size_t bodyOffset = request.getBodyOffset();
+	size_t sent = client.getCgiInputOffset();
+
+	
+	ssize_t written = write(fd, buffer.data() + bodyOffset + sent, bodySize - sent);
+	// std::cerr << " HERE ___> write to cgi written-> " << written << std::endl;
+	if (written > 0) 
+		client.setCgiInputOffset(sent + static_cast<size_t>(written));
+
+	if (client.getCgiInputOffset() >= bodySize) {
+
+		removeFd(fd);
+		client.setCgiInputFd(-1);
+		client.setCgiState(CGI_READING);
+		return true;
+	}
+	return false;
+};
+
+
+/*
+	1. Find the Client using clientFd
+	2. Find the already parsed HTTP request/body
+	3. Check how many body bytes have already been written
+	4. write() only after POLLOUT
+	5. Update the CGI input offset
+	6. If the full body is sent:
+	- close the CGI input pipe
+	- remove that pipe fd from poll()
+	- child sees EOF on stdin
+	- switch CGI state toward reading
+*/
+
+bool ServerManager::readFromCgi(int fd, int clientFdInfo) {
+
+	Client& client = _clients.at(clientFdInfo);
+
+	char buffer[4096];
+	ssize_t bytesRead = read(fd, buffer, sizeof(buffer));
+
+	if(bytesRead > 0) {
+		client.setCgiOutput(std::string(buffer, static_cast<size_t>(bytesRead)));
+		return false;
+	}
+	
+	if (bytesRead == 0) {
+
+		removeFd(fd);
+		client.setCgiOutputFd(-1);
+
+		CgiResult result = parseCgiOutput(client.getCgiOutput());
+
+		// std::cerr << "CGI RESULT:" << std::endl;
+		// std::cerr << "\tvalid: " << result.valid << std::endl;
+		// std::cerr << "\tstatus: " << result.statusCode << std::endl;
+
+		// std::cerr << "\theaders:" << std::endl;
+		// for (auto i = result.headers.begin(); i != result.headers.end(); ++i)
+		// {
+		// 	std::cerr << "\t\t>" << i->first
+		// 			<< "< = >" << i->second
+		// 			<< "<" << std::endl;
+		// }
+
+		// std::cerr << "\tbody: >\n\n"
+		// 		<< result.body
+		// 		<< "<" << std::endl;
+
+
+		if (result.valid) {
+			std::string response;
+			response = buildCgiResponse(result);
+			client.setResponseBuffer(response);
+			// setFdEvents(clientFdInfo, POLLOUT);
+
+			// return true;
+		} else {
+			const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
+
+			HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
+			client.setResponseBuffer(errorResponse.toString(errorResponse));
+
+			// setFdEvents(clientFdInfo, POLLOUT);
+			// return true;
+		}
+		setFdEvents(clientFdInfo, POLLOUT);
+
+		return true;
+	}
+	removeFd(fd);
+	client.setCgiOutputFd(-1);
+
+	
+	// CGI read failed.
+    // Build/queue 500 response here.
+	std::cerr << "CGI end of function\n";
+
+	return true;
+};
+
+CgiResult ServerManager::parseCgiOutput(const std::string& cgiOutput) {
+	
+	CgiResult parseCgi;
+	parseCgi.statusCode = 500;
+	parseCgi.valid = false;
+	bool hasStatus = false;
+
+	if (cgiOutput.empty()) {
+		// parseCgi.statusCode = 500;
+		return parseCgi;
+	}
+
+	// std::cerr << " CGI OUTPUT ----> " << cgiOutput << std::endl;
+	size_t headerEnd = cgiOutput.find("\r\n\r\n");
+	size_t separator = 4;
+	if (headerEnd == std::string::npos) {
+		headerEnd = cgiOutput.find("\n\n");
+		separator = 2;
+	}
+
+	if (headerEnd == std::string::npos) {
+		// parseCgi.statusCode = 500;
+		return parseCgi;
+	}
+
+	std::string headerPart = cgiOutput.substr(0, headerEnd);
+	// std::string bodyPart = cgiOutput.substr(headerEnd + separator);
+	parseCgi.body = cgiOutput.substr(headerEnd + separator);
+
+	std::istringstream stream(headerPart);
+	std::string line;
+
+	while (std::getline(stream, line)) {
+		std::cerr << "line -> " << line << std::endl;
+
+		size_t colon = line.find(':');
+		std::string name = toLower(line.substr(0, colon));
+		std::string value = line.substr(colon + 1);
+
+		// std::cerr << "\t name ->" << name << "<\t value ->" << value << "<" << std::endl;
+
+		while (!value.empty() && (value[0] == ' ' || value[0] == '\t'))
+			value.erase(0, 1);
+
+		if (name == "status") {
+			std::istringstream statusStream(value);
+			int statusCode;
+
+			if (!(statusStream >> statusCode) || statusCode < 100 || statusCode > 599) {
+				
+				return parseCgi;
+			}
+			parseCgi.statusCode = statusCode;
+			hasStatus = true;
+		} else {
+			parseCgi.headers[name] = value;
+		}
+
+
+	}
+	
+	parseCgi.valid = true;
+	if (!hasStatus)
+		parseCgi.statusCode = 200;
+
+	return parseCgi;
+
+}
+
+/*
+for full CGI web page.
+curl -H "Host: test.localhost" \
+"http://127.0.0.1:8080/cgi-bin/dynamic.py?name=Ivan"
+*/
+
+std::string ServerManager::buildCgiResponse(const CgiResult& result) {
+
+	std::string response;
+
+	response += "HTTP/1.1 ";
+	response += std::to_string(result.statusCode);
+	response += " ";
+	response += HTTPResponseBuild::getStatusText(result.statusCode);
+	response += "\r\n";
+
+	for (auto it = result.headers.begin(); it != result.headers.end(); it++) {
+		
+		if (toLower(it->first) == "content-length")
+			continue;
+		response += it->first;
+		response += ": ";
+		response += it->second;
+		response += "\r\n";
+
+	}
+	response += "Content-Length: ";
+	response += std::to_string(result.body.size());
+	response += "\r\n";
+	response += "Connection: keep-alive\r\n";
+	response += "\r\n";
+	response += result.body;
+
+	return response;
+}
