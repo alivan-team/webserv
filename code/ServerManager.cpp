@@ -578,7 +578,7 @@ void ServerManager::removeFd(int fd)
 	}
 
 	_fdInfo.erase(fd);
-	close(fd); // added by Ivan :) -> dunno if for future removeFd we should not need the close the fd... lets see. 
+	close(fd); // added by Ivan :) -> dunno if for future removeFd we should not need the close the fd...
 }
 
 void ServerManager::setFdEvents(int fd, short events)
@@ -673,8 +673,6 @@ bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
 	}
 	return false;
 };
-
-
 /*
 	1. Find the Client using clientFd
 	2. Find the already parsed HTTP request/body
@@ -687,7 +685,6 @@ bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
 	- child sees EOF on stdin
 	- switch CGI state toward reading
 */
-
 bool ServerManager::readFromCgi(int fd, int clientFdInfo) {
 
 	Client& client = _clients.at(clientFdInfo);
