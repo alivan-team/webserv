@@ -25,11 +25,20 @@ void ServerManager::acceptNewClient(int serverFd) {
 };
 
 void ServerManager::removeClient(size_t index) {
+
 	if (index >= _pollfds.size())
 		return;
 
+	// Client& client = _clients.at(clientFd);
+
+	// if (client.getCgiInputFd() != -1)
+	// 	removeFd(client.getCgiInputFd());
+
+	// if (client.getCgiOutputFd() != -1)
+	// 	removeFd(client.getCgiOutputFd());
+
 	int clientFd = _pollfds[index].fd;
-	close(clientFd);
+	// close(clientFd);
 	_clients.erase(clientFd);
 	removeFd(clientFd);
 }
@@ -166,18 +175,19 @@ void ServerManager::run() {
 			} else if (info.type == FD_CGI_INPUT) {
 				if (revents & POLLOUT)
 					removed = writeToCgi(fd, info.clientFd);
-				std::cout << "Hello you should write in a pipe" << std::endl;
+
 			} else if (info.type == FD_CGI_OUTPUT) {
 				if (revents & (POLLIN | POLLHUP))
 					removed = readFromCgi(fd, info.clientFd);
-				std::cout << "Hello you should read from a pipe" << std::endl;
+					
 			}
 
 			if (!removed)
 				i++;
 		}
 
-		// checkCgiTimeouts();
+		reapCgiChildern();
+		checkCgiTimeouts();
 		removeTimeOutClients();
 	}
 
@@ -237,18 +247,7 @@ int ServerManager::createListeningSockets(const ServerConfig& server) {
 	}
 
 	setNonBlocking(serverFd);
-
 	_serverSockets.push_back(serverFd);
-
-	// Old manual pollfd registration.
-	// Replaced by addFd() to keep _pollfds and _fdInfo synchronized.
-	// commented and replaced when adding CGI
-	// pollfd server_poll;
-	// server_poll.fd = serverFd;
-	// server_poll.events = POLLIN;
-	// server_poll.revents = 0;
-
-	// _pollfds.push_back(server_poll);
 	addFd(serverFd, FD_SERVER_SOCKET, -1);
 
 	std::cout << "Listening on  " << host << ":" << port << std::endl;
@@ -328,32 +327,136 @@ bool ServerManager::writeClientData(size_t index) {
 	return false;
 };
 
-void ServerManager::removeTimeOutClients() {
-
-	const std::chrono::steady_clock::time_point now = 
-			std::chrono::steady_clock::now();
-	std::map<int, Client>::iterator it = _clients.begin();
-	std::vector<int> timeOutFds;
+void ServerManager::reapCgiChildern() {
 	
-	// std::cout << "TIMEOUT client fd: " << std::endl;
+	for (auto it = _clients.begin(); it != _clients.end(); it++){
 
-	while (it != _clients.end()) {
-		
-		std::chrono::seconds timeLeft = 
-			std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActivity());
-		
-			if (timeLeft.count() > 30) 
-			timeOutFds.push_back(it->first);
+		Client& client = it->second;
 
-		++it;
+		pid_t pid = client.getCgiPid();
+
+		if (pid <= 0)
+			continue;
+		
+		int status; 
+		pid_t result = waitpid(client.getCgiPid(), &status, WNOHANG);
+
+		if (result == 0)
+			continue;
+		
+		if (result < 0) {
+			client.setCgiProcessFailed(true);
+			client.setCgiPid(-1);
+			continue;
+		}
+	
+		if (WIFEXITED(status)) {
+			if (WEXITSTATUS(status) != 0) 
+				client.setCgiProcessFailed(true);
+
+		} else if (WIFSIGNALED(status)) {
+			client.setCgiProcessFailed(true);
+		}
+
+		client.setCgiPid(-1);
+
+		if (client.getCgiState() == CGI_WAITING_EXIT)
+			finishCgiResponse(client);
 	}
 
-	for (size_t i = 0; i < timeOutFds.size(); i++) {
-		for (size_t j = 0; j < _pollfds.size(); j++) {
-			if (_pollfds[j].fd == timeOutFds[i]) {
-				// std::cout << "TIMEOUT client fd: " << timeOutFds[i] << std::endl;
-				removeClient(j);
-				break ;
+}
+
+void ServerManager::childTimeoutHandler(Client& client, std::chrono::seconds elapse) {
+
+	if (client.getCgiPid() > 0) 
+		kill(client.getCgiPid(), SIGKILL);
+
+	if (client.getCgiInputFd() != -1) {
+		removeFd(client.getCgiInputFd());
+		client.setCgiInputFd(-1);
+	}
+
+	if (client.getCgiOutputFd() != -1) {
+		removeFd(client.getCgiOutputFd());
+		client.setCgiOutputFd(-1);
+	}
+	
+	const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
+	HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
+	
+	client.setCgiState(CGI_NONE);
+	client.setResponseBuffer(errorResponse.toString(errorResponse));
+	client.updateLastActivity();
+	// client.setCloseAfterResponse(true); // -> connection keep a life or not ? 
+	setFdEvents(client.getClientFd(), POLLOUT);
+};
+
+
+void ServerManager::checkCgiTimeouts() {
+
+	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+
+	std::map<int, Client>::iterator it = _clients.begin();
+
+	while (it != _clients.end()) {
+
+		Client& client = it->second;
+
+		if (client.getCgiState() == CGI_NONE) {
+			it++;
+			continue ;
+		}
+
+		std::chrono::seconds elapse = std::chrono::duration_cast<std::chrono::seconds>(now - client.getCgiTime());
+
+		if (elapse.count() > 30) {
+			childTimeoutHandler(client, elapse);
+		}
+		it++;
+	}
+	/*
+	Client fd 5
+		│
+		├── CGI state      = CGI_READING
+		├── CGI input fd   = -1
+		├── CGI output fd  = 8
+		├── CGI PID        = 48217
+		└── CGI start time = 09:52:03
+								│
+								▼
+						process PID 48217
+						/usr/bin/python3
+								│
+								▼
+							test.py
+	*/
+};
+
+void ServerManager::removeTimeOutClients() {
+
+	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+	std::map<int, Client>::iterator it = _clients.begin();
+	
+	while (it != _clients.end()) {
+		
+		int clientFd = it->first;
+
+		if (it->second.getCgiState() != CGI_NONE) {
+			it++;
+			continue ;
+		}
+		std::chrono::seconds timeLeft = std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActivity());
+		
+		++it;
+
+		if (timeLeft.count() > 30) {
+
+			for (size_t j = 0; j < _pollfds.size(); j++) {
+
+				if (_pollfds[j].fd ==clientFd) {
+					removeClient(j);
+					break ;
+				}
 			}
 		}
 	}
@@ -404,7 +507,6 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		
 		std::vector<std::string> cgiEnvironment = buildCgiEnvironment(request, servConf);
 	
-		
 		std::vector<char*> evnp;
 		std::vector<char*> argv;
 
@@ -414,29 +516,9 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		evnp.push_back(NULL);
 
 		std::string scriptName = std::filesystem::path(route.scriptPath).filename().string();
-		// std::cerr <<"\t\t scriptName " << scriptName << std::endl;
 		argv.push_back(const_cast<char*>(route.cgiPath.c_str()));
 		argv.push_back(scriptName.data());
 		argv.push_back(NULL);
-
-		// SEEEEEEE //
-			// for (size_t i = 0; i < cgiEnvironment.size(); i++) {
-			// 	std::cerr << i << " " << cgiEnvironment[i] << std::endl;
-			// }
-
-			// std::cerr <<"\t route.cgiPath.c_str() " << route.cgiPath.c_str() << std::endl;
-			// std::cerr <<"\t route.scriptPath.c_str() " << route.scriptPath.c_str() << std::endl;
-			// std::cerr <<"\t route.workingDirectory.c_str() " << route.workingDirectory.c_str() << std::endl;
-
-			// for (size_t i = 0; i < cgiEnvironment.size(); ++i)
-			// std::cerr << i << " " << cgiEnvironment[i] << std::endl;
-
-			// std::cerr << "argv[0] = " << argv[0] << std::endl;
-			// std::cerr << "argv[1] = " << argv[1] << std::endl;
-
-			// _exit(0);
-
-		// SEEEEEEE //
 
 		execve(route.cgiPath.c_str(), argv.data() , evnp.data());
 		_exit(1);
@@ -451,13 +533,14 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 	client.setCgiInputFd(inputPipe[1]);
 	client.setCgiOutputFd(outputPipe[0]);
 	client.setCgiState(CGI_WRITING);
+	client.setCgiPid(pid);
+	client.setCgiStartTime();
+	client.setCgiProcessFailed(false);
 
 	addFd(inputPipe[1], FD_CGI_INPUT, client.getClientFd());
 	addFd(outputPipe[0], FD_CGI_OUTPUT, client.getClientFd());
 
 	setFdEvents(inputPipe[1], POLLOUT);
-
-	// CGI process creation will be implemented here.
 
 	return true;
 }
@@ -644,7 +727,6 @@ bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
 	Client& client = _clients.at(clientFdInfo);
 	const HTTPRequest& request = client.getRequest();
 	size_t bodySize = request.getBodySize();
-	// std::cerr << " HERE ___> write to cgi written-> " << std::endl;
 
 	if (bodySize == 0) {
 		
@@ -658,9 +740,8 @@ bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
 	size_t bodyOffset = request.getBodyOffset();
 	size_t sent = client.getCgiInputOffset();
 
-	
 	ssize_t written = write(fd, buffer.data() + bodyOffset + sent, bodySize - sent);
-	// std::cerr << " HERE ___> write to cgi written-> " << written << std::endl;
+
 	if (written > 0) 
 		client.setCgiInputOffset(sent + static_cast<size_t>(written));
 
@@ -673,18 +754,7 @@ bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
 	}
 	return false;
 };
-/*
-	1. Find the Client using clientFd
-	2. Find the already parsed HTTP request/body
-	3. Check how many body bytes have already been written
-	4. write() only after POLLOUT
-	5. Update the CGI input offset
-	6. If the full body is sent:
-	- close the CGI input pipe
-	- remove that pipe fd from poll()
-	- child sees EOF on stdin
-	- switch CGI state toward reading
-*/
+
 bool ServerManager::readFromCgi(int fd, int clientFdInfo) {
 
 	Client& client = _clients.at(clientFdInfo);
@@ -702,55 +772,57 @@ bool ServerManager::readFromCgi(int fd, int clientFdInfo) {
 		removeFd(fd);
 		client.setCgiOutputFd(-1);
 
-		CgiResult result = parseCgiOutput(client.getCgiOutput());
-
-		// std::cerr << "CGI RESULT:" << std::endl;
-		// std::cerr << "\tvalid: " << result.valid << std::endl;
-		// std::cerr << "\tstatus: " << result.statusCode << std::endl;
-
-		// std::cerr << "\theaders:" << std::endl;
-		// for (auto i = result.headers.begin(); i != result.headers.end(); ++i)
-		// {
-		// 	std::cerr << "\t\t>" << i->first
-		// 			<< "< = >" << i->second
-		// 			<< "<" << std::endl;
-		// }
-
-		// std::cerr << "\tbody: >\n\n"
-		// 		<< result.body
-		// 		<< "<" << std::endl;
-
-
-		if (result.valid) {
-			std::string response;
-			response = buildCgiResponse(result);
-			client.setResponseBuffer(response);
-			// setFdEvents(clientFdInfo, POLLOUT);
-
-			// return true;
+		 if (client.getCgiPid() <= 0) {
+			finishCgiResponse(client);
 		} else {
+			client.setCgiState(CGI_WAITING_EXIT);
+		}
+
+		return true;
+
+	}
+	removeFd(fd);
+	client.setCgiOutputFd(-1);
+	client.setCgiState(CGI_NONE);
+
+	const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
+	HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
+	client.setResponseBuffer(errorResponse.toString(errorResponse));
+	client.updateLastActivity();
+	setFdEvents(clientFdInfo, POLLOUT);
+
+	return true;
+};
+
+void ServerManager::finishCgiResponse(Client& client) {
+
+		if(client.getCgiProcessFailed()) {
 			const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
 
 			HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
 			client.setResponseBuffer(errorResponse.toString(errorResponse));
+		} else {
 
-			// setFdEvents(clientFdInfo, POLLOUT);
-			// return true;
-		}
-		setFdEvents(clientFdInfo, POLLOUT);
-
-		return true;
-	}
-	removeFd(fd);
-	client.setCgiOutputFd(-1);
-
+			CgiResult result = parseCgiOutput(client.getCgiOutput());
 	
-	// CGI read failed.
-    // Build/queue 500 response here.
-	std::cerr << "CGI end of function\n";
-
-	return true;
+			if (result.valid) {
+				std::string response;
+				response = buildCgiResponse(result);
+				client.setResponseBuffer(response);
+	
+			} else {
+				const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
+	
+				HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
+				client.setResponseBuffer(errorResponse.toString(errorResponse));
+			}
+		}
+		setFdEvents(client.getClientFd(), POLLOUT);
+		client.setCgiState(CGI_NONE);
+		client.updateLastActivity();
+		// return true;
 };
+
 
 CgiResult ServerManager::parseCgiOutput(const std::string& cgiOutput) {
 	

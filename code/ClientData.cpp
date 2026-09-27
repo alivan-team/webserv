@@ -183,6 +183,30 @@ const std::string& Client::getCgiOutput() const
 	return _cgiOutput;
 }
 
+pid_t Client::getCgiPid() const {
+	return _cgiPid;
+};
+
+const std::chrono::steady_clock::time_point& Client::getCgiTime() {
+	return _cgiStartTime;
+};
+
+bool Client::getCgiProcessFailed() const {
+	return _cgiProcessFailed;
+};
+
+void Client::setCgiProcessFailed(bool failed) {
+	_cgiProcessFailed = failed;
+};
+
+void Client::setCgiStartTime() {
+	_cgiStartTime = std::chrono::steady_clock::now();
+};
+
+void Client::setCgiPid(pid_t cgiPid) {
+	_cgiPid = cgiPid;
+};
+
 void Client::setCgiState(CgiState state)
 {
 	_cgiState = state;

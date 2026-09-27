@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 #include <cerrno>
 #include <netdb.h>
+#include <signal.h>
 
 enum FdType
 {
@@ -65,6 +66,10 @@ class ServerManager {
 		bool readFromCgi(int fd, int clientFdInfo);
 		CgiResult parseCgiOutput(const std::string& cgiOutput);
 		std::string buildCgiResponse(const CgiResult& result);
+		void checkCgiTimeouts();
+		void childTimeoutHandler(Client& client, std::chrono::seconds elapse);
+		void reapCgiChildern();
+		void finishCgiResponse(Client& client);
 
 	public: 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);

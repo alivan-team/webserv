@@ -30,7 +30,8 @@ enum CgiState
 {
 	CGI_NONE,
 	CGI_WRITING,
-	CGI_READING
+	CGI_READING,
+	CGI_WAITING_EXIT
 };
 
 class Client {
@@ -40,7 +41,6 @@ class Client {
 		std::string _responseBuffer;
 		
 		std::string _body;
-		
 
 		size_t _responseSent;
 		int _client_fd;
@@ -63,6 +63,9 @@ class Client {
 		int _cgiOutputFd;
 		size_t _cgiInputOffset;
 		std::string _cgiOutput;
+		pid_t _cgiPid;
+		std::chrono::steady_clock::time_point _cgiStartTime;
+		bool _cgiProcessFailed;
 		
 		bool parseContentLength(const std::string& value, size_t& result) const;
 		bool parseHexSize(const std::string& value, size_t& result) const;
@@ -111,7 +114,14 @@ class Client {
 		int getCgiOutputFd() const;
 		size_t getCgiInputOffset() const;
 		const std::string& getCgiOutput() const;
-
+		pid_t getCgiPid() const;
+		// void updateLastActivity();
+		const std::chrono::steady_clock::time_point& getCgiTime();
+		bool getCgiProcessFailed() const;
+		
+		void setCgiProcessFailed(bool failed);
+		void setCgiStartTime();
+		void setCgiPid(pid_t cgiPid);
 		void setCgiState(CgiState state);
 		void setCgiInputFd(int fd);
 		void setCgiOutputFd(int fd);
