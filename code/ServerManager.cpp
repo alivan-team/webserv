@@ -29,18 +29,38 @@ void ServerManager::removeClient(size_t index) {
 	if (index >= _pollfds.size())
 		return;
 
-	// Client& client = _clients.at(clientFd);
-
-	// if (client.getCgiInputFd() != -1)
-	// 	removeFd(client.getCgiInputFd());
-
-	// if (client.getCgiOutputFd() != -1)
-	// 	removeFd(client.getCgiOutputFd());
-
 	int clientFd = _pollfds[index].fd;
-	// close(clientFd);
-	_clients.erase(clientFd);
+
+	std::map<int, Client>::iterator it = _clients.find(clientFd);
+
+    if (it == _clients.end()) {
+        removeFd(clientFd);
+        return;
+    }
+
+	Client& client = it->second;
+
+	if (client.getCgiInputFd() != -1) {
+		removeFd(client.getCgiInputFd());
+		client.setCgiInputFd(-1);
+	}
+
+	if (client.getCgiOutputFd() != -1) {
+		removeFd(client.getCgiOutputFd());
+		client.setCgiOutputFd(-1);
+	}
+	
 	removeFd(clientFd);
+
+	if (client.getCgiPid() > 0) {
+		kill(client.getCgiPid(), SIGKILL);
+		client.setPendingRemoval(true);
+		// removeFd(clientFd);
+		return ;
+	}
+
+	_clients.erase(it);
+
 }
 
 bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
@@ -179,7 +199,7 @@ void ServerManager::run() {
 			} else if (info.type == FD_CGI_OUTPUT) {
 				if (revents & (POLLIN | POLLHUP))
 					removed = readFromCgi(fd, info.clientFd);
-					
+
 			}
 
 			if (!removed)
@@ -329,6 +349,8 @@ bool ServerManager::writeClientData(size_t index) {
 
 void ServerManager::reapCgiChildern() {
 	
+	std::vector<int> clientsToErase;
+
 	for (auto it = _clients.begin(); it != _clients.end(); it++){
 
 		Client& client = it->second;
@@ -347,6 +369,13 @@ void ServerManager::reapCgiChildern() {
 		if (result < 0) {
 			client.setCgiProcessFailed(true);
 			client.setCgiPid(-1);
+
+			if (client.getPendingRemoval()) {
+				clientsToErase.push_back(it->first);
+			} else if (client.getCgiState() == CGI_WAITING_EXIT){
+        		finishCgiResponse(client);
+			}
+
 			continue;
 		}
 	
@@ -360,9 +389,17 @@ void ServerManager::reapCgiChildern() {
 
 		client.setCgiPid(-1);
 
+		if (client.getPendingRemoval()) {
+			clientsToErase.push_back(it->first);
+			continue;
+		}
+
 		if (client.getCgiState() == CGI_WAITING_EXIT)
 			finishCgiResponse(client);
 	}
+
+	for (size_t i = 0; i < clientsToErase.size(); i++)
+		_clients.erase(clientsToErase[i]);
 
 }
 
@@ -402,9 +439,14 @@ void ServerManager::checkCgiTimeouts() {
 
 		Client& client = it->second;
 
+		if (client.getPendingRemoval()){
+			it++;
+			continue;
+		}
+
 		if (client.getCgiState() == CGI_NONE) {
 			it++;
-			continue ;
+			continue;
 		}
 
 		std::chrono::seconds elapse = std::chrono::duration_cast<std::chrono::seconds>(now - client.getCgiTime());
@@ -414,22 +456,6 @@ void ServerManager::checkCgiTimeouts() {
 		}
 		it++;
 	}
-	/*
-	Client fd 5
-		│
-		├── CGI state      = CGI_READING
-		├── CGI input fd   = -1
-		├── CGI output fd  = 8
-		├── CGI PID        = 48217
-		└── CGI start time = 09:52:03
-								│
-								▼
-						process PID 48217
-						/usr/bin/python3
-								│
-								▼
-							test.py
-	*/
 };
 
 void ServerManager::removeTimeOutClients() {
@@ -440,6 +466,11 @@ void ServerManager::removeTimeOutClients() {
 	while (it != _clients.end()) {
 		
 		int clientFd = it->first;
+
+		 if (it->second.getPendingRemoval()) {
+			it++;
+			continue;
+		}
 
 		if (it->second.getCgiState() != CGI_NONE) {
 			it++;

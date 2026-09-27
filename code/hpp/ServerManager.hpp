@@ -15,6 +15,8 @@
 #include <netinet/in.h>
 #include <cerrno>
 #include <netdb.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include <signal.h>
 
 enum FdType

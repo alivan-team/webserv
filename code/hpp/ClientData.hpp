@@ -66,6 +66,7 @@ class Client {
 		pid_t _cgiPid;
 		std::chrono::steady_clock::time_point _cgiStartTime;
 		bool _cgiProcessFailed;
+		bool _pendingRemoval;
 		
 		bool parseContentLength(const std::string& value, size_t& result) const;
 		bool parseHexSize(const std::string& value, size_t& result) const;
@@ -118,7 +119,9 @@ class Client {
 		// void updateLastActivity();
 		const std::chrono::steady_clock::time_point& getCgiTime();
 		bool getCgiProcessFailed() const;
-		
+		bool getPendingRemoval() const;
+
+		void setPendingRemoval(bool pending);
 		void setCgiProcessFailed(bool failed);
 		void setCgiStartTime();
 		void setCgiPid(pid_t cgiPid);
