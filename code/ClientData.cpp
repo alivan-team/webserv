@@ -4,7 +4,7 @@ Client::Client() :  _responseSent(0), _client_fd(-1), _server_fd(-1), _headersPa
 		_bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
 		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
 		_cgiState(CGI_NONE), _cgiInputFd(-1), _cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(),
-        _lastActivity(std::chrono::steady_clock::now()), _cgiProcessFailed(false) {
+        _lastActivity(std::chrono::steady_clock::now()), _cgiProcessFailed(false), _pendingRemoval(false) {
 	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
 
@@ -12,7 +12,7 @@ Client::Client(int client_fd, int server_fd) :  _responseSent(0), _client_fd(cli
 		_headersParsed(false), _bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
 		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
 		_cgiState(CGI_NONE), _cgiInputFd(-1), _cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(),
-        _lastActivity(std::chrono::steady_clock::now()), _cgiProcessFailed(false) {
+        _lastActivity(std::chrono::steady_clock::now()), _cgiProcessFailed(false), _pendingRemoval(false) {
 	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
 
