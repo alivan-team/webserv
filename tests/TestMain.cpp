@@ -1427,6 +1427,51 @@ void testClientHeaderSizeLimit()
 	}
 }
 
+void testClientCgiInitialState()
+{
+    Client client(42, 7);
+
+    check(
+        client.getCgiState() == CGI_NONE,
+        "new client starts with CGI_NONE"
+    );
+
+    check(
+        client.getCgiInputFd() == -1,
+        "new client has no CGI input fd"
+    );
+
+    check(
+        client.getCgiOutputFd() == -1,
+        "new client has no CGI output fd"
+    );
+
+    check(
+        client.getCgiInputOffset() == 0,
+        "new client CGI input offset starts at zero"
+    );
+
+    check(
+        client.getCgiOutput().empty(),
+        "new client CGI output starts empty"
+    );
+
+    check(
+        client.getCgiPid() == -1,
+        "new client has no CGI child PID"
+    );
+
+    check(
+        client.getCgiProcessFailed() == false,
+        "new client CGI failure flag starts false"
+    );
+
+    check(
+        client.getPendingRemoval() == false,
+        "new client is not pending removal"
+    );
+}
+
 } // namespace
 
 int main()
@@ -1454,6 +1499,7 @@ int main()
 	run("Redirect", testRedirect);
 	run("Client activity initialized", testClientLastActivityInitialized);
 	run("Client activity updates", testClientLastActivityUpdates);
+	run("Client CGI initial state", testClientCgiInitialState);
 
 	if (g_failures != 0) {
 		std::cerr << g_failures << " assertion(s) failed\n";
