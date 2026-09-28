@@ -66,6 +66,7 @@ class ServerManager {
 		std::vector<std::string> buildCgiEnvironment(const HTTPRequest& request, const ServerConfig& servConf);
 		bool writeToCgi(int fd, int clientFdInfo);
 		bool readFromCgi(int fd, int clientFdInfo);
+		void failCgi(int clientFd);
 		CgiResult parseCgiOutput(const std::string& cgiOutput);
 		std::string buildCgiResponse(const CgiResult& result);
 		void checkCgiTimeouts();

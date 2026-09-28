@@ -195,7 +195,11 @@ void ServerManager::run() {
 						removed = writeClientData(i);
 				}
 			} else if (info.type == FD_CGI_INPUT) {
-				if (revents & POLLOUT)
+
+				if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
+					failCgi(info.clientFd);
+					removed = true;
+				} else if (revents & POLLOUT)
 					removed = writeToCgi(fd, info.clientFd);
 
 			} else if (info.type == FD_CGI_OUTPUT) {
@@ -523,6 +527,9 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 	}
 
 	if (pid == 0) {
+
+		signal(SIGPIPE, SIG_DFL);
+
 		close(inputPipe[1]);
 		close(outputPipe[0]);
 
@@ -695,10 +702,9 @@ void ServerManager::unregisterFd(int fd) {
 	_fdInfo.erase(fd);
 }
 
-void ServerManager::removeFd(int fd)
-{
-	unregisterFd(fd);
+void ServerManager::removeFd(int fd) {
 
+	unregisterFd(fd);
 	close(fd); // added by Ivan :) -> dunno if for future removeFd we should not need the close the fd...
 }
 
@@ -779,6 +785,13 @@ bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
 	size_t sent = client.getCgiInputOffset();
 
 	ssize_t written = write(fd, buffer.data() + bodyOffset + sent, bodySize - sent);
+
+	if (written < 0) {
+		// removeFd(fd);
+		// client.setCgiInputFd(-1);
+		failCgi(clientFdInfo);
+		return true;
+	}
 
 	if (written > 0) 
 		client.setCgiInputOffset(sent + static_cast<size_t>(written));
@@ -895,7 +908,7 @@ CgiResult ServerManager::parseCgiOutput(const std::string& cgiOutput) {
 	std::string line;
 
 	while (std::getline(stream, line)) {
-		std::cerr << "line -> " << line << std::endl;
+		// std::cerr << "line -> " << line << std::endl;
 
 		size_t colon = line.find(':');
 		std::string name = toLower(line.substr(0, colon));
@@ -965,4 +978,33 @@ std::string ServerManager::buildCgiResponse(const CgiResult& result) {
 	response += result.body;
 
 	return response;
+}
+
+void ServerManager::failCgi(int clientFd) {
+
+		Client& client = _clients.at(clientFd);
+		
+		if (client.getCgiInputFd() != -1) {
+			removeFd(client.getCgiInputFd());
+			client.setCgiInputFd(-1);
+		}
+
+		if (client.getCgiOutputFd() != -1) {
+			removeFd(client.getCgiOutputFd());
+			client.setCgiOutputFd(-1);
+		}
+
+		if (client.getCgiPid() > 0) {
+			kill(client.getCgiPid(), SIGKILL);
+		}
+
+		client.setCgiProcessFailed(true);
+		client.setCgiState(CGI_NONE);
+
+		const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
+		HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
+		client.setResponseBuffer(errorResponse.toString(errorResponse));	
+
+		client.updateLastActivity();
+		setFdEvents(clientFd, POLLOUT);
 }

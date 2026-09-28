@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <exception>
+#include <signal.h>
 
 
 int main(int argc, char **argv) {
@@ -19,6 +20,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	signal(SIGPIPE, SIG_IGN);
 	ConfigParser config;
 
 	try {
