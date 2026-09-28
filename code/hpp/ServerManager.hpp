@@ -83,6 +83,7 @@ class ServerManager {
 		// for CGI stage
 		void addFd(int fd, FdType type, int clientFd);
 		void removeFd(int fd);
+		void unregisterFd(int fd);
 		void setFdEvents(int fd, short events);
 };
 

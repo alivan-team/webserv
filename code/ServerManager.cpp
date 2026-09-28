@@ -49,16 +49,18 @@ void ServerManager::removeClient(size_t index) {
 		removeFd(client.getCgiOutputFd());
 		client.setCgiOutputFd(-1);
 	}
-	
-	removeFd(clientFd);
 
 	if (client.getCgiPid() > 0) {
+
+		unregisterFd(clientFd);
+
 		kill(client.getCgiPid(), SIGKILL);
 		client.setPendingRemoval(true);
-		// removeFd(clientFd);
+
 		return ;
 	}
 
+	removeFd(clientFd);
 	_clients.erase(it);
 
 }
@@ -199,9 +201,7 @@ void ServerManager::run() {
 			} else if (info.type == FD_CGI_OUTPUT) {
 				if (revents & (POLLIN | POLLHUP))
 					removed = readFromCgi(fd, info.clientFd);
-
 			}
-
 			if (!removed)
 				i++;
 		}
@@ -354,7 +354,6 @@ void ServerManager::reapCgiChildern() {
 	for (auto it = _clients.begin(); it != _clients.end(); it++){
 
 		Client& client = it->second;
-
 		pid_t pid = client.getCgiPid();
 
 		if (pid <= 0)
@@ -398,8 +397,10 @@ void ServerManager::reapCgiChildern() {
 			finishCgiResponse(client);
 	}
 
-	for (size_t i = 0; i < clientsToErase.size(); i++)
+	for (size_t i = 0; i < clientsToErase.size(); i++) {
+		close(clientsToErase[i]);
 		_clients.erase(clientsToErase[i]);
+	}
 
 }
 
@@ -680,8 +681,8 @@ void ServerManager::addFd(int fd, FdType type, int clientFd)
 	_fdInfo[fd] = FdInfo{type, clientFd};
 }
 
-void ServerManager::removeFd(int fd)
-{
+void ServerManager::unregisterFd(int fd) {
+
 	for (size_t i = 0; i < _pollfds.size(); ++i)
 	{
 		if (_pollfds[i].fd == fd)
@@ -692,6 +693,12 @@ void ServerManager::removeFd(int fd)
 	}
 
 	_fdInfo.erase(fd);
+}
+
+void ServerManager::removeFd(int fd)
+{
+	unregisterFd(fd);
+
 	close(fd); // added by Ivan :) -> dunno if for future removeFd we should not need the close the fd...
 }
 
