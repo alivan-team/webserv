@@ -9,7 +9,7 @@
 
 const std::map<int, std::vector<ServerConfig>>& ServerManager::getServerManager() const {
 	return _serversMap;
-};
+}
 
 void ServerManager::acceptNewClient(int serverFd) {
 
@@ -22,7 +22,7 @@ void ServerManager::acceptNewClient(int serverFd) {
 
 	addFd(newClientFd, FD_CLIENT_SOCKET, newClientFd);
 	_clients[newClientFd] = Client(newClientFd, serverFd);
-};
+}
 
 void ServerManager::removeClient(size_t index) {
 
@@ -56,13 +56,11 @@ void ServerManager::removeClient(size_t index) {
 
 		kill(client.getCgiPid(), SIGKILL);
 		client.setPendingRemoval(true);
-
 		return ;
 	}
 
 	removeFd(clientFd);
 	_clients.erase(it);
-
 }
 
 bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
@@ -103,14 +101,14 @@ bool ServerManager::readClientData(size_t index) {
 	client.appendToRequestBuffer(buffer, static_cast<size_t>(bytes));
 
 	return processRequestBuffer(index);
-};
+}
 
 void ServerManager::queueResponse(size_t index, Client& client, HTTPResponse& response) {
 	
 	client.setResponseBuffer(response.toString(response));
 	_pollfds[index].events &= ~POLLIN;
 	_pollfds[index].events |= POLLOUT;
-};
+}
 
 
 bool ServerManager::isServerSocket(int fd) const
@@ -133,7 +131,7 @@ int ServerManager::findServerFd(const std::string& host, int port) const {
 			}
 	}
 	return -1;
-};
+}
 
 
 void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
@@ -150,17 +148,14 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 		if (serverFd == -1)
 			serverFd = createListeningSockets(servers[i]);
 
-		// std::cout << "\tserversFd: " << serverFd << "\t servers[i].getPort():  " << servers[i].getPort() <<"\t servers[i].getServerName():  " << servers[i].getServerName()[0] << std::endl;
-		
 		_serversMap[serverFd].push_back(servers[i]);
 	}
-};
+}
 
 void ServerManager::run() {
 
 	while (true) {
 		
-		// std::cout << "HELLO from the run manager" << std::endl;
 		int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
 		if (ready < 0)
 			throw std::runtime_error("poll() failed");
@@ -194,18 +189,32 @@ void ServerManager::run() {
 					if (!removed && (revents & POLLOUT))
 						removed = writeClientData(i);
 				}
+
 			} else if (info.type == FD_CGI_INPUT) {
 
 				if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
-					failCgi(info.clientFd);
+
+					Client& client = _clients.at(info.clientFd);
+					failCgi(client);
 					removed = true;
-				} else if (revents & POLLOUT)
+				} else if (revents & POLLOUT) {
+
 					removed = writeToCgi(fd, info.clientFd);
+				}
 
 			} else if (info.type == FD_CGI_OUTPUT) {
-				if (revents & (POLLIN | POLLHUP))
+
+				if (revents & (POLLERR | POLLNVAL)) {
+
+					Client& client = _clients.at(info.clientFd);
+					failCgi(client);
+					removed = true;
+				} else if (revents & (POLLIN | POLLHUP)){
+
 					removed = readFromCgi(fd, info.clientFd);
+				}
 			}
+
 			if (!removed)
 				i++;
 		}
@@ -214,8 +223,7 @@ void ServerManager::run() {
 		checkCgiTimeouts();
 		removeTimeOutClients();
 	}
-
-};
+}
 
 void ServerManager::setNonBlocking(int fd) {
 
@@ -277,7 +285,7 @@ int ServerManager::createListeningSockets(const ServerConfig& server) {
 	std::cout << "Listening on  " << host << ":" << port << std::endl;
 
 	return serverFd;
-};
+}
 
 const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const std::string& host) const {
 
@@ -302,7 +310,7 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
 	} 
 
 	return servers[0];
-};
+}
 
 bool ServerManager::writeClientData(size_t index) {
 	
@@ -351,89 +359,6 @@ bool ServerManager::writeClientData(size_t index) {
 	return false;
 };
 
-void ServerManager::reapCgiChildern() {
-	
-	std::vector<int> clientsToErase;
-
-	for (auto it = _clients.begin(); it != _clients.end(); it++){
-
-		Client& client = it->second;
-		pid_t pid = client.getCgiPid();
-
-		if (pid <= 0)
-			continue;
-		
-		int status; 
-		pid_t result = waitpid(client.getCgiPid(), &status, WNOHANG);
-
-		if (result == 0)
-			continue;
-		
-		if (result < 0) {
-			client.setCgiProcessFailed(true);
-			client.setCgiPid(-1);
-
-			if (client.getPendingRemoval()) {
-				clientsToErase.push_back(it->first);
-			} else if (client.getCgiState() == CGI_WAITING_EXIT){
-        		finishCgiResponse(client);
-			}
-
-			continue;
-		}
-	
-		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status) != 0) 
-				client.setCgiProcessFailed(true);
-
-		} else if (WIFSIGNALED(status)) {
-			client.setCgiProcessFailed(true);
-		}
-
-		client.setCgiPid(-1);
-
-		if (client.getPendingRemoval()) {
-			clientsToErase.push_back(it->first);
-			continue;
-		}
-
-		if (client.getCgiState() == CGI_WAITING_EXIT)
-			finishCgiResponse(client);
-	}
-
-	for (size_t i = 0; i < clientsToErase.size(); i++) {
-		close(clientsToErase[i]);
-		_clients.erase(clientsToErase[i]);
-	}
-
-}
-
-void ServerManager::childTimeoutHandler(Client& client, std::chrono::seconds elapse) {
-
-	if (client.getCgiPid() > 0) 
-		kill(client.getCgiPid(), SIGKILL);
-
-	if (client.getCgiInputFd() != -1) {
-		removeFd(client.getCgiInputFd());
-		client.setCgiInputFd(-1);
-	}
-
-	if (client.getCgiOutputFd() != -1) {
-		removeFd(client.getCgiOutputFd());
-		client.setCgiOutputFd(-1);
-	}
-	
-	const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
-	HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
-	
-	client.setCgiState(CGI_NONE);
-	client.setResponseBuffer(errorResponse.toString(errorResponse));
-	client.updateLastActivity();
-	// client.setCloseAfterResponse(true); // -> connection keep a life or not ? 
-	setFdEvents(client.getClientFd(), POLLOUT);
-};
-
-
 void ServerManager::checkCgiTimeouts() {
 
 	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
@@ -457,11 +382,11 @@ void ServerManager::checkCgiTimeouts() {
 		std::chrono::seconds elapse = std::chrono::duration_cast<std::chrono::seconds>(now - client.getCgiTime());
 
 		if (elapse.count() > 30) {
-			childTimeoutHandler(client, elapse);
+			failCgi(client);
 		}
 		it++;
 	}
-};
+}
 
 void ServerManager::removeTimeOutClients() {
 
@@ -498,11 +423,9 @@ void ServerManager::removeTimeOutClients() {
 	}
 };
 
-bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf)
-{
+bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf) {
 
-	(void)request;
-	(void)route;
+	client.resetCgiForNewRequest();
 
 	int inputPipe[2];
 	int outputPipe[2];
@@ -600,7 +523,7 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 	RequestState state = client.checkRequestState(maxBodySize);
 
 	return state;
-};
+}
 
 
 bool ServerManager::processRequestBuffer(size_t index) {
@@ -633,7 +556,6 @@ bool ServerManager::processRequestBuffer(size_t index) {
 			if (!client.decodeChunkedBody())
 				throw HTTPParseException(500, "Internal Server Error");
 		}
-		// std::cout << "Hello from try " << std::endl;
 		client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
 		CgiRoute cgiRoute;
 		int cgiError = 0;
@@ -674,7 +596,7 @@ bool ServerManager::processRequestBuffer(size_t index) {
 		queueResponse(index, client, errorResponse);
 		return false;
 	}
-};
+}
 
 void ServerManager::addFd(int fd, FdType type, int clientFd)
 {
@@ -705,7 +627,7 @@ void ServerManager::unregisterFd(int fd) {
 void ServerManager::removeFd(int fd) {
 
 	unregisterFd(fd);
-	close(fd); // added by Ivan :) -> dunno if for future removeFd we should not need the close the fd...
+	close(fd);
 }
 
 void ServerManager::setFdEvents(int fd, short events)
@@ -718,293 +640,4 @@ void ServerManager::setFdEvents(int fd, short events)
 			return;
 		}
 	}
-}
-
-std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& request,const ServerConfig& servConf) {
-
-	std::vector<std::string> cgiEnv;
-	std::string method;
-
-	cgiEnv.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	if (request.getMethod() == Method::GET)
-		method = "GET";
-	else if (request.getMethod() == Method::POST)
-		method = "POST";
-	else 
-		method = "DELETE";
-	cgiEnv.push_back("REQUEST_METHOD=" + method);
-	cgiEnv.push_back("SERVER_PROTOCOL=HTTP/" + request.getVersion());
-	cgiEnv.push_back("SCRIPT_NAME=" + request.getPath());
-	cgiEnv.push_back("QUERY_STRING=" + request.getQuery());
-	cgiEnv.push_back("SERVER_NAME=" + servConf.getServerName()[0]);
-	cgiEnv.push_back("SERVER_PORT=" + std::to_string(servConf.getPort()));
-
-	const std::map<std::string, std::string>& headers = request.getHeaders();
-
-	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); it++) {
-		std::string firstName = it->first;
-		std::string secondValue = it->second;
-
-		if (firstName == "content-type") {
-			cgiEnv.push_back("CONTENT_TYPE=" + secondValue);
-			continue;
-		}
-		if (firstName == "content-length") {
-			cgiEnv.push_back("CONTENT_LENGTH=" + secondValue);
-			continue;
-		}
-		for (size_t i = 0; i < firstName.size(); i++) {
-			
-			if (firstName[i] == '-') 
-				firstName[i] = '_';
-			else
-				firstName[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(firstName[i])));
-		}
-		cgiEnv.push_back("HTTP_" + firstName + "=" + secondValue);
-	}
-
-	return cgiEnv;
-};
-
-bool ServerManager::writeToCgi(int fd, int clientFdInfo) {
-
-	Client& client = _clients.at(clientFdInfo);
-	const HTTPRequest& request = client.getRequest();
-	size_t bodySize = request.getBodySize();
-
-	if (bodySize == 0) {
-		
-		removeFd(fd);
-		client.setCgiInputFd(-1);
-		client.setCgiState(CGI_READING);
-		return true;
-	}
-
-	const std::string& buffer = request.getRequestBuffer();
-	size_t bodyOffset = request.getBodyOffset();
-	size_t sent = client.getCgiInputOffset();
-
-	ssize_t written = write(fd, buffer.data() + bodyOffset + sent, bodySize - sent);
-
-	if (written < 0) {
-		// removeFd(fd);
-		// client.setCgiInputFd(-1);
-		failCgi(clientFdInfo);
-		return true;
-	}
-
-	if (written > 0) 
-		client.setCgiInputOffset(sent + static_cast<size_t>(written));
-
-	if (client.getCgiInputOffset() >= bodySize) {
-
-		removeFd(fd);
-		client.setCgiInputFd(-1);
-		client.setCgiState(CGI_READING);
-		return true;
-	}
-	return false;
-};
-
-bool ServerManager::readFromCgi(int fd, int clientFdInfo) {
-
-	Client& client = _clients.at(clientFdInfo);
-
-	char buffer[4096];
-	ssize_t bytesRead = read(fd, buffer, sizeof(buffer));
-
-	if(bytesRead > 0) {
-		client.setCgiOutput(std::string(buffer, static_cast<size_t>(bytesRead)));
-		return false;
-	}
-	
-	if (bytesRead == 0) {
-
-		removeFd(fd);
-		client.setCgiOutputFd(-1);
-
-		 if (client.getCgiPid() <= 0) {
-			finishCgiResponse(client);
-		} else {
-			client.setCgiState(CGI_WAITING_EXIT);
-		}
-
-		return true;
-
-	}
-	removeFd(fd);
-	client.setCgiOutputFd(-1);
-	client.setCgiState(CGI_NONE);
-
-	const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
-	HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
-	client.setResponseBuffer(errorResponse.toString(errorResponse));
-	client.updateLastActivity();
-	setFdEvents(clientFdInfo, POLLOUT);
-
-	return true;
-};
-
-void ServerManager::finishCgiResponse(Client& client) {
-
-		if(client.getCgiProcessFailed()) {
-			const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
-
-			HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
-			client.setResponseBuffer(errorResponse.toString(errorResponse));
-		} else {
-
-			CgiResult result = parseCgiOutput(client.getCgiOutput());
-	
-			if (result.valid) {
-				std::string response;
-				response = buildCgiResponse(result);
-				client.setResponseBuffer(response);
-	
-			} else {
-				const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
-	
-				HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
-				client.setResponseBuffer(errorResponse.toString(errorResponse));
-			}
-		}
-		setFdEvents(client.getClientFd(), POLLOUT);
-		client.setCgiState(CGI_NONE);
-		client.updateLastActivity();
-		// return true;
-};
-
-
-CgiResult ServerManager::parseCgiOutput(const std::string& cgiOutput) {
-	
-	CgiResult parseCgi;
-	parseCgi.statusCode = 500;
-	parseCgi.valid = false;
-	bool hasStatus = false;
-
-	if (cgiOutput.empty()) {
-		// parseCgi.statusCode = 500;
-		return parseCgi;
-	}
-
-	// std::cerr << " CGI OUTPUT ----> " << cgiOutput << std::endl;
-	size_t headerEnd = cgiOutput.find("\r\n\r\n");
-	size_t separator = 4;
-	if (headerEnd == std::string::npos) {
-		headerEnd = cgiOutput.find("\n\n");
-		separator = 2;
-	}
-
-	if (headerEnd == std::string::npos) {
-		// parseCgi.statusCode = 500;
-		return parseCgi;
-	}
-
-	std::string headerPart = cgiOutput.substr(0, headerEnd);
-	// std::string bodyPart = cgiOutput.substr(headerEnd + separator);
-	parseCgi.body = cgiOutput.substr(headerEnd + separator);
-
-	std::istringstream stream(headerPart);
-	std::string line;
-
-	while (std::getline(stream, line)) {
-		// std::cerr << "line -> " << line << std::endl;
-
-		size_t colon = line.find(':');
-		std::string name = toLower(line.substr(0, colon));
-		std::string value = line.substr(colon + 1);
-
-		// std::cerr << "\t name ->" << name << "<\t value ->" << value << "<" << std::endl;
-
-		while (!value.empty() && (value[0] == ' ' || value[0] == '\t'))
-			value.erase(0, 1);
-
-		if (name == "status") {
-			std::istringstream statusStream(value);
-			int statusCode;
-
-			if (!(statusStream >> statusCode) || statusCode < 100 || statusCode > 599) {
-				
-				return parseCgi;
-			}
-			parseCgi.statusCode = statusCode;
-			hasStatus = true;
-		} else {
-			parseCgi.headers[name] = value;
-		}
-
-
-	}
-	
-	parseCgi.valid = true;
-	if (!hasStatus)
-		parseCgi.statusCode = 200;
-
-	return parseCgi;
-
-}
-
-/*
-for full CGI web page.
-curl -H "Host: test.localhost" \
-"http://127.0.0.1:8080/cgi-bin/dynamic.py?name=Ivan"
-*/
-
-std::string ServerManager::buildCgiResponse(const CgiResult& result) {
-
-	std::string response;
-
-	response += "HTTP/1.1 ";
-	response += std::to_string(result.statusCode);
-	response += " ";
-	response += HTTPResponseBuild::getStatusText(result.statusCode);
-	response += "\r\n";
-
-	for (auto it = result.headers.begin(); it != result.headers.end(); it++) {
-		
-		if (toLower(it->first) == "content-length")
-			continue;
-		response += it->first;
-		response += ": ";
-		response += it->second;
-		response += "\r\n";
-
-	}
-	response += "Content-Length: ";
-	response += std::to_string(result.body.size());
-	response += "\r\n";
-	response += "Connection: keep-alive\r\n";
-	response += "\r\n";
-	response += result.body;
-
-	return response;
-}
-
-void ServerManager::failCgi(int clientFd) {
-
-		Client& client = _clients.at(clientFd);
-		
-		if (client.getCgiInputFd() != -1) {
-			removeFd(client.getCgiInputFd());
-			client.setCgiInputFd(-1);
-		}
-
-		if (client.getCgiOutputFd() != -1) {
-			removeFd(client.getCgiOutputFd());
-			client.setCgiOutputFd(-1);
-		}
-
-		if (client.getCgiPid() > 0) {
-			kill(client.getCgiPid(), SIGKILL);
-		}
-
-		client.setCgiProcessFailed(true);
-		client.setCgiState(CGI_NONE);
-
-		const ServerConfig& servConf = getClientServerManager(client.getServerFd(), client.getHost());
-		HTTPResponse errorResponse = HTTPResponseBuild::makeErrorResponse(500, client.getRequest(), servConf);
-		client.setResponseBuffer(errorResponse.toString(errorResponse));	
-
-		client.updateLastActivity();
-		setFdEvents(clientFd, POLLOUT);
 }

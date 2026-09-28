@@ -58,7 +58,6 @@ class ServerManager {
 
 		bool shouldKeepAlive(const HTTPRequest& request) const;
 		void removeClient(size_t index);
-		// bool sendWholeResponse(int clinetFd, const std::string& respone) const;
 		bool processRequestBuffer(size_t index);
 		RequestState getRequestState(Client& client, const ServerConfig*& serverConfig);
         void removeTimeOutClients();
@@ -66,15 +65,15 @@ class ServerManager {
 		std::vector<std::string> buildCgiEnvironment(const HTTPRequest& request, const ServerConfig& servConf);
 		bool writeToCgi(int fd, int clientFdInfo);
 		bool readFromCgi(int fd, int clientFdInfo);
-		void failCgi(int clientFd);
+		void failCgi(Client& client);
 		CgiResult parseCgiOutput(const std::string& cgiOutput);
-		std::string buildCgiResponse(const CgiResult& result);
 		void checkCgiTimeouts();
-		void childTimeoutHandler(Client& client, std::chrono::seconds elapse);
 		void reapCgiChildern();
 		void finishCgiResponse(Client& client);
-
+		
 	public: 
+		std::string buildCgiResponse(const CgiResult& result, const HTTPRequest &request);
+		// buildCgiResponse is out in the public only beucase of the TestMain.cpp -> move it back to private once the tests are removed? 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);
 		const std::map<int, std::vector<ServerConfig>>& getServerManager() const;
 		const ServerConfig& getClientServerManager(int serverIndex, const std::string& host) const;

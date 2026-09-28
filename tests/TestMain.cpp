@@ -9,6 +9,8 @@
 #include "HTTPParseException.hpp"
 #include "MultipartParser.hpp"
 #include "MultipartPart.hpp"
+#include "../code/hpp/ServerManager.hpp"
+#include "../code/hpp/ClientData.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -1472,6 +1474,187 @@ void testClientCgiInitialState()
     );
 }
 
+void testClientCgiResetForNewRequest()
+{
+    Client client(42, 7);
+
+    client.setCgiState(CGI_READING);
+    client.setCgiInputFd(10);
+    client.setCgiOutputFd(11);
+    client.setCgiInputOffset(25);
+    client.setCgiOutput("old CGI output");
+    client.setCgiProcessFailed(true);
+
+    pid_t oldPid = 12345;
+    client.setCgiPid(oldPid);
+
+    client.resetCgiForNewRequest();
+
+    check(
+        client.getCgiState() == CGI_NONE,
+        "CGI reset returns state to CGI_NONE"
+    );
+
+    check(
+        client.getCgiInputFd() == -1,
+        "CGI reset clears input fd"
+    );
+
+    check(
+        client.getCgiOutputFd() == -1,
+        "CGI reset clears output fd"
+    );
+
+    check(
+        client.getCgiInputOffset() == 0,
+        "CGI reset clears input offset"
+    );
+
+    check(
+        client.getCgiOutput().empty(),
+        "CGI reset clears previous CGI output"
+    );
+
+    check(
+        client.getCgiProcessFailed() == false,
+        "CGI reset clears previous process failure"
+    );
+
+    check(
+        client.getCgiPid() == oldPid,
+        "CGI reset does not overwrite an unreaped child PID"
+    );
+}
+
+void testDecideConnectionHttp11Default()
+{
+    HTTPRequest request;
+
+    request.setVersion("1.1");
+
+    check(
+        HTTPResponseBuild::decideConnection(request) == "keep-alive",
+        "HTTP/1.1 defaults to keep-alive"
+    );
+}
+
+void testDecideConnectionHttp11Close()
+{
+    HTTPRequest request;
+
+    request.setVersion("1.1");
+    request.addHeader("connection", "close");
+
+    check(
+        HTTPResponseBuild::decideConnection(request) == "close",
+        "HTTP/1.1 Connection: close is respected"
+    );
+}
+
+void testDecideConnectionHttp10Default()
+{
+    HTTPRequest request;
+
+    request.setVersion("1.0");
+
+    check(
+        HTTPResponseBuild::decideConnection(request) == "close",
+        "HTTP/1.0 defaults to close"
+    );
+}
+
+void testDecideConnectionHttp10KeepAlive()
+{
+    HTTPRequest request;
+
+    request.setVersion("1.0");
+    request.addHeader("connection", "keep-alive");
+
+    check(
+        HTTPResponseBuild::decideConnection(request) == "keep-alive",
+        "HTTP/1.0 Connection: keep-alive is respected"
+    );
+}
+
+void testDecideConnectionUnknownVersion()
+{
+    HTTPRequest request;
+
+    request.setVersion("2.0");
+
+    check(
+        HTTPResponseBuild::decideConnection(request) == "close",
+        "Unknown HTTP version defaults to close"
+    );
+}
+
+void testCgiResponseHttp10ConnectionClose()
+{
+    HTTPRequest request;
+    request.setVersion("1.0");
+
+    CgiResult result;
+    result.valid = true;
+    result.statusCode = 200;
+    result.headers["content-type"] = "text/plain";
+    result.body = "Hello CGI";
+
+    ServerManager manager;
+
+    std::string response =
+        manager.buildCgiResponse(result, request);
+
+    check(
+        response.find("HTTP/1.0 200 OK\r\n") == 0,
+        "CGI response uses request HTTP version"
+    );
+
+    check(
+        response.find("Connection: close\r\n")
+            != std::string::npos,
+        "CGI HTTP/1.0 response defaults to Connection: close"
+    );
+}
+
+void testCgiResponseIgnoresCgiConnectionHeader()
+{
+    HTTPRequest request;
+
+    request.setVersion("1.1");
+
+    CgiResult result;
+    result.valid = true;
+    result.statusCode = 200;
+    result.headers["content-type"] = "text/plain";
+
+    // CGI tries to decide connection itself.
+    result.headers["connection"] = "close";
+
+    result.body = "Hello CGI";
+
+    ServerManager manager;
+
+    std::string response =
+        manager.buildCgiResponse(result, request);
+
+    check(
+        response.find("Connection: keep-alive\r\n")
+            != std::string::npos,
+        "Webserv controls CGI Connection header"
+    );
+
+    size_t first =
+        response.find("Connection:");
+
+    size_t second =
+        response.find("Connection:", first + 1);
+
+    check(
+        second == std::string::npos,
+        "CGI response contains only one Connection header"
+    );
+}
+
 } // namespace
 
 int main()
@@ -1500,7 +1683,15 @@ int main()
 	run("Client activity initialized", testClientLastActivityInitialized);
 	run("Client activity updates", testClientLastActivityUpdates);
 	run("Client CGI initial state", testClientCgiInitialState);
-
+	run("Client CGI reset for new request", testClientCgiResetForNewRequest);
+	run("HTTP/1.1 default connection", testDecideConnectionHttp11Default);
+	run("HTTP/1.1 Connection close", testDecideConnectionHttp11Close);
+	run("HTTP/1.0 default connection", testDecideConnectionHttp10Default);
+	run("HTTP/1.0 Connection keep-alive", testDecideConnectionHttp10KeepAlive);
+	run("Unknown HTTP version connection", testDecideConnectionUnknownVersion);
+	run("CGI HTTP/1.0 response connection close", testCgiResponseHttp10ConnectionClose);
+	run("CGI ignores CGI-provided Connection header", testCgiResponseIgnoresCgiConnectionHeader);
+	
 	if (g_failures != 0) {
 		std::cerr << g_failures << " assertion(s) failed\n";
 		return 1;

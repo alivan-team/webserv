@@ -56,7 +56,6 @@ class Client {
 		bool _closeAfterResoinse;
 		std::string _host;
 		std::chrono::steady_clock::time_point _lastActivity;
-		// HTTPResponse _response;
 
 		CgiState _cgiState;
 		int _cgiInputFd;
@@ -72,7 +71,6 @@ class Client {
 		bool parseHexSize(const std::string& value, size_t& result) const;
 		RequestState checkChunkedBody(size_t bodyStart, size_t& requestEnd, size_t& decodedBodySize, size_t maxBodySize);
 		std::string trim(const std::string& value) const;
-		// std::string toLower(const std::string& value) const;
 		RequestState checkChunkedRequestBody(size_t maxBodySize);
 		RequestState checkContentLengthBody();
 		RequestState setRequestError(int errorCode);
@@ -110,13 +108,13 @@ class Client {
 		void updateLastActivity();
 		const std::chrono::steady_clock::time_point& getLastActivity();
 
+		void resetCgiForNewRequest();
 		CgiState getCgiState() const;
 		int getCgiInputFd() const;
 		int getCgiOutputFd() const;
 		size_t getCgiInputOffset() const;
 		const std::string& getCgiOutput() const;
 		pid_t getCgiPid() const;
-		// void updateLastActivity();
 		const std::chrono::steady_clock::time_point& getCgiTime();
 		bool getCgiProcessFailed() const;
 		bool getPendingRemoval() const;
