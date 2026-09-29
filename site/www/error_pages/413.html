@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error 500 - Internal Server Error</title>
+    <title>Error 413 - Payload Too Large</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
         .error-container { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 40px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -17,13 +17,13 @@
 </head>
 <body>
     <div class="error-container">
-        <h1>500</h1>
-        <div class="code">Internal Server Error</div>
-        <p class="message">Something went wrong on our end.</p>
+        <h1>413</h1>
+        <div class="code">Payload Too Large</div>
+        <p class="message">The request entity is too large.</p>
         <p class="description">
-            The server encountered an unexpected condition that prevented it from fulfilling the request. This is usually a temporary issue. Please try again later.
+            The server is refusing to process a request because the request payload is larger than the server is willing to handle. Try reducing the size of your upload or request body.
         </p>
-        <a href="/">Return to Home</a>
+        <a href="/upload.html">Go to Upload Page</a> | <a href="/">Return to Home</a>
     </div>
 </body>
 </html>

@@ -1,71 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>File Deleted</title>
-	<style>
-		body {
-			margin: 0;
-			font-family: Arial, Helvetica, sans-serif;
-			background-color: #f4f4f4;
-			color: #333;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			height: 100vh;
-		}
-
-		.container {
-			text-align: center;
-			background: white;
-			padding: 45px;
-			border-radius: 12px;
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-			max-width: 500px;
-		}
-
-		.icon {
-			font-size: 60px;
-			margin-bottom: 10px;
-		}
-
-		h1 {
-			color: #28a745;
-			margin-bottom: 10px;
-		}
-
-		p {
-			color: #666;
-			line-height: 1.5;
-		}
-
-		a {
-			display: inline-block;
-			margin-top: 20px;
-			padding: 10px 20px;
-			background: #0078d4;
-			color: white;
-			text-decoration: none;
-			border-radius: 5px;
-		}
-
-		a:hover {
-			background: #005fa3;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DELETE Page - Webserv Test Suite</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #dc3545; padding-bottom: 10px; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 15px; color: #155724; margin: 15px 0; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; padding: 15px; margin: 15px 0; color: #0c5460; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 0.9em; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px; background: #f8f9fa; }
+    </style>
 </head>
 <body>
-	<div class="container">
-		<div class="icon">✓</div>
+    <h1>DELETE Page</h1>
+    <div class="card">
+        <h2>DELETE Method Test</h2>
+        <p>This page is used to test DELETE requests for file removal. To test DELETE:</p>
+        <ul>
+            <li>Use curl: <code>curl -X DELETE http://127.0.0.1:8080/delete_page/example.txt</code></li>
+            <li>Or access via browser for GET to see available files</li>
+        </ul>
 
-		<h1>File Deleted Successfully</h1>
+        <div class="info">
+            <strong>Files in this directory:</strong>
+        </div>
 
-		<p>
-			The requested file has been successfully removed from the server.
-		</p>
+        <h3>Files for deletion testing</h3>
+        <ul>
+            <li><code>example.txt</code> - Test file that can be deleted</li>
+            <li><code>evil/secret.txt</code> - Another test file (nested directory)</li>
+        </ul>
 
-		<a href="/">Return to Home</a>
-	</div>
+        <div class="success">
+            <strong>Note:</strong> The server is configured to allow DELETE on this location. 
+            Uploaded files can be deleted using the DELETE method.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Navigation</h2>
+        <p><a href="/">← Home</a> | <a href="/upload.html">Upload Files</a> | <a href="/delete-demo.html">DELETE Demo</a></p>
+    </div>
+
+    <div class="footer">
+        <p>Webserv Test Suite | DELETE Page</p>
+    </div>
 </body>
 </html>

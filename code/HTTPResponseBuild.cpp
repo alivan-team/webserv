@@ -548,7 +548,7 @@ HTTPResponse HTTPResponseBuild::makeEarlyErrorResponse(int code, const ServerCon
 
 std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &servConf) {
 
-	std::string error_message = getStatusText(code);
+	// std::string error_message = getStatusText(code);
 
 	if (servConf.hasErrorPage(code)) {
 
@@ -562,25 +562,36 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 				return readReadFile(fullPath);
 			}
 		} catch (const std::exception &e) {
+
 			std::cerr << "Could not read custom error page " << error_path << ": " << e.what() << std::endl;
 		}
 
-		return "<!DOCTYPE html>\n"
-			   "<html>\n"
-			   "<head><title>" +
-			   std::to_string(code) + " " + error_message +
-			   "</title></head>\n"
-			   "<body>\n"
-			   "<h1>" +
-			   std::to_string(code) + " " + error_message + "</h1>\n"
-															"</body>\n"
-															"</html>\n";
+		return makeFallBackErrorBody(code);
 	}
+
+	try {
+		return readReadFile("./site/www/error_pages/index.html");
+	} catch (const std::exception& e) {
+
+		return makeFallBackErrorBody(code);
+	}
+}
+
+std::string HTTPResponseBuild::makeFallBackErrorBody(int code) {
 
 	std::string text = getStatusText(code);
 
-	return readReadFile("./site/www/error_pages/index.html");
-};
+	return "<!DOCTYPE html>\n"
+			   "<html>\n"
+			   "<head><title>" +
+			   std::to_string(code) + " " + text +
+			   "</title></head>\n"
+			   "<body>\n"
+			   "<h1>" +
+			   std::to_string(code) + " " + text + "</h1>\n"
+															"</body>\n"
+															"</html>\n";
+}
 
 std::string HTTPResponseBuild::getStatusText(int code) 
 {
@@ -655,7 +666,6 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 
 	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
-		// std::cout << "\t\t name --> " << name << std::endl;
 
 		if (name == "." || name == ".." || name.front() == '.')
 			continue;
@@ -924,4 +934,3 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 	}
 	return decodedUrl;
 }
-

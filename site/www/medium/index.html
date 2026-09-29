@@ -1,11 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<title>Medium Server</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medium Files - Webserv Test Suite</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #6f42c1; padding-bottom: 10px; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .file-info { background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin: 10px 0; }
+        .file-info code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 0.9em; }
+    </style>
 </head>
 <body>
-	<h1>MEDIUM SERVER</h1>
-	<p>You reached medium.localhost</p>
+    <h1>Medium Files</h1>
+    <div class="card">
+        <h2>Medium-Sized File Downloads</h2>
+        <p>This directory contains medium-sized files for testing download handling.</p>
+
+        <div class="file-info">
+            <h3>Sample Medium File</h3>
+            <p><a href="/medium/medium-file.bin">medium-file.bin</a> — A medium binary file for download testing.</p>
+            <p><strong>Size:</strong> ~1 MB</p>
+            <p><strong>Purpose:</strong> Test efficient transfer of moderate-sized files.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Navigation</h2>
+        <p><a href="/">← Home</a> | <a href="/large/">Large Files</a> | <a href="/small/">Small Files</a></p>
+    </div>
+
+    <div class="footer">
+        <p>Webserv Test Suite | Medium Files</p>
+    </div>
 </body>
 </html>

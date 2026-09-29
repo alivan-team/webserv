@@ -1,65 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Error</title>
-	<style>
-		body {
-			margin: 0;
-			font-family: Arial, Helvetica, sans-serif;
-			background-color: #f5f5f5;
-			color: #333;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			height: 100vh;
-		}
-
-		.container {
-			text-align: center;
-			background: white;
-			padding: 40px;
-			border-radius: 10px;
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-		}
-
-		h1 {
-			font-size: 64px;
-			margin: 0;
-			color: #d9534f;
-		}
-
-		h2 {
-			margin: 15px 0;
-			font-weight: normal;
-		}
-
-		p {
-			color: #666;
-		}
-
-		a {
-			display: inline-block;
-			margin-top: 20px;
-			text-decoration: none;
-			color: white;
-			background: #0078d4;
-			padding: 10px 20px;
-			border-radius: 5px;
-		}
-
-		a:hover {
-			background: #005fa3;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Pages - Webserv Test Suite</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #dc3545; padding-bottom: 10px; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; }
+        .status { display: inline-block; padding: 5px 12px; border-radius: 4px; color: white; font-weight: bold; }
+        .status-400 { background: #ffc107; color: #333; }
+        .status-403 { background: #fd7e14; }
+        .status-404 { background: #dc3545; }
+        .status-405 { background: #6f42c1; }
+        .status-413 { background: #28a745; }
+        .status-500 { background: #dc3545; }
+        .status-505 { background: #17a2b8; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 0.9em; }
+    </style>
 </head>
 <body>
-	<div class="container">
-		<h1>Error</h1>
-		<h2>Something went wrong</h2>
-		<p>The server was unable to process your request.</p>
-		<a href="/">Return to Home</a>
-	</div>
+    <h1>Error Pages</h1>
+    <div class="card">
+        <h2>Custom Error Pages</h2>
+        <p>This page lists all the custom error pages configured for this server. These pages demonstrate the server's ability to serve custom error responses.</p>
+
+        <table>
+            <tr>
+                <th>Status Code</th>
+                <th>Name</th>
+                <th>Preview</th>
+            </tr>
+            <tr>
+                <td><span class="status status-400">400</span></td>
+                <td>Bad Request</td>
+                <td><a href="/error_pages/400.html">View Page</a></td>
+            </tr>
+            <tr>
+                <td><span class="status status-403">403</span></td>
+                <td>Forbidden</td>
+                <td><a href="/error_pages/403.html">View Page</a></td>
+            </tr>
+            <tr>
+                <td><span class="status status-404">404</span></td>
+                <td>Not Found</td>
+                <td><a href="/error_pages/404.html">View Page</a></td>
+            </tr>
+            <tr>
+                <td><span class="status status-405">405</span></td>
+                <td>Method Not Allowed</td>
+                <td><a href="/error_pages/405.html">View Page</a></td>
+            </tr>
+            <tr>
+                <td><span class="status status-413">413</span></td>
+                <td>Payload Too Large</td>
+                <td><a href="/error_pages/413.html">View Page</a></td>
+            </tr>
+            <tr>
+                <td><span class="status status-500">500</span></td>
+                <td>Internal Server Error</td>
+                <td><a href="/error_pages/500.html">View Page</a></td>
+            </tr>
+            <tr>
+                <td><span class="status status-505">505</span></td>
+                <td>HTTP Version Not Supported</td>
+                <td><a href="/error_pages/505.html">View Page</a></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Webserv Test Suite | Error Pages</p>
+    </div>
 </body>
 </html>

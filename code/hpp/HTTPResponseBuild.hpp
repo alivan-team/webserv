@@ -31,6 +31,7 @@ class HTTPResponseBuild {
 		static HTTPResponse handleDelete(const HTTPRequest& request, const ServerConfig& servConf, std::string &path,  const LocationConfig *&location);
 
 		static std::string  buildErrorBody(int code, const ServerConfig& servConf);
+		static std::string makeFallBackErrorBody(int code);
 		static std::string joinPath(const std::string& root, const std::string& path);
 		static bool fileExists(const std::string& file);
 		static bool canReadFile(const std::string& file);

@@ -1,95 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Welcome to Webserv</title>
-	<style>
-		body {
-			margin: 0;
-			font-family: Arial, Helvetica, sans-serif;
-			background-color: #f4f4f4;
-			color: #333;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			height: 100vh;
-		}
-
-		.container {
-			text-align: center;
-			background: white;
-			padding: 50px;
-			border-radius: 12px;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-			max-width: 600px;
-		}
-
-		h1 {
-			color: #0078d4;
-			margin-bottom: 10px;
-		}
-
-		h2 {
-			color: #666;
-			font-weight: normal;
-			margin-top: 0;
-		}
-
-		p {
-			line-height: 1.6;
-			margin: 20px 0;
-		}
-
-		code {
-			background: #eee;
-			padding: 2px 6px;
-			border-radius: 4px;
-		}
-
-		.footer {
-			margin-top: 30px;
-			color: #888;
-			font-size: 0.9em;
-		}
-
-		.status {
-			display: inline-block;
-			margin-top: 20px;
-			padding: 10px 20px;
-			background: #28a745;
-			color: white;
-			border-radius: 20px;
-			font-weight: bold;
-		}
-
-		.post-link {
-			display: inline-block;
-			margin-top: 20px;
-			color: #0078d4;
-			font-weight: bold;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserv Test Suite - Home</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .card h3 { margin-top: 0; color: #007bff; }
+        ul { list-style: none; padding: 0; }
+        li { margin: 10px 0; }
+        a { color: #007bff; text-decoration: none; font-weight: 500; }
+        a:hover { text-decoration: underline; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+        .method-get { color: #28a745; }
+        .method-post { color: #ffc107; }
+        .method-delete { color: #dc3545; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; color: white; }
+        .tag-get { background: #28a745; }
+        .tag-post { background: #ffc107; color: #333; }
+        .tag-delete { background: #dc3545; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
 </head>
 <body>
-	<div class="container">
-		<h1>🚀 Welcome to AliVan-Webserv</h1>
-		<h2>Your HTTP server is running successfully.</h2>
+    <h1>Webserv Test Suite</h1>
+    <p>This is a test website for the 42 CODAM webserv project. It demonstrates all major HTTP server functionalities.</p>
 
-		<p>
-			Congratulations! If you're seeing this page, your
-			<code>webserv</code> project is serving static files correctly.
-		</p>
+    <div class="card">
+        <h3>Quick Links</h3>
+        <ul>
+            <li><a href="/about.html">About this project</a></li>
+            <li><a href="/upload.html">File Upload (POST)</a></li>
+            <li><a href="/post-demo.html">POST Form Demo</a></li>
+            <li><a href="/delete-demo.html">DELETE Demo</a></li>
+            <li><a href="/cgi-bin/test.py">CGI Test (Python)</a></li>
+            <li><a href="/cgi-bin/test.sh">CGI Test (Bash)</a></li>
+            <li><a href="/second/">Second Directory</a></li>
+            <li><a href="/image/">Image Directory Listing</a></li>
+            <li><a href="/small/">Small Files</a></li>
+            <li><a href="/medium/">Medium Files</a></li>
+            <li><a href="/large/">Large Files</a></li>
+        </ul>
+    </div>
 
-		<div class="status">
-			✓ Server Online
-		</div>
+    <div class="card">
+        <h3>Features Tested</h3>
+        <table>
+            <tr><th>Feature</th><th>Method</th><th>Endpoint</th></tr>
+            <tr><td>Static file serving</td><td><span class="method-get">GET</span></td><td><code>/</code>, <code>/about.html</code>, <code>/second/</code></td></tr>
+            <tr><td>Directory listing</td><td><span class="method-get">GET</span></td><td><code>/image/</code>, <code>/upload/</code></td></tr>
+            <tr><td>File upload</td><td><span class="method-post">POST</span></td><td><code>/upload</code> (multipart/form-data)</td></tr>
+            <tr><td>Form POST</td><td><span class="method-post">POST</span></td><td><code>/upload</code> (application/x-www-form-urlencoded)</td></tr>
+            <tr><td>File delete</td><td><span class="method-delete">DELETE</span></td><td><code>/delete-page</code></td></tr>
+            <tr><td>CGI Python</td><td><span class="method-get">GET</span></td><td><code>/cgi-bin/test.py</code></td></tr>
+            <tr><td>CGI Bash</td><td><span class="method-get">GET</span></td><td><code>/cgi-bin/test.sh</code></td></tr>
+            <tr><td>HTTP Redirect (301)</td><td><span class="method-get">GET</span></td><td><code>/old-page</code> → <code>/old-new-page</code></td></tr>
+            <tr><td>Error pages</td><td>various</td><td><code>/error_pages/</code></td></tr>
+        </table>
+    </div>
 
-		<p><a class="post-link" href="/post-demo.html">Open the POST upload demo →</a></p>
-		<p><a class="uploads" href="/upload">Go to Upload page→</a></p>
-		<div class="footer">
-			Built with C++ • HTTP/1.1 • Codam / 42 Webserv
-		</div>
-	</div>
+    <div class="card">
+        <h3>HTTP Methods</h3>
+        <p>
+            <span class="tag tag-get">GET</span> - Retrieve resources<br>
+            <span class="tag tag-post">POST</span> - Send data / upload files<br>
+            <span class="tag tag-delete">DELETE</span> - Remove resources
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>Webserv Test Suite | 42 CODAM | C++17 HTTP Server</p>
+    </div>
 </body>
 </html>
