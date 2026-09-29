@@ -6,7 +6,6 @@ Client::Client() :  _responseSent(0), _client_fd(-1), _server_fd(-1), _headersPa
 		_lastActivity(std::chrono::steady_clock::now()), _cgiState(CGI_NONE), _cgiInputFd(-1), 
 		_cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(), _cgiPid(-1), _cgiStartTime(), 
 		_cgiProcessFailed(false), _pendingRemoval(false) {
-	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
 
 Client::Client(int client_fd, int server_fd) :  _responseSent(0), _client_fd(client_fd), _server_fd(server_fd), 
@@ -15,7 +14,6 @@ Client::Client(int client_fd, int server_fd) :  _responseSent(0), _client_fd(cli
 		_lastActivity(std::chrono::steady_clock::now()), _cgiState(CGI_NONE), _cgiInputFd(-1), 
 		_cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(), _cgiPid(-1), _cgiStartTime(), 
 		_cgiProcessFailed(false), _pendingRemoval(false) {
-	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
 };
 
 void Client::updateLastActivity() {

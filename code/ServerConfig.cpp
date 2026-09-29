@@ -196,7 +196,6 @@ std::string ServerConfig::getOneErrorPage(int code) const {
 
 const int& ServerConfig::getServerConfFD() const { return _serverConf_fd; };
 
-// Added by Alina for Location block
 void ServerConfig::addLocation(const LocationConfig &locations) {
 		
 	_locations.push_back(locations);

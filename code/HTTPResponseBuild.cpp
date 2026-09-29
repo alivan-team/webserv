@@ -255,10 +255,6 @@ HTTPResponse HTTPResponseBuild::handlePost(
 		return makeErrorResponse(400, request, servConf);
 	}
 
-	/*
-	 * Determine which part of the current request body
-	 * must be saved.
-	 */
 	size_t dataOffset = bodyOffset;
 	size_t dataSize = bodySize;
 	std::string filename;
@@ -449,13 +445,10 @@ HTTPResponse HTTPResponseBuild::handleDelete(
 		return makeErrorResponse(404, request, servConf);
 
 	HTTPResponse res;
-	// std::string body = readReadFile("./site/www/delete_page/index.html");
-
 	res.setStatusCode(204);
 	res.setStatus(getStatusText(204));
 	res.setHeader("Content-Type", getContentType(fullPath));
-	// res.setHeader("Content-Length", std::to_string(body.size())); // send body for successful deleting file...
-	res.setHeader("Content-Length", "0"); // send body for successful deleting file...
+	res.setHeader("Content-Length", "0");
 	res.setHeader("Connection", decideConnection(request));
 	res.setVersion(request.getVersion());
 	res.setBody("");
@@ -626,7 +619,6 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request) {
 };
 
 // HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER
-
 //  AUTO INDEX
 
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, const ServerConfig &servConf, const std::string &fullPath, const std::string &requestPath) {

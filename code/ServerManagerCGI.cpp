@@ -314,7 +314,6 @@ void ServerManager::reapCgiChildern() {
 	}
 
 	for (size_t i = 0; i < clientsToErase.size(); i++) {
-		// close(clientsToErase[i]);
 		_clients.erase(clientsToErase[i]);
 	}
 }

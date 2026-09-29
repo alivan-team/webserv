@@ -15,7 +15,6 @@ SRCS		:= main.cpp \
 			   code/ServerManagerCGI.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
-			   code/ErrorPages.cpp \
 			   code/HelperFunctions.cpp \
 			   code/printDebug.cpp \
 			   code/ClientData.cpp \
@@ -34,7 +33,6 @@ TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ServerManagerCGI.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
-			   code/ErrorPages.cpp \
 			   code/HelperFunctions.cpp \
 			   code/printDebug.cpp \
 			   code/ClientData.cpp \
