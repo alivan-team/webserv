@@ -464,6 +464,12 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		close(inputPipe[0]);
 		close(outputPipe[1]);
 
+		for (size_t i = 0; i < _pollfds.size(); ++i) {
+			int fd = _pollfds[i].fd;
+			if (fd > STDERR_FILENO)
+				close(fd);
+		}
+
 		if (chdir(route.workingDirectory.c_str()) < 0)
 			_exit(1);
 		
@@ -557,6 +563,22 @@ bool ServerManager::processRequestBuffer(size_t index) {
 				throw HTTPParseException(500, "Internal Server Error");
 		}
 		client.setClientRequest(HTTPRequestParser().parse(client.getRequestBuffer(), client.getRequestEnd()));
+
+		Method method = client.getRequest().getMethod();
+
+		switch (method) {
+			case Method::GET:
+			case Method::POST:
+			case Method::DELETE:
+				break;
+
+			default:
+				HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(501, *serverConfig);
+				client.setCloseAfterResponse(true);
+				queueResponse(index, client, errorResponse);
+				return false;
+		}
+
 		CgiRoute cgiRoute;
 		int cgiError = 0;
 

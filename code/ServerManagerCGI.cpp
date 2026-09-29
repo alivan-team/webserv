@@ -235,7 +235,6 @@ std::string ServerManager::buildCgiResponse(const CgiResult& result, const HTTPR
 	response += "Connection: ";
     response +=  HTTPResponseBuild::decideConnection(request);
     response +=  "\r\n\r\n";
-	// response += "\r\n";
 	response += result.body;
 
 	return response;

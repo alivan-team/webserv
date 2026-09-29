@@ -47,9 +47,6 @@ class HTTPResponseBuild {
 		static bool pathInsideBase(const std::string& base, const std::string& target);
 		static std::string urlDecoder(std::string urlPath);
 		static int prepareRequestPath(const HTTPRequest &request, const ServerConfig &servConf, std::string &path, const LocationConfig *&location);
-
-		// DELETE 
-		// static std::string uploadStorePresent(const LocationConfig& location);
 		static std::string buildAllowHeader(const LocationConfig& location);
 		static bool deleteParentInsideBase(const std::string& base, const std::string& target);
 	

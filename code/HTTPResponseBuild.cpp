@@ -146,12 +146,7 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerCo
 
 // GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
 
-HTTPResponse HTTPResponseBuild::handleGet(
-	const HTTPRequest &request, 
-	const ServerConfig &servConf, 
-	std::string &path,  
-	const LocationConfig *&location)
-{
+HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const ServerConfig &servConf, std::string &path,  const LocationConfig *&location) {
 
 	HTTPResponse res;
 
@@ -548,8 +543,6 @@ HTTPResponse HTTPResponseBuild::makeEarlyErrorResponse(int code, const ServerCon
 
 std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &servConf) {
 
-	// std::string error_message = getStatusText(code);
-
 	if (servConf.hasErrorPage(code)) {
 
 		std::string error_path = servConf.getOneErrorPage(code);
@@ -557,22 +550,18 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 		std::string fullPath = joinPath(root, error_path);
 
 		try {
-
 			if (fileExists(fullPath) && canReadFile(fullPath)) {
 				return readReadFile(fullPath);
 			}
 		} catch (const std::exception &e) {
-
 			std::cerr << "Could not read custom error page " << error_path << ": " << e.what() << std::endl;
 		}
-
 		return makeFallBackErrorBody(code);
 	}
 
 	try {
 		return readReadFile("./site/www/error_pages/index.html");
 	} catch (const std::exception& e) {
-
 		return makeFallBackErrorBody(code);
 	}
 }
