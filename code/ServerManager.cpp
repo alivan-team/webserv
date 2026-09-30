@@ -457,9 +457,9 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		close(outputPipe[0]);
 
 		if (dup2(inputPipe[0], STDIN_FILENO) < 0)
-			_exit(1);
+			std::_Exit(1);
 		if (dup2(outputPipe[1], STDOUT_FILENO) < 0)
-			_exit(1);
+			std::_Exit(1);
 
 		close(inputPipe[0]);
 		close(outputPipe[1]);
@@ -471,7 +471,7 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		}
 
 		if (chdir(route.workingDirectory.c_str()) < 0)
-			_exit(1);
+			std::_Exit(1);
 		
 		std::vector<std::string> cgiEnvironment = buildCgiEnvironment(request, servConf);
 	
@@ -489,7 +489,7 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 		argv.push_back(NULL);
 
 		execve(route.cgiPath.c_str(), argv.data() , evnp.data());
-		_exit(1);
+		std::_Exit(1);
 	}
 
 	close(inputPipe[0]);

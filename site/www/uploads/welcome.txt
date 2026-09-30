@@ -1,0 +1,1 @@
+Uploaded files will appear next to this one. The dashboard reads /uploads/ using webserv's autoindex.
