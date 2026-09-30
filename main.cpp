@@ -37,7 +37,3 @@ int main(int argc, char **argv) {
 
 	
 }
-
-// Add client/request timeouts. This is the clearest mandatory issue.
-// Add a maximum HTTP-header/request-buffer size.
-// Make the final error-page fallback independent of disk files.
