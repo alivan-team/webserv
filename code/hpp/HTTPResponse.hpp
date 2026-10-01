@@ -24,67 +24,11 @@ class HTTPResponse {
 		void setVersion(const std::string& version);
 		
 		std::string toString(HTTPResponse& ClassResponse) const;
-
 		const std::string& getBody() const;
 		const std::string& getVersion() const;
-
-		// remove in the end!!!
-		// const int& getHeader() const {
-			
-		// 	for(auto h : _headers) {
-		// 		std::cout << "\t h -> " << h.first 
-		// 		<< " : " << h.second << std::endl;
-		// 	}
-		// 	return _headers.size();
-		// };
-
+		
+		// getStatusCode() is added only for TestMain.cpp 
+		int getStatusCode() const { return _statusCode; }; 
 };
 
 #endif
-
-	// std::string response =
-	// "HTTP/1.1 200 OK\r\n"
-	// "Content-Type: text/plain\r\n"
-	// "Content-Length: " + std::to_string(body.size()) + "\r\n"
-	// "\r\n" +
-	// body;
-
-	// HTTP/version status reason
-	// Content-Type
-	// Content-Length
-	// Connection
-	
-
-
-
-
-// .html  -> text/html
-// .htm   -> text/html
-// .css   -> text/css
-// .js	-> application/javascript
-// .png   -> image/png
-// .jpg   -> image/jpeg
-// .jpeg  -> image/jpeg
-// .gif   -> image/gif
-// .ico   -> image/x-icon
-// .txt   -> text/plain
-
-// /favicon.ico
-// /style.css
-// /script.js
-// /image.png
-
-// 4. Is this enough to cover every request?
-
-// Almost, but I would phrase the categories like this:
-
-// 1. Match server
-// 2. Match location
-// 3. Check method allowed
-// 4. Check body size
-// 5. Handle redirect
-// 6. Handle CGI
-// 7. Handle GET
-// 8. Handle POST/upload
-// 9. Handle DELETE
-// 10. Handle error pages
