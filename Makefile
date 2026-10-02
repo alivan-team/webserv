@@ -2,7 +2,7 @@ NAME		:= webserv
 TEST_NAME	:= webserv_tests
 
 CXX			:= c++
-# CXXFLAGS	:= -Wall -Wextra -Werror
+CXXFLAGS	:= -Wall -Wextra -Werror
 CPPFLAGS	:= -Icode/hpp -g -std=c++17
 
 OBJ_DIR		:= build
@@ -12,9 +12,9 @@ OBJ_DIR		:= build
 SRCS		:= main.cpp \
 			   code/ConfigParser.cpp \
 			   code/ServerManager.cpp \
+			   code/ServerManagerCGI.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
-			   code/ErrorPages.cpp \
 			   code/HelperFunctions.cpp \
 			   code/printDebug.cpp \
 			   code/ClientData.cpp \
@@ -30,9 +30,9 @@ SRCS		:= main.cpp \
 TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ConfigParser.cpp \
 			   code/ServerManager.cpp \
+			   code/ServerManagerCGI.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
-			   code/ErrorPages.cpp \
 			   code/HelperFunctions.cpp \
 			   code/printDebug.cpp \
 			   code/ClientData.cpp \

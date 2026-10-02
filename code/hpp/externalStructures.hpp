@@ -12,8 +12,8 @@ struct AllowMethods{
 };
 
 struct Redirection{
-	int	_number; // status 
-	std::string _redirPath; // - redirect for this error
+	int	_number;
+	std::string _redirPath;
 };
 
 enum class Method

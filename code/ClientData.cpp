@@ -3,17 +3,17 @@
 Client::Client() :  _responseSent(0), _client_fd(-1), _server_fd(-1), _headersParsed(false),
 		_bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
 		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
-		_cgiState(CGI_NONE), _cgiInputFd(-1), _cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(),
-        _lastActivity(std::chrono::steady_clock::now()) {
-	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
+		_lastActivity(std::chrono::steady_clock::now()), _cgiState(CGI_NONE), _cgiInputFd(-1), 
+		_cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(), _cgiPid(-1), _cgiStartTime(), 
+		_cgiProcessFailed(false), _pendingRemoval(false) {
 };
 
 Client::Client(int client_fd, int server_fd) :  _responseSent(0), _client_fd(client_fd), _server_fd(server_fd), 
 		_headersParsed(false), _bodyType(BodyType::None), _contentLength(0), _bodyPos(0),
 		_bodySize(0), _requestEnd(0), _requestErrorCode(0), _closeAfterResoinse(false), 
-		_cgiState(CGI_NONE), _cgiInputFd(-1), _cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(),
-        _lastActivity(std::chrono::steady_clock::now()) {
-	// std::cout << "Client: " << _client_fd << ", Server: " << _server_fd << std::endl;
+		_lastActivity(std::chrono::steady_clock::now()), _cgiState(CGI_NONE), _cgiInputFd(-1), 
+		_cgiOutputFd(-1), _cgiInputOffset(0), _cgiOutput(), _cgiPid(-1), _cgiStartTime(), 
+		_cgiProcessFailed(false), _pendingRemoval(false) {
 };
 
 void Client::updateLastActivity() {
@@ -97,7 +97,15 @@ int Client::getRequestErrorCode() const { return _requestErrorCode; };
 bool Client::getHeaderIsParsed() const {return _headersParsed; };
 const std::chrono::steady_clock::time_point& Client::getLastActivity() { return _lastActivity; };
 
-
+void Client::resetCgiForNewRequest()
+{
+    _cgiState = CGI_NONE;
+    _cgiInputFd = -1;
+    _cgiOutputFd = -1;
+    _cgiInputOffset = 0;
+    _cgiOutput.clear();
+    _cgiProcessFailed = false;
+}
 
 void Client::clearResponse() {
 	_responseBuffer.clear();
@@ -183,6 +191,40 @@ const std::string& Client::getCgiOutput() const
 	return _cgiOutput;
 }
 
+pid_t Client::getCgiPid() const {
+	return _cgiPid;
+};
+
+const std::chrono::steady_clock::time_point& Client::getCgiTime() {
+	return _cgiStartTime;
+};
+
+bool Client::getCgiProcessFailed() const {
+	return _cgiProcessFailed;
+};
+
+bool Client::getPendingRemoval() const
+{
+    return _pendingRemoval;
+}
+
+void Client::setPendingRemoval(bool pending)
+{
+    _pendingRemoval = pending;
+}
+
+void Client::setCgiProcessFailed(bool failed) {
+	_cgiProcessFailed = failed;
+};
+
+void Client::setCgiStartTime() {
+	_cgiStartTime = std::chrono::steady_clock::now();
+};
+
+void Client::setCgiPid(pid_t cgiPid) {
+	_cgiPid = cgiPid;
+};
+
 void Client::setCgiState(CgiState state)
 {
 	_cgiState = state;
@@ -205,5 +247,5 @@ void Client::setCgiInputOffset(size_t offset)
 
 void Client::setCgiOutput(const std::string& output)
 {
-	_cgiOutput = output;
+	_cgiOutput += output;
 }

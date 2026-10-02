@@ -1,95 +1,189 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Welcome to Webserv</title>
-	<style>
-		body {
-			margin: 0;
-			font-family: Arial, Helvetica, sans-serif;
-			background-color: #f4f4f4;
-			color: #333;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			height: 100vh;
-		}
-
-		.container {
-			text-align: center;
-			background: white;
-			padding: 50px;
-			border-radius: 12px;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-			max-width: 600px;
-		}
-
-		h1 {
-			color: #0078d4;
-			margin-bottom: 10px;
-		}
-
-		h2 {
-			color: #666;
-			font-weight: normal;
-			margin-top: 0;
-		}
-
-		p {
-			line-height: 1.6;
-			margin: 20px 0;
-		}
-
-		code {
-			background: #eee;
-			padding: 2px 6px;
-			border-radius: 4px;
-		}
-
-		.footer {
-			margin-top: 30px;
-			color: #888;
-			font-size: 0.9em;
-		}
-
-		.status {
-			display: inline-block;
-			margin-top: 20px;
-			padding: 10px 20px;
-			background: #28a745;
-			color: white;
-			border-radius: 20px;
-			font-weight: bold;
-		}
-
-		.post-link {
-			display: inline-block;
-			margin-top: 20px;
-			color: #0078d4;
-			font-weight: bold;
-		}
-	</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>webserv // evaluation console</title>
+  <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-	<div class="container">
-		<h1>🚀 Welcome to AliVan-Webserv</h1>
-		<h2>Your HTTP server is running successfully.</h2>
+  <div class="scanlines"></div>
+  <header class="hero shell">
+    <nav>
+      <a class="brand" href="/"><span class="prompt">$</span> webserv</a>
+      <div class="navlinks">
+        <a href="/about/">architecture</a>
+        <a href="/docs/">evaluation map</a>
+        <a href="http://localhost:8081/">port :8081</a>
+      </div>
+    </nav>
 
-		<p>
-			Congratulations! If you're seeing this page, your
-			<code>webserv</code> project is serving static files correctly.
-		</p>
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">42 / Codam · HTTP/1.1 · C++17</p>
+        <h1>A browser-driven test bench for our <span>web server.</span></h1>
+        <p class="lead">Every button below talks to <strong>this webserv</strong>. Static files, routing, autoindex, uploads, DELETE, CGI, redirects, custom errors and multiple listening ports can all be demonstrated without leaving the browser.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#live-tests">Run live tests</a>
+          <a class="button" href="/files/">Open autoindex</a>
+        </div>
+      </div>
+      <div class="terminal" aria-label="server terminal illustration">
+        <div class="terminal-bar"><i></i><i></i><i></i><span>webserv@localhost</span></div>
+        <pre><span class="muted">$</span> ./webserv config/evaluation_showcase.conf
+<span class="ok">✓</span> listening 0.0.0.0:<b>8080</b>
+<span class="ok">✓</span> listening 0.0.0.0:<b>8081</b>
+<span class="muted">→</span> poll() watches sockets + CGI pipes
+<span class="muted">→</span> GET / <span class="ok">200</span>
+<span class="muted">→</span> POST /upload <span class="ok">201</span>
+<span class="muted">→</span> DELETE /uploads/file <span class="ok">204</span>
+<span class="cursor">█</span></pre>
+      </div>
+    </div>
+  </header>
 
-		<div class="status">
-			✓ Server Online
-		</div>
+  <main class="shell">
+    <section class="stats">
+      <div><strong>GET</strong><span>static + directories</span></div>
+      <div><strong>POST</strong><span>uploads + CGI body</span></div>
+      <div><strong>DELETE</strong><span>filesystem resources</span></div>
+      <div><strong>CGI</strong><span>Python through pipes</span></div>
+    </section>
 
-		<p><a class="post-link" href="/post-demo.html">Open the POST upload demo →</a></p>
-		<p><a class="uploads" href="/upload">Go to Upload page→</a></p>
-		<div class="footer">
-			Built with C++ • HTTP/1.1 • Codam / 42 Webserv
-		</div>
-	</div>
+    <section class="section" id="live-tests">
+      <div class="section-heading">
+        <p class="eyebrow">Live evaluation panel</p>
+        <h2>Click it. Watch the server answer.</h2>
+        <p>Each test reports the HTTP status returned by your running webserv.</p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="card">
+          <div class="icon">01</div>
+          <h3>Static GET</h3>
+          <p>Serve HTML, CSS, text and binary/static assets from configured roots.</p>
+          <div class="actions">
+            <a class="button small" href="/about/">Open static page</a>
+            <button data-test="static">Fetch /about/</button>
+          </div>
+          <output id="out-static">ready</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">02</div>
+          <h3>Directory autoindex</h3>
+          <p>This directory intentionally has no index file, so webserv generates the listing itself.</p>
+          <div class="actions"><a class="button small" href="/files/">Open /files/</a></div>
+          <output>server-generated HTML</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">03</div>
+          <h3>301 redirect</h3>
+          <p>The <code>/legacy</code> route is configured to redirect to a new resource.</p>
+          <div class="actions"><a class="button small" href="/legacy">Follow redirect</a></div>
+          <output>watch the address bar → /redirected.html</output>
+        </article>
+
+        <article class="card accent">
+          <div class="icon">04</div>
+          <h3>Python CGI</h3>
+          <p>Fork → pipes → dup2 → execve. The CGI echoes request metadata back as JSON.</p>
+          <label>Query value <input id="cgi-name" value="Codam evaluator" maxlength="80"></label>
+          <div class="actions">
+            <button data-test="cgi-get">CGI GET</button>
+            <button data-test="cgi-post">CGI POST</button>
+          </div>
+          <output id="out-cgi">ready</output>
+        </article>
+
+        <article class="card accent">
+          <div class="icon">05</div>
+          <h3>Upload with POST</h3>
+          <p>Select a file. The browser sends multipart/form-data and webserv stores it in the configured upload directory.</p>
+          <input id="upload-file" type="file">
+          <div class="actions"><button data-test="upload">Upload file</button></div>
+          <output id="out-upload">ready</output>
+        </article>
+
+        <article class="card accent">
+          <div class="icon">06</div>
+          <h3>GET + DELETE uploaded files</h3>
+          <p>The list below is read from webserv's own autoindex. DELETE buttons send a real HTTP DELETE request.</p>
+          <div class="actions"><button data-test="refresh-uploads">Refresh files</button></div>
+          <div id="upload-list" class="file-list"><span class="muted">loading…</span></div>
+          <output id="out-delete">ready</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">07</div>
+          <h3>405 Method Not Allowed</h3>
+          <p><code>/get-only</code> accepts GET only. We deliberately POST to it.</p>
+          <div class="actions"><button data-test="405">Send forbidden POST</button></div>
+          <output id="out-405">ready</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">08</div>
+          <h3>404 + custom error page</h3>
+          <p>Ask for a resource that does not exist and see the configured custom response.</p>
+          <div class="actions">
+            <button data-test="404">Fetch missing resource</button>
+            <a class="button small" href="/definitely-not-here">Open error page</a>
+          </div>
+          <output id="out-404">ready</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">09</div>
+          <h3>413 Payload Too Large</h3>
+          <p>Config limit: 128 KiB. This sends a generated body larger than the configured maximum.</p>
+          <div class="actions"><button data-test="413">Send oversized body</button></div>
+          <output id="out-413">ready</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">10</div>
+          <h3>501 unsupported method</h3>
+          <p>The project implements GET, POST and DELETE. This test deliberately sends PUT.</p>
+          <div class="actions"><button data-test="501">Send PUT</button></div>
+          <output id="out-501">ready</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">11</div>
+          <h3>Multiple listen ports</h3>
+          <p>The same process also serves a separate site on port <code>8081</code>.</p>
+          <div class="actions"><a class="button small" href="http://localhost:8081/">Open :8081</a></div>
+          <output>second server block</output>
+        </article>
+
+        <article class="card">
+          <div class="icon">12</div>
+          <h3>Route configuration</h3>
+          <p>Different roots, methods, indexes, redirect rules, autoindex behavior, CGI and upload storage are selected per URL route.</p>
+          <div class="actions"><a class="button small" href="/docs/">Evaluation map</a></div>
+          <output>configuration-driven behavior</output>
+        </article>
+      </div>
+    </section>
+
+    <section class="section split">
+      <div>
+        <p class="eyebrow">Under the hood</p>
+        <h2>One event-driven server.</h2>
+      </div>
+      <div class="pipeline">
+        <span>socket</span><b>→</b><span>poll()</span><b>→</b><span>parse</span><b>→</b><span>route</span><b>→</b><span>response / CGI</span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell footer">
+    <span>webserv evaluation console</span>
+    <span>served by the project itself · no framework · no external assets</span>
+  </footer>
+
+  <script src="/assets/app.js"></script>
 </body>
 </html>

@@ -15,6 +15,10 @@
 #include <netinet/in.h>
 #include <cerrno>
 #include <netdb.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <cstdlib>
 
 enum FdType
 {
@@ -28,6 +32,13 @@ struct FdInfo
 {
     FdType type;
     int clientFd;
+};
+
+struct CgiResult {
+	bool valid;
+	int statusCode;
+	std::map<std::string, std::string> headers;
+	std::string body;
 };
 
 class ServerManager {
@@ -48,17 +59,22 @@ class ServerManager {
 
 		bool shouldKeepAlive(const HTTPRequest& request) const;
 		void removeClient(size_t index);
-		// bool sendWholeResponse(int clinetFd, const std::string& respone) const;
 		bool processRequestBuffer(size_t index);
 		RequestState getRequestState(Client& client, const ServerConfig*& serverConfig);
         void removeTimeOutClients();
 		bool startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf);
 		std::vector<std::string> buildCgiEnvironment(const HTTPRequest& request, const ServerConfig& servConf);
-		bool writeToCgi(int fd, int clientFd);
-		bool readFromCgi(int fd, int clientFd);
-		size_t findClientIndex(int clientFd) const;
+		bool writeToCgi(int fd, int clientFdInfo);
+		bool readFromCgi(int fd, int clientFdInfo);
+		void failCgi(Client& client);
+		CgiResult parseCgiOutput(const std::string& cgiOutput);
+		void checkCgiTimeouts();
+		void reapCgiChildern();
+		void finishCgiResponse(Client& client);
 		
 	public: 
+		std::string buildCgiResponse(const CgiResult& result, const HTTPRequest &request);
+		// buildCgiResponse is out in the public only beucase of the TestMain.cpp -> move it back to private once the tests are removed? 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);
 		const std::map<int, std::vector<ServerConfig>>& getServerManager() const;
 		const ServerConfig& getClientServerManager(int serverIndex, const std::string& host) const;
@@ -68,6 +84,7 @@ class ServerManager {
 		// for CGI stage
 		void addFd(int fd, FdType type, int clientFd);
 		void removeFd(int fd);
+		void unregisterFd(int fd);
 		void setFdEvents(int fd, short events);
 		HTTPResponse buildCgiResponse(const Client& client);
 

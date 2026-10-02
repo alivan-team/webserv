@@ -1,10 +1,6 @@
 #include "./hpp/ServerConfig.hpp"
 #include "HelperFunctions.hpp"
 
-//	LOCATION CONFIG
-
-//  SERVER CONFIG 
-
 ServerConfig::ServerConfig() :_host("0.0.0.0"), _port(8080), _server_name({"localhost"}), _root({"./site/www"}), _index({"index.html"}), _client_max_body_size({1000000}) {};
 
 ServerConfig::~ServerConfig() {};
@@ -167,8 +163,6 @@ const std::string& ServerConfig::getHost() const { return _host; }
 
 const int& ServerConfig::getPort() const { return _port; };
 
-// const std::vector<LocationConfig>& ServerConfig::getLocations() const { return _locations; };
-
 const std::vector<std::string>& ServerConfig::getServerName() const { return _server_name; };
 
 const std::vector<std::string>& ServerConfig::getRoot() const { return _root; };
@@ -196,7 +190,6 @@ std::string ServerConfig::getOneErrorPage(int code) const {
 
 const int& ServerConfig::getServerConfFD() const { return _serverConf_fd; };
 
-// Added by Alina for Location block
 void ServerConfig::addLocation(const LocationConfig &locations) {
 		
 	_locations.push_back(locations);

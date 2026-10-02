@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <exception>
+#include <signal.h>
 
 
 int main(int argc, char **argv) {
@@ -19,6 +20,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	signal(SIGPIPE, SIG_IGN);
 	ConfigParser config;
 
 	try {
@@ -32,10 +34,4 @@ int main(int argc, char **argv) {
 	}
 
 	return 0;
-
-	
 }
-
-// Add client/request timeouts. This is the clearest mandatory issue.
-// Add a maximum HTTP-header/request-buffer size.
-// Make the final error-page fallback independent of disk files.

@@ -1,4 +1,5 @@
 #include "MultipartParser.hpp"
+#include "HelperFunctions.hpp"
 
 MultipartParser::MultipartParser()
 	: _buffer(NULL),
@@ -116,7 +117,7 @@ void MultipartParser::parseContentDisposition(
 	MultipartPart& part) const
 {
 	const std::string headerName = "Content-Disposition:";
-	const size_t headerStart = headers.find(headerName);
+	const size_t headerStart = headers.find(toLower(headerName));
 
 	if (headerStart == std::string::npos)
 		return;

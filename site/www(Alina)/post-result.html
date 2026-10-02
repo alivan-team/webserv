@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POST Result - Webserv Test Suite</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 15px; margin: 15px 0; color: #155724; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; padding: 15px; margin: 15px 0; color: #0c5460; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>POST Result Page</h1>
+    <div class="card">
+        <h2>Form Submission Result</h2>
+        <p>This page would display the result of a POST form submission. The actual behavior depends on how the server handles POST requests to the <code>/upload</code> endpoint.</p>
+
+        <div class="success">
+            <strong>Success!</strong> Your POST request was processed.
+        </div>
+
+        <div class="info">
+            <strong>What happened:</strong>
+            <ul>
+                <li>The server received a POST request with form data</li>
+                <li>Content-Type was <code>application/x-www-form-urlencoded</code></li>
+                <li>The server should have processed the data and returned a response</li>
+            </ul>
+        </div>
+
+        <p><a href="/post-demo.html">← Submit Another Form</a></p>
+        <p><a href="/">← Back to Home</a></p>
+    </div>
+
+    <div class="footer">
+        <p>Webserv Test Suite | 42 CODAM</p>
+    </div>
+</body>
+</html>

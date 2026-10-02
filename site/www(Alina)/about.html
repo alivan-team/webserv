@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Webserv Test Suite</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>About This Project</h1>
+    <div class="card">
+        <h2>Webserv - HTTP Server in C++17</h2>
+        <p>This website is a test suite for the <strong>webserv</strong> project, part of the 42 CODAM curriculum.</p>
+        <p>The project implements a fully functional HTTP/1.1 server written in C++17, featuring:</p>
+        <ul>
+            <li>Non-blocking I/O with <code>poll()</code></li>
+            <li>Multiple server blocks on different ports</li>
+            <li>Virtual host support via <code>Host</code> header</li>
+            <li>Static file serving with MIME-type detection</li>
+            <li>Directory listing (<code>autoindex</code>)</li>
+            <li>File upload via <code>multipart/form-data</code></li>
+            <li>CGI execution (.py, .sh, .php)</li>
+            <li>HTTP redirect (301, 302)</li>
+            <li>Custom error pages</li>
+            <li>Request body size limits</li>
+        </ul>
+        <h3>Configuration</h3>
+        <p>The server uses a nginx-inspired configuration file format. Example:</p>
+        <pre><code>server {
+    listen 8080;
+    server_name localhost;
+    root ./site/www;
+    index index.html;
+    client_max_body_size 1000000;
+
+    location / {
+        allow_methods GET;
+        autoindex off;
+    }
+
+    location /upload {
+        allow_methods GET POST DELETE;
+        upload_store ./site/www/uploads;
+        autoindex on;
+    }
+
+    location /cgi-bin {
+        root ./site/www/cgi-bin;
+        allow_methods GET POST;
+        cgi_extension .py;
+        cgi_path /usr/bin/python3;
+    }
+}</code></pre>
+        <p><a href="/">← Back to Home</a></p>
+    </div>
+    <div class="footer">
+        <p>Webserv Test Suite | 42 CODAM</p>
+    </div>
+</body>
+</html>

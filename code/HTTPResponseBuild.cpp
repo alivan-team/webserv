@@ -146,12 +146,7 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerCo
 
 // GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET GET
 
-HTTPResponse HTTPResponseBuild::handleGet(
-	const HTTPRequest &request, 
-	const ServerConfig &servConf, 
-	std::string &path,  
-	const LocationConfig *&location)
-{
+HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const ServerConfig &servConf, std::string &path,  const LocationConfig *&location) {
 
 	HTTPResponse res;
 
@@ -260,10 +255,6 @@ HTTPResponse HTTPResponseBuild::handlePost(
 		return makeErrorResponse(400, request, servConf);
 	}
 
-	/*
-	 * Determine which part of the current request body
-	 * must be saved.
-	 */
 	size_t dataOffset = bodyOffset;
 	size_t dataSize = bodySize;
 	std::string filename;
@@ -454,13 +445,10 @@ HTTPResponse HTTPResponseBuild::handleDelete(
 		return makeErrorResponse(404, request, servConf);
 
 	HTTPResponse res;
-	// std::string body = readReadFile("./site/www/delete_page/index.html");
-
 	res.setStatusCode(204);
 	res.setStatus(getStatusText(204));
 	res.setHeader("Content-Type", getContentType(fullPath));
-	// res.setHeader("Content-Length", std::to_string(body.size())); // send body for successful deleting file...
-	res.setHeader("Content-Length", "0"); // send body for successful deleting file...
+	res.setHeader("Content-Length", "0");
 	res.setHeader("Connection", decideConnection(request));
 	res.setVersion(request.getVersion());
 	res.setBody("");
@@ -548,8 +536,6 @@ HTTPResponse HTTPResponseBuild::makeEarlyErrorResponse(int code, const ServerCon
 
 std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &servConf) {
 
-	std::string error_message = getStatusText(code);
-
 	if (servConf.hasErrorPage(code)) {
 
 		std::string error_path = servConf.getOneErrorPage(code);
@@ -557,30 +543,37 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 		std::string fullPath = joinPath(root, error_path);
 
 		try {
-
 			if (fileExists(fullPath) && canReadFile(fullPath)) {
 				return readReadFile(fullPath);
 			}
 		} catch (const std::exception &e) {
 			std::cerr << "Could not read custom error page " << error_path << ": " << e.what() << std::endl;
 		}
-
-		return "<!DOCTYPE html>\n"
-			   "<html>\n"
-			   "<head><title>" +
-			   std::to_string(code) + " " + error_message +
-			   "</title></head>\n"
-			   "<body>\n"
-			   "<h1>" +
-			   std::to_string(code) + " " + error_message + "</h1>\n"
-															"</body>\n"
-															"</html>\n";
+		return makeFallBackErrorBody(code);
 	}
+
+	try {
+		return readReadFile("./site/www/error_pages/index.html");
+	} catch (const std::exception& e) {
+		return makeFallBackErrorBody(code);
+	}
+}
+
+std::string HTTPResponseBuild::makeFallBackErrorBody(int code) {
 
 	std::string text = getStatusText(code);
 
-	return readReadFile("./site/www/error_pages/index.html");
-};
+	return "<!DOCTYPE html>\n"
+			   "<html>\n"
+			   "<head><title>" +
+			   std::to_string(code) + " " + text +
+			   "</title></head>\n"
+			   "<body>\n"
+			   "<h1>" +
+			   std::to_string(code) + " " + text + "</h1>\n"
+															"</body>\n"
+															"</html>\n";
+}
 
 std::string HTTPResponseBuild::getStatusText(int code) 
 {
@@ -626,7 +619,6 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request) {
 };
 
 // HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER
-
 //  AUTO INDEX
 
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, const ServerConfig &servConf, const std::string &fullPath, const std::string &requestPath) {
@@ -655,7 +647,6 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 
 	while ((entry = readdir(dir)) != NULL) {
 		std::string name = entry->d_name;
-		// std::cout << "\t\t name --> " << name << std::endl;
 
 		if (name == "." || name == ".." || name.front() == '.')
 			continue;
@@ -924,4 +915,3 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 	}
 	return decodedUrl;
 }
-
