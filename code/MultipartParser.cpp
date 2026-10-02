@@ -117,7 +117,7 @@ void MultipartParser::parseContentDisposition(
 	MultipartPart& part) const
 {
 	const std::string headerName = "Content-Disposition:";
-	const size_t headerStart = headers.find(toLower(headerName)); // added toLower by Ivan to be caseinsensitive.
+	const size_t headerStart = headers.find(toLower(headerName));
 
 	if (headerStart == std::string::npos)
 		return;
