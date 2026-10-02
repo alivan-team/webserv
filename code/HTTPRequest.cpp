@@ -50,7 +50,7 @@ const std::string& HTTPRequest::getRequestBuffer() const {
 size_t HTTPRequest::getBodyOffset() const { return _bodyOffset; };
 size_t HTTPRequest::getBodySize() const { return _bodySize; };
 
-bool HTTPRequest::hasHeader(const std::string &name) const{ return (_headers.find(name) != _headers.end()); };
+bool HTTPRequest::hasHeader(const std::string &name) const{ return (_headers.find(toLower(name)) != _headers.end()); };
 
 const std::string& HTTPRequest::getHeader(const std::string &name) const{
 	std::map<std::string, std::string>::const_iterator it;

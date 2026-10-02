@@ -161,8 +161,7 @@ void ServerManager::run() {
 			throw std::runtime_error("poll() failed");
 
 		size_t i = 0;
-		while (i < _pollfds.size())
-		{
+		while (i < _pollfds.size()) {
 
 			int fd = _pollfds[i].fd;
 			short revents = _pollfds[i].revents;
@@ -179,42 +178,34 @@ void ServerManager::run() {
 
 			} else if (info.type == FD_CLIENT_SOCKET) {
 
-				if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
+				if (revents & (POLLERR | POLLNVAL)) {
 					removeClient(i);
 					removed = true;
 				} else {
-
-					if (revents & POLLIN)
+					if (revents & (POLLIN | POLLHUP))
 						removed = readClientData(i);
 					if (!removed && (revents & POLLOUT))
 						removed = writeClientData(i);
 				}
-
 			} else if (info.type == FD_CGI_INPUT) {
 
 				if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
-
 					Client& client = _clients.at(info.clientFd);
 					failCgi(client);
 					removed = true;
 				} else if (revents & POLLOUT) {
-
 					removed = writeToCgi(fd, info.clientFd);
 				}
-
 			} else if (info.type == FD_CGI_OUTPUT) {
 
 				if (revents & (POLLERR | POLLNVAL)) {
-
 					Client& client = _clients.at(info.clientFd);
 					failCgi(client);
 					removed = true;
 				} else if (revents & (POLLIN | POLLHUP)){
-
 					removed = readFromCgi(fd, info.clientFd);
 				}
 			}
-
 			if (!removed)
 				i++;
 		}
@@ -297,13 +288,14 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
 		throw std::runtime_error("Server configuration list is empty.");
 	
 	const std::vector<ServerConfig>& servers = it->second;
-
+	
+	std::string lowerHost = toLower(host);
 	for (size_t i = 0; i < servers.size(); i++) {
 
 		const std::vector<std::string>& serverNames = servers[i].getServerName();
 
 		for (size_t j = 0; j < serverNames.size(); j++) {
-			if (serverNames[j] == host) {
+			if (toLower(serverNames[j]) == lowerHost) {
 				return servers[i];
 			}
 		}
