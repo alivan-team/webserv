@@ -109,7 +109,7 @@ HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerCo
 
 	int errorCode = prepareRequestPath(request, servConf, path, location);
 
-	if(errorCode != 0) 
+	if(errorCode != 0)
 		return makeErrorResponse(errorCode, request, servConf);
 
 	if (location->hasRedirect()) {

@@ -16,7 +16,6 @@ SRCS		:= main.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
 			   code/HelperFunctions.cpp \
-			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/ClientRequestParsing.cpp\
 			   code/HTTPRequest.cpp \
@@ -34,7 +33,6 @@ TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
 			   code/HelperFunctions.cpp \
-			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/ClientRequestParsing.cpp\
 			   code/HTTPRequest.cpp \

@@ -2132,20 +2132,22 @@ void testMultipartLowercaseContentDisposition() {
 // 		throw std::runtime_error("Two uploads created the same filename");
 // }
 
-// void testEncodedPathTraversal() {
+void testEncodedPathTraversal() {
 
-// 	ServerConfig server;
-// 	server.setRoot({"./site/www"});
+	ServerConfig server;
+	server.setRoot({"./site/www"});
 
-// 	HTTPRequest request;
-// 	request.setMethod(Method::GET);
-// 	request.setPath("/%2e%2e/secret.txt");
+	HTTPRequest request;
+	request.setMethod(Method::GET);
+	request.setPath("/%2e%2e/secret.txt");
+	request.setVersion("1.1");
 
-// 	HTTPResponse response = HTTPResponseBuild::build(request, server);
+	HTTPResponse response = HTTPResponseBuild::build(request, server);
 
-// 	if (response.getStatusCode() != 403)
-// 		throw std::runtime_error("Encoded path traversal was not rejected with 403");
-// }
+	// std::cout << "\t Response: " << response.getStatusCode() << std::endl;
+	if (response.getStatusCode() != 403)
+		throw std::runtime_error("Encoded path traversal was not rejected with 403");
+}
 
 void testContentLengthPipelining() {
 
@@ -2219,7 +2221,7 @@ int main()
     // run("BREAKER quoted multipart boundary", testQuotedMultipartBoundary);
     // run("BREAKER multipart boundary prefix in data", testMultipartBoundaryPrefixInsideData);
     // run("BREAKER raw upload uniqueness", testRawUploadFilenameUniqueness);
-    // run("BREAKER encoded traversal", testEncodedPathTraversal);
+    run("BREAKER encoded traversal", testEncodedPathTraversal);
     run("BREAKER pipelined Content-Length", testContentLengthPipelining);
 	
 	if (g_failures != 0) {
