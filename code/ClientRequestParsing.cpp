@@ -57,6 +57,10 @@ RequestState Client::parseHeaderClient() {
 
 		if (colonmPosition == std::string::npos) 
 			return setRequestError(400);
+		if (colonmPosition == 0)
+			return setRequestError(400);
+		if (std::isspace(static_cast<unsigned char>(line[colonmPosition - 1])))
+			return setRequestError(400);
 
 		std::string headerName = toLower(trim(line.substr(0, colonmPosition)));
 		std::string headerValue = trim(line.substr(colonmPosition + 1));
@@ -266,6 +270,12 @@ bool Client::parseHexSize(const std::string& value, size_t& result) const {
 
 	if (value.empty())
 		return false;
+
+	for (size_t i = 0; i < value.size(); i++) {
+		unsigned char c = static_cast<unsigned char>(value[i]);
+		if (!std::isxdigit(c))
+			return false;
+	}
 
 	try {
 		size_t parsedCharacters = 0;
