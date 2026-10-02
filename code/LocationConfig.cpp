@@ -59,7 +59,6 @@ void LocationConfig::setUploadStore(const std::vector<std::string>& fspath){
 
 void LocationConfig::setAutoIndex(const std::vector<std::string>& indexes){
 
-	// if (indexes.size() != 1 || !checkFSPath(indexes[0]))
 	if (indexes.size() != 1 || (indexes[0] != "on" && indexes[0] != "off"))
 
 		throw std::runtime_error("Incorrect AutoIndex in configuration file");
@@ -93,7 +92,7 @@ void LocationConfig::setIndex(const std::vector<std::string>& indpaths){
 };
 
 void LocationConfig::setCgiExtension(const std::vector<std::string>& cgiexs){
-	// Validate each extension
+
 	for (const std::string& ext : cgiexs) {
 		if (ext.empty() || ext[0] != '.' || ext.find('/') != std::string::npos || ext.find(' ') != std::string::npos)
 			throw std::runtime_error("Invalid CGI extension in configuration file");

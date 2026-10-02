@@ -74,14 +74,12 @@ class ServerManager {
 		
 	public: 
 		std::string buildCgiResponse(const CgiResult& result, const HTTPRequest &request);
-		// buildCgiResponse is out in the public only beucase of the TestMain.cpp -> move it back to private once the tests are removed? 
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);
 		const std::map<int, std::vector<ServerConfig>>& getServerManager() const;
 		const ServerConfig& getClientServerManager(int serverIndex, const std::string& host) const;
 		void initialize(const std::vector<ServerConfig>& servers);
 		void run();
 
-		// for CGI stage
 		void addFd(int fd, FdType type, int clientFd);
 		void removeFd(int fd);
 		void unregisterFd(int fd);

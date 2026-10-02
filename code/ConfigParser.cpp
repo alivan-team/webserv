@@ -61,7 +61,6 @@ void ConfigParser::parse(const std::string& filename)
 {
 
 	std::ifstream file(filename.c_str());
-	// check currect file
 
 	if (!file) {
 		throw std::runtime_error("Cannot open config file");

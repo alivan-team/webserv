@@ -16,7 +16,7 @@ class HTTPRequest{
 		std::string _path;
 		std::string _query;
 		std::string _version;
-		std::map<std::string, std::string> _headers; // "key" -> "value";
+		std::map<std::string, std::string> _headers;
 		const std::string* _requestBuffer;
 		size_t _bodyOffset;
 		size_t _bodySize;

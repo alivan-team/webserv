@@ -25,9 +25,7 @@ void printDebug(std::string title, const size_t& value) {
 
 void printDebug(std::string title, const std::string& str) {
 	std::cout << title;
-	// for (int value : str)
-		std::cout << str << " ";
-
+	std::cout << str << " ";
 	std::cout << "\n";
 }
 

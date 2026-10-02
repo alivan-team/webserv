@@ -26,8 +26,6 @@ static bool validServerName(const std::string& name) {
 
 void ServerConfig::setPort(const std::vector<std::string>& port) {
 
-	// _port.pop_back();
-	// std::cout << "Setport -> " << port.size() << "post var --> " << port[0] << port[1] << std::endl;
 	if (port.size() != 1)
 		throw std::runtime_error("Incorrect port");
 
@@ -117,7 +115,6 @@ void ServerConfig::setIndex(const std::vector<std::string>& index_name) {
 
 void ServerConfig::setClientMaxBodySize(const std::vector<std::string>& client_max_body_size) {
 
-	// char *end;
 	errno = 0;
 
 	if (client_max_body_size.size() != 1)

@@ -43,7 +43,6 @@ void MultipartPart::setName(const std::string& name)
 void MultipartPart::setFilename(const std::string& filename)
 {
 	_filename = filename;
-	// std::cout << "Filename: " << filename << std::endl;
 }
 
 void MultipartPart::setDataOffset(size_t offset)

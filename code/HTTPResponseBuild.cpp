@@ -619,7 +619,6 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request) {
 };
 
 // HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER
-//  AUTO INDEX
 
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, const ServerConfig &servConf, const std::string &fullPath, const std::string &requestPath) {
 
@@ -759,7 +758,7 @@ bool HTTPResponseBuild::isDirectory(const std::string &path)
 	if (stat(path.c_str(), &st) != 0)
 		return false;
 
-	return S_ISDIR(st.st_mode); // S_ISDIR(st.st_mode) asks -> "Do the type bits inside st_mode indicate a directory?"
+	return S_ISDIR(st.st_mode);
 }
 
 std::string HTTPResponseBuild::findIndexFile(std::string fullPath, const LocationConfig &location, const ServerConfig &servConf) {
