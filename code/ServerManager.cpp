@@ -388,41 +388,6 @@ void ServerManager::checkCgiTimeouts() {
 	}
 }
 
-void ServerManager::checkCgiTimeouts() {
-
-	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-	std::map<int, Client>::iterator it = _clients.begin();
-	
-	while (it != _clients.end()) {
-		
-		int clientFd = it->first;
-
-		 if (it->second.getPendingRemoval()) {
-			it++;
-			continue;
-		}
-
-		if (it->second.getCgiState() != CGI_NONE) {
-			it++;
-			continue ;
-		}
-		std::chrono::seconds timeLeft = std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActivity());
-		
-		++it;
-
-		if (timeLeft.count() > 30) {
-
-			for (size_t j = 0; j < _pollfds.size(); j++) {
-
-				if (_pollfds[j].fd ==clientFd) {
-					removeClient(j);
-					break ;
-				}
-			}
-		}
-	}
-};
-
 bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf) {
 
 	client.resetCgiForNewRequest();
@@ -662,67 +627,4 @@ void ServerManager::setFdEvents(int fd, short events)
 			return;
 		}
 	}
-}
-
-bool ServerManager::writeToCgi(int fd, int clientFd)
-{
-	Client& client = _clients.at(clientFd);
-	const HTTPRequest& request = client.getRequest();
-
-	size_t bodySize = request.getBodySize();
-	size_t inputOffset = client.getCgiInputOffset();
-
-	if (inputOffset >= bodySize)
-		return true;
-
-	size_t bodyOffset = request.getBodyOffset();
-	size_t writeOffset = bodyOffset + inputOffset;
-	size_t remaining = bodySize - inputOffset;
-
-	const std::string& buffer = request.getRequestBuffer();
-
-	ssize_t written = write(fd, buffer.data() + writeOffset, remaining);
-
-	if (written > 0)
-	{
-		inputOffset += static_cast<size_t>(written);
-		client.setCgiInputOffset(inputOffset);
-
-		return inputOffset >= bodySize;
-	}
-
-	return false;
-}
-
-bool ServerManager::readFromCgi(int fd, int clientFd)
-{
-	Client& client = _clients.at(clientFd);
-
-	char buffer[4096];
-	ssize_t bytes = read(fd, buffer, sizeof(buffer));
-	std::cerr << "CGI read bytes: " << bytes << std::endl;
-
-	if (bytes > 0)
-	{
-		std::string output = client.getCgiOutput();
-		output.append(buffer, static_cast<size_t>(bytes));
-		client.setCgiOutput(output);
-		return false;
-	}
-
-	if (bytes == 0)
-		return true;
-
-	return false;
-}
-
-size_t ServerManager::findClientIndex(int clientFd) const
-{
-	for (size_t i = 0; i < _pollfds.size(); ++i)
-	{
-		if (_pollfds[i].fd == clientFd)
-			return i;
-	}
-
-	return _pollfds.size();
 }
