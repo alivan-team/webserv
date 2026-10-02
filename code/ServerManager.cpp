@@ -388,6 +388,41 @@ void ServerManager::checkCgiTimeouts() {
 	}
 }
 
+void ServerManager::removeTimeOutClients() {
+
+	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+	std::map<int, Client>::iterator it = _clients.begin();
+	
+	while (it != _clients.end()) {
+		
+		int clientFd = it->first;
+
+		 if (it->second.getPendingRemoval()) {
+			it++;
+			continue;
+		}
+
+		if (it->second.getCgiState() != CGI_NONE) {
+			it++;
+			continue ;
+		}
+		std::chrono::seconds timeLeft = std::chrono::duration_cast<std::chrono::seconds>(now - it->second.getLastActivity());
+		
+		++it;
+
+		if (timeLeft.count() > 30) {
+
+			for (size_t j = 0; j < _pollfds.size(); j++) {
+
+				if (_pollfds[j].fd ==clientFd) {
+					removeClient(j);
+					break ;
+				}
+			}
+		}
+	}
+};
+
 bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const CgiRoute& route, const ServerConfig& servConf) {
 
 	client.resetCgiForNewRequest();
