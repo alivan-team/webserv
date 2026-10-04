@@ -3,6 +3,62 @@
 #include <iostream>
 #include <algorithm>
 
+namespace {
+std::string multipartBoundary(const std::string& contentType, size_t start)
+{
+	while (start < contentType.size()) {
+		while (start < contentType.size() && (contentType[start] == ';'
+			|| contentType[start] == ' ' || contentType[start] == '\t'))
+			++start;
+		if (start == contentType.size())
+			break;
+		const size_t equals = contentType.find('=', start);
+		const size_t separator = contentType.find(';', start);
+		if (equals == std::string::npos || (separator != std::string::npos && separator < equals))
+			throw HTTPParseException(400, "Invalid multipart parameter");
+		std::string name = toLower(contentType.substr(start, equals - start));
+		while (!name.empty() && (name.back() == ' ' || name.back() == '\t'))
+			name.pop_back();
+		start = equals + 1;
+		while (start < contentType.size() && (contentType[start] == ' ' || contentType[start] == '\t'))
+			++start;
+		std::string value;
+		if (start < contentType.size() && contentType[start] == '"') {
+			++start;
+			bool closed = false;
+			while (start < contentType.size()) {
+				char c = contentType[start++];
+				if (c == '"') { closed = true; break; }
+				if (c == '\\') {
+					if (start == contentType.size())
+						throw HTTPParseException(400, "Invalid quoted multipart parameter");
+					c = contentType[start++];
+				}
+				value += c;
+			}
+			if (!closed)
+				throw HTTPParseException(400, "Unclosed multipart parameter");
+			while (start < contentType.size() && (contentType[start] == ' ' || contentType[start] == '\t'))
+				++start;
+			if (start < contentType.size() && contentType[start] != ';')
+				throw HTTPParseException(400, "Invalid quoted multipart parameter");
+		} else {
+			const size_t end = contentType.find(';', start);
+			value = contentType.substr(start, end == std::string::npos ? end : end - start);
+			while (!value.empty() && (value.back() == ' ' || value.back() == '\t'))
+				value.pop_back();
+			start = end == std::string::npos ? contentType.size() : end;
+		}
+		if (name == "boundary") {
+			if (value.empty())
+				throw HTTPParseException(400, "Empty multipart boundary");
+			return value;
+		}
+	}
+	throw HTTPParseException(400, "Missing multipart boundary");
+}
+}
+
 std::string HTTPRequestParser::trim(const std::string &text) const {
 
 	size_t begin = 0;
@@ -147,21 +203,15 @@ HTTPRequest HTTPRequestParser::parse(const std::string &buffer, size_t requestSi
 	it = allHeaders.find("content-type");
 
 	if (it != allHeaders.end()) {
-		size_t semicolon = it->second.find(";");
-		std::string lowSecond = toLower(it->second);
-		if (semicolon != std::string::npos) {
-			if (trim(lowSecond.substr(0,semicolon)) =="multipart/form-data") {
-				size_t boundPos = lowSecond.find("boundary=");
-				if (boundPos != std::string::npos) {
-					httpparseresult.setBodyType(BODY_MULTIPART);
-					httpparseresult.setBoundary(it->second.substr(boundPos + 9));
-				}
-			}
-			else
-				httpparseresult.setBodyType(BODY_RAW);
-		}
-		else
+		const size_t semicolon = it->second.find(';');
+		const std::string mediaType = trim(toLower(it->second.substr(0, semicolon)));
+		if (mediaType == "multipart/form-data") {
+			const size_t parameters = semicolon == std::string::npos ? it->second.size() : semicolon + 1;
+			httpparseresult.setBoundary(multipartBoundary(it->second, parameters));
+			httpparseresult.setBodyType(BODY_MULTIPART);
+		} else {
 			httpparseresult.setBodyType(BODY_RAW);
+		}
 	}
 
 	size_t bodyOffset = headersEnd + 4;

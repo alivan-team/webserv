@@ -1,5 +1,8 @@
 #include "./hpp/LocationConfig.hpp"
 #include "HelperFunctions.hpp"
+#include <filesystem>
+#include <sys/stat.h>
+#include <unistd.h>
 
 LocationConfig::LocationConfig()
 	: _uriPath(),
@@ -93,10 +96,16 @@ void LocationConfig::setIndex(const std::vector<std::string>& indpaths){
 };
 
 void LocationConfig::setCgiExtension(const std::vector<std::string>& cgiexs){
+	if (cgiexs.empty())
+		throw std::runtime_error("Missing CGI extensions in configuration file");
 	// Validate each extension
 	for (const std::string& ext : cgiexs) {
-		if (ext.empty() || ext[0] != '.' || ext.find('/') != std::string::npos || ext.find(' ') != std::string::npos)
+		if (ext.size() < 2 || ext[0] != '.' || ext.find('/') != std::string::npos || ext.find(' ') != std::string::npos)
 			throw std::runtime_error("Invalid CGI extension in configuration file");
+	}
+	for (size_t i = 0; i < cgiexs.size(); ++i) {
+		if (std::find(cgiexs.begin(), cgiexs.begin() + i, cgiexs[i]) != cgiexs.begin() + i)
+			throw std::runtime_error("Duplicate CGI extension in configuration file");
 	}
 	_cgi_extensions = cgiexs;
 	// printDebug("_cgi_extensions > ", _cgi_extensions);
@@ -112,13 +121,26 @@ void LocationConfig::setCgiPath(const std::vector<std::string>& cgipath)
 	if (!_cgi_extensions.empty() && cgipath.size() != _cgi_extensions.size())
 		throw std::runtime_error("CGI extensions and CGI paths count mismatch");
 
+	std::vector<std::string> validatedPaths;
 	for (const std::string& path : cgipath)
 	{
 		if (!checkFSPath(path))
 			throw std::runtime_error("Incorrect CGI path in configuration file");
-		_cgi_paths.push_back(path);
+		struct stat status;
+		if (stat(path.c_str(), &status) != 0 || !S_ISREG(status.st_mode)
+			|| access(path.c_str(), X_OK) != 0)
+			throw std::runtime_error("CGI interpreter must be an executable regular file: " + path);
+		// CGI runs after chdir(), so preserve the interpreter's absolute path.
+		validatedPaths.push_back(std::filesystem::absolute(path).lexically_normal().string());
 	}
+	_cgi_paths = validatedPaths;
 	// printDebug("_cgi_paths > ", _cgi_paths);
+}
+
+void LocationConfig::validateCgiConfig() const
+{
+	if (_cgi_extensions.size() != _cgi_paths.size())
+		throw std::runtime_error("Location " + _uriPath + ": cgi_extension and cgi_path must be paired");
 }
 
 void LocationConfig::setRedirect(const std::vector<std::string>& redirpath){

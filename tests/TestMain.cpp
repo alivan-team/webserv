@@ -180,6 +180,106 @@ void testConfigParser()
 				"unknown directives are rejected");
 }
 
+void testCgiConfigurationValidation()
+{
+	char directoryTemplate[] = "/tmp/webserv-cgi-config-XXXXXX";
+	char* directory = mkdtemp(directoryTemplate);
+	check(directory != NULL, "CGI configuration fixture directory is created");
+	if (!directory)
+		return;
+	const std::string base(directory);
+	const std::string interpreter = base + "/interpreter";
+	std::ofstream(interpreter) << "#!/bin/sh\nexit 0\n";
+	chmod(interpreter.c_str(), 0700);
+	const std::string config = base + "/test.conf";
+	const auto parseDirectives = [&](const std::string& directives) {
+		std::ofstream file(config);
+		file << "server { listen 8088; location /cgi-bin { allow_methods GET POST; "
+			 << directives << " } }\n";
+		file.close();
+		ConfigParser parser;
+		parser.parse(config);
+	};
+	parseDirectives("cgi_extension .py; cgi_path " + interpreter + ";");
+	parseDirectives("cgi_path " + interpreter + "; cgi_extension .py;");
+	checkThrows([&] { parseDirectives("cgi_extension .py;"); }, "extension without interpreter is rejected");
+	checkThrows([&] { parseDirectives("cgi_path " + interpreter + ";"); }, "interpreter without extension is rejected");
+	checkThrows([&] { parseDirectives("cgi_extension .py .sh; cgi_path " + interpreter + ";"); }, "mismatched CGI pairs are rejected");
+	checkThrows([&] { parseDirectives("cgi_path " + interpreter + "; cgi_extension .py .sh;"); }, "mismatched CGI pairs in reverse order are rejected");
+	checkThrows([&] { parseDirectives("cgi_extension .py; cgi_path " + base + "/missing;"); }, "missing CGI interpreter is rejected");
+	checkThrows([&] { parseDirectives("cgi_extension .py; cgi_path " + base + ";"); }, "directory used as interpreter is rejected");
+	checkThrows([&] { parseDirectives("cgi_extension .; cgi_path " + interpreter + ";"); }, "empty CGI extension suffix is rejected");
+	checkThrows([&] { parseDirectives("cgi_extension .py .py; cgi_path " + interpreter + " " + interpreter + ";"); }, "ambiguous duplicate CGI extensions are rejected");
+	chmod(interpreter.c_str(), 0600);
+	checkThrows([&] { parseDirectives("cgi_extension .py; cgi_path " + interpreter + ";"); }, "non-executable interpreter is rejected");
+	unlink(config.c_str());
+	unlink(interpreter.c_str());
+	rmdir(directory);
+}
+
+void testCgiRoutingAndMissingUploadStore()
+{
+	char directoryTemplate[] = "/tmp/webserv-cgi-route-XXXXXX";
+	char* directory = mkdtemp(directoryTemplate);
+	check(directory != NULL, "CGI route fixture directory is created");
+	if (!directory)
+		return;
+	const std::string base(directory);
+	std::ofstream(base + "/existing.py") << "print('Content-Type: text/plain\\n\\nOK')\n";
+	mkdir((base + "/directory.py").c_str(), 0700);
+	LocationConfig location;
+	location.setUriPath("/cgi-bin");
+	location.setRoot({base});
+	location.setAllowMethods({"GET", "POST"});
+	location.setCgiExtension({".py"});
+	location.setCgiPath({"/bin/sh"});
+	location.validateCgiConfig();
+	ServerConfig server;
+	server.addLocation(location);
+	for (const std::string method : {"GET", "POST"}) {
+		for (const std::string name : {"missing.py", "directory.py"}) {
+			const std::string raw = method + " /cgi-bin/" + name + " HTTP/1.1\r\nContent-Length: 0\r\n\r\n";
+			HTTPRequest request = HTTPRequestParser().parse(raw, raw.size());
+			CgiRoute route;
+			int error = 0;
+			check(!HTTPResponseBuild::resolveCgiRoute(request, server, route, error) && error == 404,
+				method + " absent/non-file CGI script produces 404 without falling through");
+		}
+	}
+	std::string requestBuffer;
+	const auto requestFor = [&requestBuffer](const std::string& path) {
+		requestBuffer = "POST " + path + " HTTP/1.1\r\nContent-Length: 0\r\n\r\n";
+		return HTTPRequestParser().parse(requestBuffer, requestBuffer.size());
+	};
+	CgiRoute route;
+	int error = 999;
+	check(HTTPResponseBuild::resolveCgiRoute(requestFor("/cgi-bin/existing.py"), server, route, error)
+		&& error == 0, "existing CGI accepts POST without upload_store");
+	check(!HTTPResponseBuild::resolveCgiRoute(requestFor("/cgi-bin/plain.txt"), server, route, error)
+		&& error == 0, "ordinary URL is distinguished from missing CGI script");
+	check(HTTPResponseBuild::build(requestFor("/cgi-bin/plain.txt"), server).getStatusCode() == 403,
+		"ordinary POST without upload_store is forbidden, not a server failure");
+	LocationConfig getOnly;
+	getOnly.setUriPath("/get-only");
+	getOnly.setAllowMethods({"GET"});
+	server.addLocation(getOnly);
+	check(HTTPResponseBuild::build(requestFor("/get-only/file"), server).getStatusCode() == 405,
+		"disallowed POST retains 405 even without upload_store");
+	LocationConfig redirect;
+	redirect.setUriPath("/redirect");
+	redirect.setCgiExtension({".py"});
+	redirect.setCgiPath({"/bin/sh"});
+	redirect.setRedirect({"301", "/new"});
+	server.addLocation(redirect);
+	check(!HTTPResponseBuild::resolveCgiRoute(requestFor("/redirect/missing.py"), server, route, error)
+		&& error == 0, "redirect is not mistaken for missing CGI");
+	check(HTTPResponseBuild::build(requestFor("/redirect/missing.py"), server).getStatusCode() == 301,
+		"redirect works without upload_store");
+	unlink((base + "/existing.py").c_str());
+	rmdir((base + "/directory.py").c_str());
+	rmdir(directory);
+}
+
 void testHttpRequestParser()
 {
 	HTTPRequestParser parser;
@@ -2025,127 +2125,132 @@ void testMultipartLowercaseContentDisposition() {
 		throw std::runtime_error("Filename from lowercase content-disposition was not parsed");
 }
 
-// void testQuotedMultipartBoundary() {
+void testQuotedMultipartBoundary() {
 
-// 	HTTPRequestParser parser;
+	HTTPRequestParser parser;
 
-// 	std::string request =
-// 		"POST /upload HTTP/1.1\r\n"
-// 		"Host: localhost\r\n"
-// 		"Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"
-// 		"Content-Length: 0\r\n"
-// 		"\r\n";
+	std::string request =
+		"POST /upload HTTP/1.1\r\n"
+		"Host: localhost\r\n"
+		"Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"
+		"Content-Length: 0\r\n"
+		"\r\n";
 
-// 	HTTPRequest parsed = parser.parse(request, request.size());
+	HTTPRequest parsed = parser.parse(request, request.size());
 
-// 	if (parsed.getBoundary() != "AaB03x")
-// 		throw std::runtime_error("Quoted multipart boundary was not normalized correctly");
-// }
+	if (parsed.getBoundary() != "AaB03x")
+		throw std::runtime_error("Quoted multipart boundary was not normalized correctly");
+}
 
-// void testMultipartBoundaryPrefixInsideData() {
+void testMultipartBoundaryPrefixInsideData() {
 
-// 	std::string body =
-// 		"--BOUNDARY\r\n"
-// 		"Content-Disposition: form-data; name=\"file\"; filename=\"data.txt\"\r\n"
-// 		"Content-Type: text/plain\r\n"
-// 		"\r\n"
-// 		"first line\r\n"
-// 		"--BOUNDARYXYZ\r\n"
-// 		"still file data\r\n"
-// 		"--BOUNDARY--\r\n";
+	std::string body =
+		"--BOUNDARY\r\n"
+		"Content-Disposition: form-data; name=\"file\"; filename=\"data.txt\"\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n"
+		"first line\r\n"
+		"--BOUNDARYXYZ\r\n"
+		"still file data\r\n"
+		"--BOUNDARY--\r\n";
 
-// 	MultipartParser parser(body, 0, body.size(), "BOUNDARY");
+	MultipartParser parser(body, 0, body.size(), "BOUNDARY");
 
-// 	std::vector<MultipartPart> parts = parser.parse();
+	std::vector<MultipartPart> parts = parser.parse();
 
-// 	if (parts.size() != 1)
-// 		throw std::runtime_error("Boundary-like file data confused multipart parser");
+	if (parts.size() != 1)
+		throw std::runtime_error("Boundary-like file data confused multipart parser");
 
-// 	std::string expected =
-// 		"first line\r\n"
-// 		"--BOUNDARYXYZ\r\n"
-// 		"still file data";
+	std::string expected =
+		"first line\r\n"
+		"--BOUNDARYXYZ\r\n"
+		"still file data";
 
-//     std::string actualData = body.substr(
-//         parts[0].getDataOffset(),
-//         parts[0].getDataSize()
-//     );
+    std::string actualData = body.substr(
+        parts[0].getDataOffset(),
+        parts[0].getDataSize()
+    );
 
-// 	if (actualData != expected)
-// 		throw std::runtime_error("Multipart payload was truncated by boundary prefix");
-// }
+	if (actualData != expected)
+		throw std::runtime_error("Multipart payload was truncated by boundary prefix");
+}
 
-//  void testRawUploadFilenameUniqueness() {
+ void testRawUploadFilenameUniqueness() {
 
-// 	char temporaryDirectory[] = "/tmp/webserv-upload-unique-XXXXXX";
-// 	char* uploadStore = mkdtemp(temporaryDirectory);
+	char temporaryDirectory[] = "/tmp/webserv-upload-unique-XXXXXX";
+	char* uploadStore = mkdtemp(temporaryDirectory);
 
-// 	if (uploadStore == NULL)
-// 		throw std::runtime_error("mkdtemp failed");
+	if (uploadStore == NULL)
+		throw std::runtime_error("mkdtemp failed");
 
-// 	ServerConfig server;
-// 	server.setRoot({"./site/www"});
+	ServerConfig server;
+	server.setRoot({"./site/www"});
 
-// 	LocationConfig location;
-// 	location.setUriPath("/upload");
-// 	location.setRoot({"./site/www/upload"});
-// 	location.setUploadStore({uploadStore});
-// 	location.setAllowMethods({"POST"});
+	LocationConfig location;
+	location.setUriPath("/upload");
+	location.setRoot({"./site/www/upload"});
+	location.setUploadStore({uploadStore});
+	location.setAllowMethods({"POST"});
 
-// 	server.addLocation(location);
+	server.addLocation(location);
 
-// 	HTTPRequest request1;
-// 	request1.setMethod(Method::POST);
-// 	request1.setPath("/upload");
-//     std::string buffer1 = "one";
-//     request1.setBodyLocation(buffer1, 0, buffer1.size());
+	HTTPRequest request1;
+	HTTPRequest request2;
+	request1.setVersion("1.1");
+	request2.setVersion("1.1");
+	
+	request1.setMethod(Method::POST);
+	request1.setPath("/upload");
+    std::string buffer1 = "one";
+    request1.setBodyLocation(buffer1, 0, buffer1.size());
 
-// 	HTTPRequest request2;
-// 	request2.setMethod(Method::POST);
-// 	request2.setPath("/upload");
-// 	std::string buffer2 = "two";
-//     request2.setBodyLocation(buffer2, 0, buffer2.size());
 
-// 	HTTPResponseBuild::build(request1, server);
-// 	HTTPResponseBuild::build(request2, server);
+	request2.setMethod(Method::POST);
+	request2.setPath("/upload");
+	std::string buffer2 = "two";
+    request2.setBodyLocation(buffer2, 0, buffer2.size());
 
-// 	DIR* dir = opendir(uploadStore);
+	HTTPResponseBuild::build(request1, server);
+	HTTPResponseBuild::build(request2, server);
 
-// 	if (dir == NULL)
-// 		throw std::runtime_error("Could not open upload directory");
+	DIR* dir = opendir(uploadStore);
 
-// 	int fileCount = 0;
+	if (dir == NULL)
+		throw std::runtime_error("Could not open upload directory");
 
-// 	struct dirent* entry;
+	int fileCount = 0;
 
-// 	while ((entry = readdir(dir)) != NULL) {
+	struct dirent* entry;
 
-// 		std::string name = entry->d_name;
+	while ((entry = readdir(dir)) != NULL) {
 
-// 		if (name != "." && name != "..")
-// 			++fileCount;
-// 	}
+		std::string name = entry->d_name;
 
-// 	closedir(dir);
+		if (name != "." && name != "..")
+			++fileCount;
+	}
 
-// 	if (fileCount < 2)
-// 		throw std::runtime_error("Two uploads created the same filename");
-// }
+	closedir(dir);
 
-// void testEncodedPathTraversal() {
+	if (fileCount < 2)
+		throw std::runtime_error("Two uploads created the same filename");
+}
 
-// 	ServerConfig server;
-// 	server.setRoot({"./site/www"});
+void testEncodedPathTraversal() {
 
-// 	HTTPRequest request;
-// 	request.setMethod(Method::GET);
-// 	request.setPath("/%2e%2e/secret.txt");
+	ServerConfig server;
+	server.setRoot({"./site/www"});
 
-// 	HTTPResponse response = HTTPResponseBuild::build(request, server);
+	HTTPRequest request;
+	request.setVersion("1.1");
+	request.setMethod(Method::GET);
+	request.setPath("/%2e%2e/secret.txt");
 
-// 	if (response.getStatusCode() != 403)
-// 		throw std::runtime_error("Encoded path traversal was not rejected with 403");
-// }
+	HTTPResponse response = HTTPResponseBuild::build(request, server);
+
+	if (response.getStatusCode() != 403)
+		throw std::runtime_error("Encoded path traversal was not rejected with 403");
+}
 
 void testContentLengthPipelining() {
 
@@ -2180,6 +2285,8 @@ int main()
 	run("LocationConfig", testLocationConfig);
 	run("ServerConfig", testServerConfig);
 	run("ConfigParser", testConfigParser);
+	run("CGI configuration validation", testCgiConfigurationValidation);
+	run("CGI routing and missing upload store", testCgiRoutingAndMissingUploadStore);
 	run("HTTPRequestParser", testHttpRequestParser);
 	run("HTTPRequest body location", testHttpRequestBodyLocation);
 	run("POST upload", testPostUpload);
@@ -2216,10 +2323,10 @@ int main()
     run("BREAKER chunk + sign", testInvalidChunkSizePlusSign);
     run("BREAKER chunk 0x prefix", testInvalidChunkSize0xPrefix);
     run("BREAKER multipart lowercase header", testMultipartLowercaseContentDisposition);
-    // run("BREAKER quoted multipart boundary", testQuotedMultipartBoundary);
-    // run("BREAKER multipart boundary prefix in data", testMultipartBoundaryPrefixInsideData);
-    // run("BREAKER raw upload uniqueness", testRawUploadFilenameUniqueness);
-    // run("BREAKER encoded traversal", testEncodedPathTraversal);
+    run("BREAKER quoted multipart boundary", testQuotedMultipartBoundary);
+    run("BREAKER multipart boundary prefix in data", testMultipartBoundaryPrefixInsideData);
+    run("BREAKER raw upload uniqueness", testRawUploadFilenameUniqueness);
+    run("BREAKER encoded traversal", testEncodedPathTraversal);
     run("BREAKER pipelined Content-Length", testContentLengthPipelining);
 	
 	if (g_failures != 0) {

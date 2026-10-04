@@ -16,7 +16,6 @@ SRCS		:= main.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
 			   code/HelperFunctions.cpp \
-			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/ClientRequestParsing.cpp\
 			   code/HTTPRequest.cpp \
@@ -26,6 +25,7 @@ SRCS		:= main.cpp \
 			   code/HTTPParseException.cpp \
 			   code/MultipartPart.cpp \
 			   code/MultipartParser.cpp \
+# 			   code/printDebug.cpp \
 			   
 TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ConfigParser.cpp \
@@ -34,7 +34,6 @@ TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ServerConfig.cpp \
 			   code/LocationConfig.cpp \
 			   code/HelperFunctions.cpp \
-			   code/printDebug.cpp \
 			   code/ClientData.cpp \
 			   code/ClientRequestParsing.cpp\
 			   code/HTTPRequest.cpp \
@@ -44,6 +43,7 @@ TEST_SRCS	:= tests/TestMain.cpp \
 			   code/HTTPParseException.cpp \
 			   code/MultipartPart.cpp \
 			   code/MultipartParser.cpp \
+# 			   code/printDebug.cpp \
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS		:= $(OBJS:.o=.d)

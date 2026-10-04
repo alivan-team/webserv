@@ -101,6 +101,7 @@ void ConfigParser::parse(const std::string& filename)
 						throw std::runtime_error("Missing closing brace for location");
 
 					location.setUriPath(uripath);
+					location.validateCgiConfig();
 					server.addLocation(location);
 					i++;
 				} else {

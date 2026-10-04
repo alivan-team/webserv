@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <dirent.h>
 #include <fcntl.h>
-#include <cerrno>
 #include <ctime>
 
 class HTTPResponseBuild {
@@ -56,6 +55,7 @@ class HTTPResponseBuild {
 		static std::string decideConnection(const HTTPRequest& request);
 		static HTTPResponse makeErrorResponse(int code, const HTTPRequest& request, const ServerConfig& servConf);
 		static HTTPResponse makeEarlyErrorResponse(int code, const ServerConfig& servConf);
+		// false + errorCode == 0: ordinary route; false + errorCode != 0: routing failure.
 		static bool resolveCgiRoute(const HTTPRequest& request, const ServerConfig& servConf, 
 			CgiRoute& route, int& errorCode);
 };
