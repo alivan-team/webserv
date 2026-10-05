@@ -41,6 +41,14 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 	if (location->hasRedirect())
 		return false;
 
+	Method method = request.getMethod();
+	if ((method == Method::GET && !location->isGetAllowed()) || 
+		(method == Method::POST && !location->isPostAllowed()) || 
+		(method == Method::DELETE && !location->isDeleteAllowed())) {
+		errorCode = 405;
+		return false;
+	}
+	
 	// Identify CGI from the URL before checking whether the script exists.
 	const size_t dot = path.find_last_of('.');
 	const size_t slash = path.find_last_of('/');

@@ -52,7 +52,8 @@ void ServerManager::removeClient(size_t index) {
 
 	if (client.getCgiPid() > 0) {
 
-		unregisterFd(clientFd);
+		// unregisterFd(clientFd);
+		removeFd(clientFd);
 
 		kill(client.getCgiPid(), SIGKILL);
 		client.setPendingRemoval(true);
@@ -501,6 +502,7 @@ bool ServerManager::startCgi(Client& client, const HTTPRequest& request, const C
 	addFd(outputPipe[0], FD_CGI_OUTPUT, client.getClientFd());
 
 	setFdEvents(inputPipe[1], POLLOUT);
+	setFdEvents(client.getClientFd(), 0);
 
 	return true;
 }
@@ -528,6 +530,8 @@ bool ServerManager::processRequestBuffer(size_t index) {
 
 	int clientFd = _pollfds[index].fd;
 	Client& client = _clients.at(clientFd);
+	if (client.getCgiState() != CGI_NONE)
+		return false;
 	const ServerConfig* serverConfig = NULL;
 
 	RequestState state = getRequestState(client, serverConfig);
