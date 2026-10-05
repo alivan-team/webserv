@@ -5,15 +5,13 @@ static bool isValidHeaderName(const std::string& name)
 	if (name.empty())
 		return false;
 
-	for (size_t i = 0; i < name.size(); ++i)
-	{
+	for (size_t i = 0; i < name.size(); ++i) {
 		unsigned char c = static_cast<unsigned char>(name[i]);
 
 		if (std::isalnum(c))
 			continue;
 
-		switch (c)
-		{
+		switch (c) {
 			case '!':
 			case '#':
 			case '$':
