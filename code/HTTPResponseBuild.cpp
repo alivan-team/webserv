@@ -362,15 +362,22 @@ HTTPResponse HTTPResponseBuild::handlePost(
 
 	HTTPResponse res;
 
-	std::string body =
-		readReadFile("./site/www/post-result.html");
+	std::string body = "<!DOCTYPE html>"
+		"<html>"
+		"<head><title>201 Created</title></head>"
+		"<body>"
+		"<h1>201 Created</h1>"
+		"<p>Upload successful.</p>"
+		"</body>"
+		"</html>";
+		// readReadFile("./site/www/post-result.html");
 
 	res.setStatusCode(201);
 	res.setStatus(getStatusText(201));
 	res.setVersion(request.getVersion());
 	res.setHeader(
 		"Content-Type",
-		getContentType("./site/www/post-result.html"));
+		"text/html");
 	res.setHeader(
 		"Content-Length",
 		std::to_string(body.size()));
