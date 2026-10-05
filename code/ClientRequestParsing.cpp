@@ -1,5 +1,44 @@
 #include "./hpp/ClientData.hpp"
 
+static bool isValidHeaderName(const std::string& name)
+{
+	if (name.empty())
+		return false;
+
+	for (size_t i = 0; i < name.size(); ++i)
+	{
+		unsigned char c = static_cast<unsigned char>(name[i]);
+
+		if (std::isalnum(c))
+			continue;
+
+		switch (c)
+		{
+			case '!':
+			case '#':
+			case '$':
+			case '%':
+			case '&':
+			case '\'':
+			case '*':
+			case '+':
+			case '-':
+			case '.':
+			case '^':
+			case '_':
+			case '`':
+			case '|':
+			case '~':
+				continue;
+
+			default:
+				return false;
+		}
+	}
+
+	return true;
+}
+
 RequestState Client::parseHeaderClient() {
 
 	static const size_t MAX_HEADER_SIZE = 32 * 1024;
@@ -57,12 +96,12 @@ RequestState Client::parseHeaderClient() {
 
 		if (colonmPosition == std::string::npos) 
 			return setRequestError(400);
-		if (colonmPosition == 0)
-			return setRequestError(400);
-		if (std::isspace(static_cast<unsigned char>(line[colonmPosition - 1])))
+		
+		std::string rawHeaderName = line.substr(0, colonmPosition);
+		if (!isValidHeaderName(rawHeaderName))
 			return setRequestError(400);
 
-		std::string headerName = toLower(trim(line.substr(0, colonmPosition)));
+		std::string headerName = toLower(rawHeaderName);
 		std::string headerValue = trim(line.substr(colonmPosition + 1));
 
 		if (headerName.empty()) 
