@@ -228,14 +228,21 @@ std::string ServerManager::buildCgiResponse(const CgiResult& result, const HTTPR
 		response += it->second;
 		response += "\r\n";
 	}
+
+	bool bodyCheck = result.statusCode == 204 || result.statusCode == 304;
+
 	response += "Content-Length: ";
-	response += std::to_string(result.body.size());
+	if (!bodyCheck)
+		response += std::to_string(result.body.size());
+	else 
+		response += "0";
 	response += "\r\n";
 
 	response += "Connection: ";
     response +=  HTTPResponseBuild::decideConnection(request);
     response +=  "\r\n\r\n";
-	response += result.body;
+	if (!bodyCheck)
+		response += result.body;
 
 	return response;
 }
