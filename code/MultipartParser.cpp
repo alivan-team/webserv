@@ -64,12 +64,17 @@ size_t MultipartParser::findBoundary(size_t start) const
 			|| position + delimiter.size() > bodyEnd)
 			return std::string::npos;
 
-		if (position == _bodyOffset)
-			return position;
-
-		if (position >= _bodyOffset + 2
-			&& (*_buffer)[position - 2] == '\r'
-			&& (*_buffer)[position - 1] == '\n')
+		const size_t suffix = position + delimiter.size();
+		const bool lineStart = position == _bodyOffset
+			|| (position >= _bodyOffset + 2 && (*_buffer)[position - 2] == '\r'
+				&& (*_buffer)[position - 1] == '\n');
+		const bool ordinary = suffix + 2 <= bodyEnd
+			&& _buffer->compare(suffix, 2, "\r\n") == 0;
+		const bool closing = suffix + 2 <= bodyEnd
+			&& _buffer->compare(suffix, 2, "--") == 0
+			&& (suffix + 2 == bodyEnd || (suffix + 4 <= bodyEnd
+				&& _buffer->compare(suffix + 2, 2, "\r\n") == 0));
+		if (lineStart && (ordinary || closing))
 			return position;
 
 		position = _buffer->find(delimiter, position + 1);
@@ -117,7 +122,7 @@ void MultipartParser::parseContentDisposition(
 	MultipartPart& part) const
 {
 	const std::string headerName = "Content-Disposition:";
-	const size_t headerStart = headers.find(toLower(headerName));
+	const size_t headerStart = toLower(headers).find(toLower(headerName));
 
 	if (headerStart == std::string::npos)
 		return;

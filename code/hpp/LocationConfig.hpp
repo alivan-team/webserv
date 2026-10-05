@@ -36,6 +36,7 @@ class LocationConfig {
 		void setRoot(const std::vector<std::string>& fspath);
 		void setIndex(const std::vector<std::string>& indpaths);
 		void setCgiExtension(const std::vector<std::string>& cgiexs);
+		void validateCgiConfig() const;
 		void setCgiPath(const std::vector<std::string>& cgipath);
 		void setRedirect(const std::vector<std::string>& redirpath);
 		

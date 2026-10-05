@@ -38,6 +38,26 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 		return false;
 	}
 
+	if (location->hasRedirect())
+		return false;
+
+	// Identify CGI from the URL before checking whether the script exists.
+	const size_t dot = path.find_last_of('.');
+	const size_t slash = path.find_last_of('/');
+	if (dot == std::string::npos || (slash != std::string::npos && dot < slash))
+		return false;
+	const std::string extension = path.substr(dot);
+	const std::vector<std::string>& extensions = location->getCgiExtension();
+	const std::vector<std::string>& cgiPaths = location->getCgiPath();
+	const auto matched = std::find(extensions.begin(), extensions.end(), extension);
+	if (matched == extensions.end())
+		return false;
+	const size_t cgiIndex = static_cast<size_t>(matched - extensions.begin());
+	if (cgiIndex >= cgiPaths.size()) {
+		errorCode = 500;
+		return false;
+	}
+
 	std::string baseDir;
 	std::string fullPath;
 	std::string relativePath = path;
@@ -52,49 +72,44 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 	}
 	else
 	{
-		if (servConf.getRoot().empty() || servConf.getRoot()[0].empty())
+		if (servConf.getRoot().empty() || servConf.getRoot()[0].empty()) {
+			errorCode = 500;
 			return false;
+		}
 
 		baseDir = servConf.getRoot()[0];
 		fullPath = joinPath(servConf.getRoot()[0], path);
 	}
 
-	if (!fileExists(fullPath))
+	std::error_code ec;
+	const std::filesystem::file_status status = std::filesystem::status(fullPath, ec);
+	if (ec || !std::filesystem::exists(status)) {
+		if (!ec || ec == std::errc::no_such_file_or_directory || ec == std::errc::not_a_directory)
+			errorCode = 404;
+		else if (ec == std::errc::permission_denied)
+			errorCode = 403;
+		else
+			errorCode = 500;
 		return false;
-
-	if (!pathInsideBase(baseDir, fullPath))
+	}
+	if (!pathInsideBase(baseDir, fullPath)) {
+		errorCode = 403;
 		return false;
-
-	if (isDirectory(fullPath))
+	}
+	if (!std::filesystem::is_regular_file(status)) {
+		errorCode = 404;
 		return false;
-
-	size_t dot = fullPath.find_last_of('.');
-	if (dot == std::string::npos)
+	}
+	if (!canReadFile(fullPath)) {
+		errorCode = 403;
 		return false;
-
-	std::string extension = fullPath.substr(dot);
-
-	const std::vector<std::string>& extensions = location->getCgiExtension();
-	const std::vector<std::string>& cgiPaths = location->getCgiPath();
-
-	for (size_t i = 0; i < extensions.size(); ++i)
-	{
-		if (extensions[i] == extension)
-		{
-			route.scriptPath = fullPath;
-			route.cgiPath = cgiPaths[i];
-
-			size_t slash = fullPath.find_last_of('/');
-			if (slash == std::string::npos)
-				route.workingDirectory = ".";
-			else
-				route.workingDirectory = fullPath.substr(0, slash);
-
-			return true;
-		}
 	}
 
-	return false;
+	route.scriptPath = fullPath;
+	route.cgiPath = cgiPaths[cgiIndex];
+	const size_t scriptSlash = fullPath.find_last_of('/');
+	route.workingDirectory = scriptSlash == std::string::npos ? "." : fullPath.substr(0, scriptSlash);
+	return true;
 }
 
 HTTPResponse HTTPResponseBuild::build(const HTTPRequest &request, const ServerConfig &servConf) {
@@ -236,7 +251,10 @@ HTTPResponse HTTPResponseBuild::handlePost(
 
 	const std::string &uploadStore = location->getUploadStore();
 
-	if (uploadStore.empty() || !isDirectory(uploadStore) || access(uploadStore.c_str(), W_OK | X_OK) != 0)
+	if (uploadStore.empty())
+		return makeErrorResponse(403, request, servConf);
+
+	if (!isDirectory(uploadStore) || access(uploadStore.c_str(), W_OK | X_OK) != 0)
 	{
 		return makeErrorResponse(500, request, servConf);
 	}
@@ -310,50 +328,29 @@ HTTPResponse HTTPResponseBuild::handlePost(
 	{
 		std::ostringstream name;
 
-		name << "upload-"
-			 << std::time(NULL)
-			 << "-"
-			 << getpid();
-
-		filename = name.str();
+		static unsigned long sequence = 0;
+		do {
+			name.str("");
+			name.clear();
+			name << "upload-" << std::time(NULL) << "-" << getpid() << "-" << ++sequence;
+			filename = name.str();
+		} while (fileExists(joinPath(uploadStore, filename)));
 	}
 
 	const std::string outputPath =
 		joinPath(uploadStore, filename);
 
-	const int outputFd = open(
-		outputPath.c_str(),
-		O_WRONLY | O_CREAT | O_TRUNC,
-		0644);
-
-	if (outputFd < 0)
+	std::ofstream output(outputPath.c_str(), std::ios::binary | std::ios::trunc);
+	if (!output)
 		return makeErrorResponse(500, request, servConf);
 
-	size_t written = 0;
-
-	while (written < dataSize)
-	{
-		ssize_t result = write(
-			outputFd,
-			requestBuffer.data() + dataOffset + written,
-			dataSize - written);
-
-		if (result < 0 && errno == EINTR)
-			continue;
-
-		if (result <= 0)
-		{
-			close(outputFd); 
-			std::error_code ec;
-			std::filesystem::remove(outputPath, ec);
-
-			return makeErrorResponse(500, request, servConf);
-		}
-
-		written += static_cast<size_t>(result);
+	output.write(requestBuffer.data() + dataOffset, static_cast<std::streamsize>(dataSize));
+	output.close();
+	if (!output) {
+		std::error_code ec;
+		std::filesystem::remove(outputPath, ec);
+		return makeErrorResponse(500, request, servConf);
 	}
-
-	close(outputFd);
 
 	HTTPResponse res;
 

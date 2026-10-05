@@ -25,6 +25,7 @@ SRCS		:= main.cpp \
 			   code/HTTPParseException.cpp \
 			   code/MultipartPart.cpp \
 			   code/MultipartParser.cpp \
+# 			   code/printDebug.cpp \
 			   
 TEST_SRCS	:= tests/TestMain.cpp \
 			   code/ConfigParser.cpp \
@@ -42,6 +43,7 @@ TEST_SRCS	:= tests/TestMain.cpp \
 			   code/HTTPParseException.cpp \
 			   code/MultipartPart.cpp \
 			   code/MultipartParser.cpp \
+# 			   code/printDebug.cpp \
 
 OBJS		:= $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS		:= $(OBJS:.o=.d)
