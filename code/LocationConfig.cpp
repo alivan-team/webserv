@@ -46,9 +46,6 @@ void LocationConfig::setAllowMethods(const std::vector<std::string>& methods) {
 		else
 			throw std::runtime_error("Unknown Allow methods in configuration file");
 	}
-	// printDebug("_methods.get > ", _methods.get);
-	// printDebug("_methods.post > ", _methods.post);
-	// printDebug("_methods.del > ", _methods.del);
 };
 
 void LocationConfig::setUploadStore(const std::vector<std::string>& fspath){
@@ -57,7 +54,6 @@ void LocationConfig::setUploadStore(const std::vector<std::string>& fspath){
 		throw std::runtime_error("Incorrect Upload store in configuration file");
 		
 	_upload_store = fspath[0];
-	// printDebug("_upload_store > ", _upload_store);
 };
 
 void LocationConfig::setAutoIndex(const std::vector<std::string>& indexes){
@@ -67,7 +63,6 @@ void LocationConfig::setAutoIndex(const std::vector<std::string>& indexes){
 		throw std::runtime_error("Incorrect AutoIndex in configuration file");
 		
 	_autoIndex = indexes[0] == "on";
-	// printDebug("_autoIndex > ", _autoIndex);
 };
 
 void LocationConfig::setRoot(const std::vector<std::string>& fspath){
@@ -76,7 +71,6 @@ void LocationConfig::setRoot(const std::vector<std::string>& fspath){
 		throw std::runtime_error("Incorrect root in location");
 		
 	_rootPath = fspath[0];
-	// printDebug("_rootPath > ", _rootPath);
 };
 
 void LocationConfig::setIndex(const std::vector<std::string>& indpaths){
@@ -91,13 +85,12 @@ void LocationConfig::setIndex(const std::vector<std::string>& indpaths){
 	}
 		
 	_indpaths.insert(_indpaths.end(), indpaths.begin(), indpaths.end());
-	// printDebug("_indexes: ", _indpaths);
 };
 
 void LocationConfig::setCgiExtension(const std::vector<std::string>& cgiexs){
 	if (cgiexs.empty())
 		throw std::runtime_error("Missing CGI extensions in configuration file");
-	// Validate each extension
+
 	for (const std::string& ext : cgiexs) {
 		if (ext.size() < 2 || ext[0] != '.' || ext.find('/') != std::string::npos || ext.find(' ') != std::string::npos)
 			throw std::runtime_error("Invalid CGI extension in configuration file");
@@ -107,7 +100,6 @@ void LocationConfig::setCgiExtension(const std::vector<std::string>& cgiexs){
 			throw std::runtime_error("Duplicate CGI extension in configuration file");
 	}
 	_cgi_extensions = cgiexs;
-	// printDebug("_cgi_extensions > ", _cgi_extensions);
 	if (!_cgi_paths.empty() && _cgi_paths.size() != _cgi_extensions.size())
 		throw std::runtime_error("CGI extensions and CGI paths count mismatch");
 }
@@ -129,11 +121,9 @@ void LocationConfig::setCgiPath(const std::vector<std::string>& cgipath)
 		if (stat(path.c_str(), &status) != 0 || !S_ISREG(status.st_mode)
 			|| access(path.c_str(), X_OK) != 0)
 			throw std::runtime_error("CGI interpreter must be an executable regular file: " + path);
-		// CGI runs after chdir(), so preserve the interpreter's absolute path.
 		validatedPaths.push_back(std::filesystem::absolute(path).lexically_normal().string());
 	}
 	_cgi_paths = validatedPaths;
-	// printDebug("_cgi_paths > ", _cgi_paths);
 }
 
 void LocationConfig::validateCgiConfig() const
@@ -160,9 +150,6 @@ void LocationConfig::setRedirect(const std::vector<std::string>& redirpath){
 	
 	_redir._number = statusCode;
 	_redir._redirPath = redirpath[1];
-
-	// printDebug("_redir._number > ", _redir._number);
-	// printDebug("_redir._redirPath > ", _redir._redirPath);
 }
 
 const std::string& LocationConfig::getUriPath() const
