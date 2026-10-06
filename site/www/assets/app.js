@@ -68,6 +68,11 @@ document.addEventListener('click', async (event) => {
       });
       setOut('#out-cgi', `POST CGI → HTTP ${response.status}\n${text.slice(0, 900)}`, response.status === 200);
     }
+    if (test === 'cgi-js-get') {
+      const value = encodeURIComponent($('#cgi-name').value);
+      const { response, text } = await request(`/cgi-bin/testjs.js?name=${value}&mode=get`);
+      setOut('#out-cgi', `GET CGI → HTTP ${response.status}\n${text.slice(0, 900)}`, response.status === 200);
+    }
     if (test === 'upload') {
       const fileInput = $('#upload-file');
       if (!fileInput.files.length) {

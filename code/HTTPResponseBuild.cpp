@@ -243,6 +243,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 };
 
 // POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST POST  POST POST POST POST POST POST POST POST  POST POST POST POST POST
+
 HTTPResponse HTTPResponseBuild::handlePost(
 	const HTTPRequest &request,
 	const ServerConfig &servConf, 
@@ -630,7 +631,7 @@ std::string HTTPResponseBuild::decideConnection(const HTTPRequest &request) {
 	return "close";
 };
 
-// HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER
+// HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER HELPER
 
 HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, const ServerConfig &servConf, const std::string &fullPath, const std::string &requestPath) {
 

@@ -1,1 +1,0 @@
-This file exists so the evaluator can press DELETE in the dashboard.
