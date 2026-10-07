@@ -84,7 +84,7 @@ class ServerManager {
 		void removeFd(int fd);
 		void unregisterFd(int fd);
 		void setFdEvents(int fd, short events);
-		HTTPResponse buildCgiResponse(const Client& client);
+		// HTTPResponse buildCgiResponse(const Client& client);
 
 };
 
