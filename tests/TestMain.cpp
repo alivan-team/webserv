@@ -227,6 +227,7 @@ void testCgiRoutingAndMissingUploadStore()
 	const std::string base(directory);
 	std::ofstream(base + "/existing.py") << "print('Content-Type: text/plain\\n\\nOK')\n";
 	mkdir((base + "/directory.py").c_str(), 0700);
+	const LocationConfig* matchedLocation;
 	LocationConfig location;
 	location.setUriPath("/cgi-bin");
 	location.setRoot({base});
@@ -242,7 +243,7 @@ void testCgiRoutingAndMissingUploadStore()
 			HTTPRequest request = HTTPRequestParser().parse(raw, raw.size());
 			CgiRoute route;
 			int error = 0;
-			check(!HTTPResponseBuild::resolveCgiRoute(request, server, route, error) && error == 404,
+			check(!HTTPResponseBuild::resolveCgiRoute(request, server, route, error, matchedLocation) && error == 404,
 				method + " absent/non-file CGI script produces 404 without falling through");
 		}
 	}
@@ -253,9 +254,9 @@ void testCgiRoutingAndMissingUploadStore()
 	};
 	CgiRoute route;
 	int error = 999;
-	check(HTTPResponseBuild::resolveCgiRoute(requestFor("/cgi-bin/existing.py"), server, route, error)
+	check(HTTPResponseBuild::resolveCgiRoute(requestFor("/cgi-bin/existing.py"), server, route, error, matchedLocation)
 		&& error == 0, "existing CGI accepts POST without upload_store");
-	check(!HTTPResponseBuild::resolveCgiRoute(requestFor("/cgi-bin/plain.txt"), server, route, error)
+	check(!HTTPResponseBuild::resolveCgiRoute(requestFor("/cgi-bin/plain.txt"), server, route, error, matchedLocation)
 		&& error == 0, "ordinary URL is distinguished from missing CGI script");
 	check(HTTPResponseBuild::build(requestFor("/cgi-bin/plain.txt"), server).getStatusCode() == 403,
 		"ordinary POST without upload_store is forbidden, not a server failure");
@@ -271,7 +272,7 @@ void testCgiRoutingAndMissingUploadStore()
 	redirect.setCgiPath({"/bin/sh"});
 	redirect.setRedirect({"301", "/new"});
 	server.addLocation(redirect);
-	check(!HTTPResponseBuild::resolveCgiRoute(requestFor("/redirect/missing.py"), server, route, error)
+	check(!HTTPResponseBuild::resolveCgiRoute(requestFor("/redirect/missing.py"), server, route, error, matchedLocation)
 		&& error == 0, "redirect is not mistaken for missing CGI");
 	check(HTTPResponseBuild::build(requestFor("/redirect/missing.py"), server).getStatusCode() == 301,
 		"redirect works without upload_store");
@@ -2277,6 +2278,149 @@ void testContentLengthPipelining() {
 		throw std::runtime_error("Pipelined second request was consumed with first request");
 }
 
+void testUnsupportedMethodToCgiReturns501()
+{
+	char directoryTemplate[] = "/tmp/webserv-cgi-put-XXXXXX";
+	char* directory = mkdtemp(directoryTemplate);
+
+	check(directory != NULL, "CGI PUT fixture directory is created");
+	if (directory == NULL)
+		return;
+
+	const std::string base(directory);
+
+	std::ofstream(base + "/existing.py")
+		<< "print('Content-Type: text/plain\\n\\nOK')\n";
+
+	LocationConfig location;
+	location.setUriPath("/cgi-bin");
+	location.setRoot({base});
+	location.setAllowMethods({"GET", "POST"});
+	location.setCgiExtension({".py"});
+	location.setCgiPath({"/bin/sh"});
+	location.validateCgiConfig();
+
+	ServerConfig server;
+	server.addLocation(location);
+
+	const std::string raw =
+		"PUT /cgi-bin/existing.py HTTP/1.1\r\n"
+		"Host: localhost\r\n"
+		"Content-Length: 0\r\n"
+		"\r\n";
+
+	HTTPRequest request =
+		HTTPRequestParser().parse(raw, raw.size());
+
+	check(
+		request.getMethod() == Method::UNKNOWN,
+		"unsupported CGI PUT method parses as UNKNOWN"
+	);
+
+	HTTPResponse response =
+		HTTPResponseBuild::makeEarlyErrorResponse(
+			501,
+			server
+		);
+
+	const std::string output =
+		response.toString(response);
+
+	check(
+		output.find("HTTP/1.1 501 Not Implemented\r\n") == 0,
+		"unsupported method to CGI URI returns 501"
+	);
+
+	unlink((base + "/existing.py").c_str());
+	rmdir(directory);
+}
+
+void testCgi405IncludesAllowHeader()
+{
+	char directoryTemplate[] = "/tmp/webserv-cgi-405-XXXXXX";
+	char* directory = mkdtemp(directoryTemplate);
+
+	check(directory != NULL, "CGI 405 fixture directory is created");
+	if (directory == NULL)
+		return;
+
+	const std::string base(directory);
+
+	std::ofstream(base + "/existing.py")
+		<< "print('Content-Type: text/plain\\n\\nOK')\n";
+
+	LocationConfig location;
+	location.setUriPath("/cgi-bin");
+	location.setRoot({base});
+	location.setAllowMethods({"GET", "POST"});
+	location.setCgiExtension({".py"});
+	location.setCgiPath({"/bin/sh"});
+	location.validateCgiConfig();
+
+	ServerConfig server;
+	server.addLocation(location);
+
+	const std::string raw =
+		"DELETE /cgi-bin/existing.py HTTP/1.1\r\n"
+		"Host: localhost\r\n"
+		"\r\n";
+
+	HTTPRequest request =
+		HTTPRequestParser().parse(raw, raw.size());
+
+	CgiRoute route;
+	int error = 0;
+	const LocationConfig* matchedLocation = NULL;
+
+	bool isCgi = HTTPResponseBuild::resolveCgiRoute(
+		request,
+		server,
+		route,
+		error,
+		matchedLocation
+	);
+
+	check(
+		!isCgi && error == 405,
+		"disallowed CGI method produces 405"
+	);
+
+	check(
+		matchedLocation != NULL,
+		"CGI 405 preserves the matched location"
+	);
+
+	if (error == 405 && matchedLocation != NULL) {
+
+		HTTPResponse response =
+			HTTPResponseBuild::makeEarlyErrorResponse(
+				405,
+				server
+			);
+
+		response.setHeader(
+			"Allow",
+			HTTPResponseBuild::buildAllowHeader(*matchedLocation)
+		);
+
+		const std::string output =
+			response.toString(response);
+
+		check(
+			output.find("HTTP/1.1 405 Method Not Allowed\r\n") == 0,
+			"CGI disallowed method builds 405 response"
+		);
+
+		check(
+			output.find("Allow: GET, POST\r\n") != std::string::npos,
+			"CGI 405 response includes configured Allow header"
+		);
+	}
+
+	unlink((base + "/existing.py").c_str());
+	rmdir(directory);
+}
+
 } // namespace
 
 int main()
@@ -2320,6 +2464,9 @@ int main()
 	run("HTTP protocol edge cases", testHttpProtocolEdgeCases);
 	run("Route and path edge cases", testRouteAndPathEdgeCases);
 	run("ServerConfig body-size edge cases", testServerConfigBodySizeEdgeCases);
+	run("CGI routing and missing upload store", testCgiRoutingAndMissingUploadStore);
+	run("CGI 405 includes Allow header", testCgi405IncludesAllowHeader);
+	run("Unsupported CGI method returns 501", testUnsupportedMethodToCgiReturns501);
     run("BREAKER chunk + sign", testInvalidChunkSizePlusSign);
     run("BREAKER chunk 0x prefix", testInvalidChunkSize0xPrefix);
     run("BREAKER multipart lowercase header", testMultipartLowercaseContentDisposition);
