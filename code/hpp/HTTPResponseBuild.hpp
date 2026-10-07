@@ -46,10 +46,10 @@ class HTTPResponseBuild {
 		static bool pathInsideBase(const std::string& base, const std::string& target);
 		static std::string urlDecoder(std::string urlPath);
 		static int prepareRequestPath(const HTTPRequest &request, const ServerConfig &servConf, std::string &path, const LocationConfig *&location);
-		static std::string buildAllowHeader(const LocationConfig& location);
 		static bool deleteParentInsideBase(const std::string& base, const std::string& target);
-	
+		
 	public:
+		static std::string buildAllowHeader(const LocationConfig& location);
 		static std::string getStatusText(int code);
 		static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);
 		static std::string decideConnection(const HTTPRequest& request);
@@ -57,7 +57,7 @@ class HTTPResponseBuild {
 		static HTTPResponse makeEarlyErrorResponse(int code, const ServerConfig& servConf);
 		// false + errorCode == 0: ordinary route; false + errorCode != 0: routing failure.
 		static bool resolveCgiRoute(const HTTPRequest& request, const ServerConfig& servConf, 
-			CgiRoute& route, int& errorCode);
+			CgiRoute& route, int& errorCode, const LocationConfig*& location);
 };
 
 #endif

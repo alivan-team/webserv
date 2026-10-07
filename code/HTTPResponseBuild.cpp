@@ -26,11 +26,11 @@ int HTTPResponseBuild::prepareRequestPath(const HTTPRequest &request, const Serv
 }
 
 bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const ServerConfig& servConf,
-	CgiRoute& route, int& errorCode)
+	CgiRoute& route, int& errorCode, const LocationConfig*& location)
 {
 	std::string path;
 	errorCode = 0;
-	const LocationConfig* location = NULL;
+	// const LocationConfig* location = NULL;
 
 	int result = prepareRequestPath(request, servConf, path, location);
 	if (result != 0) {

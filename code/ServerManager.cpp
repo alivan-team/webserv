@@ -577,8 +577,9 @@ bool ServerManager::processRequestBuffer(size_t index) {
 
 		CgiRoute cgiRoute;
 		int cgiError = 0;
+		const LocationConfig* location = NULL;
 
-		if (HTTPResponseBuild::resolveCgiRoute(client.getRequest(), *serverConfig, cgiRoute, cgiError))
+		if (HTTPResponseBuild::resolveCgiRoute(client.getRequest(), *serverConfig, cgiRoute, cgiError, location))
 		{
 			if (!startCgi(client, client.getRequest(), cgiRoute, *serverConfig))
 			{
@@ -588,11 +589,11 @@ bool ServerManager::processRequestBuffer(size_t index) {
 			}
 			return false;
 		}
-		if (cgiError != 0)
-		{
-			HTTPResponse errorResponse =
-				HTTPResponseBuild::makeEarlyErrorResponse(cgiError, *serverConfig);
+		if (cgiError != 0) {
+			HTTPResponse errorResponse = HTTPResponseBuild::makeEarlyErrorResponse(cgiError, *serverConfig);
 			client.setCloseAfterResponse(true);
+			if(cgiError == 405)
+				errorResponse.setHeader("Allow", HTTPResponseBuild::buildAllowHeader(*location));
 			queueResponse(index, client, errorResponse);
 			return false;
 		}
