@@ -24,6 +24,8 @@ class LocationConfig {
 		std::vector<std::string> _cgi_extensions;
 		std::vector<std::string> _cgi_paths;
 		Redirection _redir;
+		unsigned int _clientMaxBodySize;
+		bool _hasClientMaxBodySize;
 
 	public:
 		LocationConfig();
@@ -53,6 +55,9 @@ class LocationConfig {
 		bool isGetAllowed() const;
 		bool isPostAllowed() const;
 		bool isDeleteAllowed() const;
+		void setClientMaxBodySize(const std::vector<std::string>& client_max_body_size);
+		unsigned int getClientMaxBodySize() const;
+		bool hasClientMaxBodySize() const;
 };
 
 #endif

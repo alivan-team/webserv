@@ -208,6 +208,11 @@ bool Client::getPendingRemoval() const
     return _pendingRemoval;
 }
 
+const std::string& Client::getRequestUri() const
+{
+	return _requestUri;
+}
+
 void Client::setPendingRemoval(bool pending)
 {
     _pendingRemoval = pending;

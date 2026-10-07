@@ -13,7 +13,9 @@ LocationConfig::LocationConfig()
 	  _indpaths(),
 	  _cgi_extensions(),
 	  _cgi_paths(),
-	  _redir()
+	  _redir(),
+	  _clientMaxBodySize(0),
+	  _hasClientMaxBodySize(false)
 {
 	_methods.get = false;
 	_methods.post = false;
@@ -212,4 +214,32 @@ bool LocationConfig::isPostAllowed() const {
 
 bool LocationConfig::isDeleteAllowed() const {
 	return _methods.del;
+}
+
+void LocationConfig::setClientMaxBodySize(const std::vector<std::string>& client_max_body_size) {
+	
+	errno = 0;
+
+	if (client_max_body_size.size() != 1)
+		throw std::runtime_error("client_max_body_size expects exactly one value");
+	
+	if (!check_num(client_max_body_size[0])) {
+		throw std::runtime_error("Invalid client_max_body_size");
+	}
+
+	unsigned long long int value = std::strtoull(client_max_body_size[0].c_str(), NULL, 10);
+
+	if (errno == ERANGE || value > UINT_MAX)
+		throw std::runtime_error("Invalid client_max_body_size number");
+
+	_clientMaxBodySize = static_cast<unsigned int>(value);
+	_hasClientMaxBodySize = true;
+}
+
+unsigned int LocationConfig::getClientMaxBodySize() const {
+	return _clientMaxBodySize;
+}
+
+bool LocationConfig::hasClientMaxBodySize() const {
+	return _hasClientMaxBodySize;
 }

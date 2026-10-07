@@ -927,3 +927,7 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 	}
 	return decodedUrl;
 }
+
+const LocationConfig* HTTPResponseBuild::getLocationForPath(const std::string& path, const ServerConfig& servConf) {
+	return findBestLocation(path, servConf);
+}

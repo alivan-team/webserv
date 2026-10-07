@@ -49,6 +49,7 @@ class HTTPResponseBuild {
 		static bool deleteParentInsideBase(const std::string& base, const std::string& target);
 		
 	public:
+		static const LocationConfig* getLocationForPath(const std::string& path, const ServerConfig& servConf);
 		static std::string buildAllowHeader(const LocationConfig& location);
 		static std::string getStatusText(int code);
 		static HTTPResponse build(const HTTPRequest& request, const ServerConfig& servConf);

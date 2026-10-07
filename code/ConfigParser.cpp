@@ -18,6 +18,7 @@ ConfigParser::ConfigParser() {
 	locationSetters["cgi_extension"] = &LocationConfig::setCgiExtension;
 	locationSetters["cgi_path"] = &LocationConfig::setCgiPath;
 	locationSetters["return"] = &LocationConfig::setRedirect;
+	locationSetters["client_max_body_size"] = &LocationConfig::setClientMaxBodySize;
 }
 
 const std::vector<ServerConfig>& ConfigParser::getServers() const {
@@ -65,18 +66,17 @@ void ConfigParser::parse(const std::string& filename)
 	if (!file) {
 		throw std::runtime_error("Cannot open config file");
 	}
-	
+
 	std::vector<std::string> configTokens = tokenize(file);
 
 	for (size_t i = 0; i < configTokens.size(); i++) {
 
 		if (configTokens[i] == "server" && i + 1 < configTokens.size() && configTokens[i + 1] == "{") {
-			
+
 			ServerConfig server;
 			i += 2;
 
 			while (i < configTokens.size() && configTokens[i] != "}") {
-
 
 				if (configTokens[i] == "location") {
 

@@ -76,6 +76,8 @@ RequestState Client::parseHeaderClient() {
 	if (!(requestLine >> method >> uri >> version))
 		return setRequestError(400);
 
+	_requestUri = uri;
+
 	bool hasContentLength = false;
 	bool hasTransferEncoding = false;
 	bool hasHost = false;
