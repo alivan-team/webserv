@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <climits>
 
 LocationConfig::LocationConfig()
 	: _uriPath(),
