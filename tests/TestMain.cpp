@@ -2421,6 +2421,169 @@ void testCgi405IncludesAllowHeader()
 	rmdir(directory);
 }
 
+void testLocationBodySizeConfig()
+{
+	LocationConfig location;
+
+	check(
+		!location.hasClientMaxBodySize(),
+		"new location has no client_max_body_size override"
+	);
+
+	location.setClientMaxBodySize(
+		std::vector<std::string>(1, "100")
+	);
+
+	check(
+		location.hasClientMaxBodySize(),
+		"location remembers that client_max_body_size was configured"
+	);
+
+	check(
+		location.getClientMaxBodySize() == 100,
+		"location stores client_max_body_size 100"
+	);
+}
+
+void testLocationBodySizeEdgeCases()
+{
+	{
+		LocationConfig location;
+
+		try {
+			location.setClientMaxBodySize(
+				std::vector<std::string>(1, "abc")
+			);
+
+			check(
+				false,
+				"non-numeric location client_max_body_size is rejected"
+			);
+		}
+		catch (const std::exception&) {
+			check(
+				true,
+				"non-numeric location client_max_body_size is rejected"
+			);
+		}
+	}
+
+	{
+		LocationConfig location;
+
+		std::vector<std::string> values;
+		values.push_back("10");
+		values.push_back("20");
+
+		try {
+			location.setClientMaxBodySize(values);
+
+			check(
+				false,
+				"multiple location client_max_body_size values are rejected"
+			);
+		}
+		catch (const std::exception&) {
+			check(
+				true,
+				"multiple location client_max_body_size values are rejected"
+			);
+		}
+	}
+}
+
+void testLocationBodySizeLimit()
+{
+	Client client(42, 7);
+
+	const std::string body(101, 'A');
+
+	const std::string request =
+		"POST /upload HTTP/1.1\r\n"
+		"Host: localhost\r\n"
+		"Content-Length: 101\r\n"
+		"\r\n"
+		+ body;
+
+	client.appendToRequestBuffer(
+		request.c_str(),
+		request.size()
+	);
+
+	check(
+		client.parseHeaderClient() == RequestState::Complete,
+		"location body-size test parses headers"
+	);
+
+	check(
+		client.checkRequestState(100) == RequestState::BadRequest,
+		"101-byte body is rejected by 100-byte location limit"
+	);
+
+	check(
+		client.getRequestErrorCode() == 413,
+		"location body-size overflow produces 413"
+	);
+}
+
+void testLocationBodySizeBoundary()
+{
+	Client client(42, 7);
+
+	const std::string body(100, 'A');
+
+	const std::string request =
+		"POST /upload HTTP/1.1\r\n"
+		"Host: localhost\r\n"
+		"Content-Length: 100\r\n"
+		"\r\n"
+		+ body;
+
+	client.appendToRequestBuffer(
+		request.c_str(),
+		request.size()
+	);
+
+	check(
+		client.parseHeaderClient() == RequestState::Complete,
+		"location body-size boundary parses headers"
+	);
+
+	check(
+		client.checkRequestState(100) == RequestState::Complete,
+		"100-byte body is accepted by 100-byte location limit"
+	);
+}
+
+void testServerBodySizeLimit()
+{
+	Client client(42, 7);
+
+	const std::string body(101, 'A');
+
+	const std::string request =
+		"POST /upload HTTP/1.1\r\n"
+		"Host: localhost\r\n"
+		"Content-Length: 101\r\n"
+		"\r\n"
+		+ body;
+
+	client.appendToRequestBuffer(
+		request.c_str(),
+		request.size()
+	);
+
+	check(
+		client.parseHeaderClient() == RequestState::Complete,
+		"server body-size test parses headers"
+	);
+
+	check(
+		client.checkRequestState(1000) == RequestState::Complete,
+		"101-byte body is accepted by larger server limit"
+	);
+}
+
 } // namespace
 
 int main()
@@ -2475,6 +2638,11 @@ int main()
     run("BREAKER raw upload uniqueness", testRawUploadFilenameUniqueness);
     run("BREAKER encoded traversal", testEncodedPathTraversal);
     run("BREAKER pipelined Content-Length", testContentLengthPipelining);
+	run("Location body-size config", testLocationBodySizeConfig);
+	run("Location body-size edge cases", testLocationBodySizeEdgeCases);
+	run("Location body-size limit", testLocationBodySizeLimit);
+	run("Location body-size boundary", testLocationBodySizeBoundary);
+	run("Server body-size limit", testServerBodySizeLimit);
 	
 	if (g_failures != 0) {
 		std::cerr << g_failures << " assertion(s) failed\n";
