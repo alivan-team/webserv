@@ -27,3 +27,4 @@ webserv_tests
 
 # VSCode files
 .vscode/
+webserv.code-workspace
