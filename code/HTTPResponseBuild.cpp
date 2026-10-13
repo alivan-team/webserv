@@ -41,20 +41,38 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 	if (location->hasRedirect())
 		return false;
 
+	// Method method = request.getMethod();
+	// if ((method == Method::GET && !location->isGetAllowed()) || 
+	// 	(method == Method::POST && !location->isPostAllowed()) || 
+	// 	(method == Method::DELETE && !location->isDeleteAllowed())) {
+	// 	errorCode = 405;
+	// 	return false;
+	// }
+	
+	// // Identify CGI from the URL before checking whether the script exists.
+	// const size_t dot = path.find_last_of('.');
+	// const size_t slash = path.find_last_of('/');
+	// if (dot == std::string::npos || (slash != std::string::npos && dot < slash))
+	// 	return false;
+	// const std::string extension = path.substr(dot);
+
+	// Begin of the new block
+	const std::string extension = getPathExtension(path);
+
+	if (extension.empty() || !location->hasCgiExtension(extension))
+		return false;
+
 	Method method = request.getMethod();
-	if ((method == Method::GET && !location->isGetAllowed()) || 
-		(method == Method::POST && !location->isPostAllowed()) || 
-		(method == Method::DELETE && !location->isDeleteAllowed())) {
+
+	if ((method == Method::GET && !location->isGetAllowed()) ||
+		(method == Method::POST && !location->isPostAllowed()) ||
+		(method == Method::DELETE && !location->isDeleteAllowed()))
+	{
 		errorCode = 405;
 		return false;
 	}
-	
-	// Identify CGI from the URL before checking whether the script exists.
-	const size_t dot = path.find_last_of('.');
-	const size_t slash = path.find_last_of('/');
-	if (dot == std::string::npos || (slash != std::string::npos && dot < slash))
-		return false;
-	const std::string extension = path.substr(dot);
+	// End of the new block
+
 	const std::vector<std::string>& extensions = location->getCgiExtension();
 	const std::vector<std::string>& cgiPaths = location->getCgiPath();
 	const auto matched = std::find(extensions.begin(), extensions.end(), extension);
@@ -696,25 +714,102 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 	return res;
 }
 
-const LocationConfig *HTTPResponseBuild::findBestLocation(const std::string &path, const ServerConfig &servConf) {
+// const LocationConfig *HTTPResponseBuild::findBestLocation(const std::string &path, const ServerConfig &servConf) {
 
-	const std::vector<LocationConfig> &locations = servConf.getLocations();
+// 	const std::vector<LocationConfig>& locations = servConf.getLocations();
 
-	const LocationConfig *bestLoc = NULL;
+// 	const LocationConfig* normalLoc = NULL;
+// 	const LocationConfig* cgiLoc = NULL;
 
-	for (const auto &loc : locations) {
-		if (startsWithLocation(path, loc.getUriPath()))
+// 	size_t bestLength = 0;
+
+// 	std::string extension = getPathExtension(path);
+
+// 	for (size_t i = 0; i < locations.size(); ++i)
+// 	{
+// 		const LocationConfig& loc = locations[i];
+
+// 		if (!startsWithLocation(path, loc.getUriPath()))
+// 			continue;
+
+// 		size_t currentLength = loc.getUriPath().size();
+
+// 		if (currentLength > bestLength)
+// 		{
+// 			bestLength = currentLength;
+// 			normalLoc = NULL;
+// 			cgiLoc = NULL;
+// 		}
+// 		else if (currentLength < bestLength)
+// 			continue;
+
+// 		if (loc.hasCgiConfig())
+// 		{
+// 			if (!extension.empty() && loc.hasCgiExtension(extension))
+// 				cgiLoc = &loc;
+// 		}
+// 		else
+// 			normalLoc = &loc;
+// 	}
+
+// 	if (cgiLoc != NULL)
+// 		return cgiLoc;
+
+// 	return normalLoc;
+// };
+
+const LocationConfig *HTTPResponseBuild::findBestLocation(
+	const std::string &path,
+	const ServerConfig &servConf)
+{
+	const std::vector<LocationConfig>& locations = servConf.getLocations();
+
+	const LocationConfig* normalLoc = NULL;
+	const LocationConfig* cgiLoc = NULL;
+
+	size_t bestLength = 0;
+	std::string extension = getPathExtension(path);
+
+	for (size_t i = 0; i < locations.size(); ++i)
+	{
+		const LocationConfig& loc = locations[i];
+
+		if (!startsWithLocation(path, loc.getUriPath()))
+			continue;
+
+		bool isMatchingCgi = false;
+
+		if (loc.hasCgiConfig())
 		{
-			if (!bestLoc || loc.getUriPath().size() > bestLoc->getUriPath().size())
-				bestLoc = &loc;
+			if (extension.empty() || !loc.hasCgiExtension(extension))
+				continue;
+
+			isMatchingCgi = true;
 		}
+
+		size_t currentLength = loc.getUriPath().size();
+
+		if (currentLength > bestLength)
+		{
+			bestLength = currentLength;
+			normalLoc = NULL;
+			cgiLoc = NULL;
+		}
+		else if (currentLength < bestLength)
+			continue;
+
+		if (isMatchingCgi)
+			cgiLoc = &loc;
+		else
+			normalLoc = &loc;
 	}
 
-	if (bestLoc == NULL)
-		return NULL;
+	if (cgiLoc != NULL)
+		return cgiLoc;
 
-	return bestLoc;
-};
+	return normalLoc;
+}
+
 
 bool HTTPResponseBuild::startsWithLocation(const std::string &path, const std::string &loc) {
 
@@ -856,6 +951,21 @@ std::string HTTPResponseBuild::getContentType(const std::string &contenPath)
 	return "application/octet-stream";
 }
 
+
+std::string HTTPResponseBuild::getPathExtension(const std::string& path)
+{
+	size_t dot = path.find_last_of('.');
+	size_t slash = path.find_last_of('/');
+
+	if (dot == std::string::npos)
+		return "";
+
+	if (slash != std::string::npos && dot < slash)
+		return "";
+
+	return path.substr(dot);
+}
+
 bool HTTPResponseBuild::containsParentTraversal(const std::string &path)
 {
 	std::stringstream stream(path);
@@ -928,6 +1038,16 @@ std::string HTTPResponseBuild::urlDecoder(std::string urlPath) {
 	return decodedUrl;
 }
 
-const LocationConfig* HTTPResponseBuild::getLocationForPath(const std::string& path, const ServerConfig& servConf) {
-	return findBestLocation(path, servConf);
+const LocationConfig* HTTPResponseBuild::getLocationForPath(
+	const std::string& path,
+	const ServerConfig& servConf)
+{
+	try
+	{
+		return findBestLocation(urlDecoder(path), servConf);
+	}
+	catch (const std::exception&)
+	{
+		return NULL;
+	}
 }

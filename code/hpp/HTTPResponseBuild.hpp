@@ -37,6 +37,7 @@ class HTTPResponseBuild {
 		static std::string readReadFile(const std::string& file);
 		static bool isDirectory(const std::string& path);
 		static std::string getContentType(const std::string& contenPath);
+		static std::string getPathExtension(const std::string& path);
 		static const LocationConfig* findBestLocation (const std::string& path,  const ServerConfig& servConf);
 		static std::string findIndexFile(std::string fullPath, const LocationConfig& location, const ServerConfig& servConf);
 		static bool startsWithLocation(const std::string& path, const std::string& loc);

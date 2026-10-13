@@ -189,6 +189,32 @@ const int& ServerConfig::getServerConfFD() const { return _serverConf_fd; };
 
 void ServerConfig::addLocation(const LocationConfig &locations) {
 		
+	for (size_t i = 0; i < _locations.size(); ++i)
+	{
+		const LocationConfig& current = _locations[i];
+
+		if (current.getUriPath() != locations.getUriPath())
+			continue;
+
+		bool currentIsCgi = current.hasCgiConfig();
+		bool newIsCgi = locations.hasCgiConfig();
+
+		if (!currentIsCgi && !newIsCgi)
+			throw std::runtime_error("Incorrect config file");
+
+		if (currentIsCgi && newIsCgi)
+		{
+			const std::vector<std::string>& extensions =
+				locations.getCgiExtension();
+
+			for (size_t j = 0; j < extensions.size(); ++j)
+			{
+				if (current.hasCgiExtension(extensions[j]))
+					throw std::runtime_error("Incorrect config file");
+			}
+		}
+	}
+
 	_locations.push_back(locations);
 };
 

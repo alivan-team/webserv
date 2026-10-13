@@ -175,6 +175,21 @@ bool LocationConfig::hasRedirect() const
 	return _redir._number != 0;
 }
 
+bool LocationConfig::hasCgiConfig() const
+{
+	return !_cgi_extensions.empty();
+}
+
+bool LocationConfig::hasCgiExtension(const std::string& extension) const
+{
+	for (size_t i = 0; i < _cgi_extensions.size(); ++i)
+	{
+		if (_cgi_extensions[i] == extension)
+			return true;
+	}
+	return false;
+}
+
 const std::string& LocationConfig::getUploadStore() const
 {
 	return _upload_store;

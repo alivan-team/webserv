@@ -520,7 +520,9 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 
 	serverConfig = &getClientServerManager(client.getServerFd(), client.getHost());
 	size_t maxBodySize = serverConfig->getClientMaxBodySize().back();
-	const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
+	// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
+	const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequest().getPath(), *serverConfig);
+	
 	if (location != NULL && location->hasClientMaxBodySize()) {
 		maxBodySize = location->getClientMaxBodySize();
 	}

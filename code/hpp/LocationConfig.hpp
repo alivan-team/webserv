@@ -44,7 +44,9 @@ class LocationConfig {
 		
 		AllowMethods getAllowMethods() const;
 		bool getAutoIndex() const;
-		bool hasRedirect() const;
+		bool hasRedirect() const; 
+		bool hasCgiConfig() const;
+		bool hasCgiExtension(const std::string& extension) const;
 		const std::string& getUriPath() const;
 		const std::string& getUploadStore() const;
 		const std::string& getRoot() const;
@@ -57,6 +59,7 @@ class LocationConfig {
 		bool isDeleteAllowed() const;
 		void setClientMaxBodySize(const std::vector<std::string>& client_max_body_size);
 		unsigned int getClientMaxBodySize() const;
+		// int  getCgiExtensionIndex(const std::string& extension);
 		bool hasClientMaxBodySize() const;
 };
 
