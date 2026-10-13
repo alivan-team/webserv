@@ -42,20 +42,20 @@ struct CgiResult {
 };
 
 class ServerManager {
-
+	using fd = int;
 	private:
-		std::map<int, std::vector<ServerConfig>> _serversMap;
-		std::vector<int> _serverSockets;
+		std::map<fd, std::vector<ServerConfig>> _serversMap;
+		std::vector<fd> _serverSockets;
 		std::vector<pollfd> _pollfds;
-		std::map<int, Client> _clients;
-		void setNonBlocking(int fd);
-		int findServerFd(const std::string& host, int port) const;
-		int createListeningSockets(const ServerConfig& servers);
-		bool isServerSocket(int fd) const;
-		void acceptNewClient(int serverFd);
+		std::map<fd, Client> _clients;
+		void setNonBlocking(fd file);
+		fd findServerFd(const std::string& host, int port) const;
+		fd createListeningSockets(const ServerConfig& servers);
+		bool isServerSocket(fd fd) const;
+		void acceptNewClient(fd server);
 		bool readClientData(size_t index);
 		bool writeClientData(size_t index);
-		std::map<int, FdInfo> _fdInfo;
+		std::map<fd, FdInfo> _fdInfo;
 
 		bool shouldKeepAlive(const HTTPRequest& request) const;
 		void removeClient(size_t index);

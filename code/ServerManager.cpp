@@ -79,11 +79,17 @@ bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
 	return false;
 }
 
+#define KiB 1024
+#define KB 1000
+#define MiB (KiB * KiB)
+#define MB (KB * KB)
+#define GiB (MiB * KiB)
+
 bool ServerManager::readClientData(size_t index) {
 
 	int clientFd = _pollfds[index].fd;
 
-	char buffer[4096];
+	char buffer[4 * KiB];
 	std::memset(buffer, 0, sizeof(buffer));
 
 	int bytes = recv(clientFd, buffer, sizeof(buffer) - 1, 0);
@@ -155,7 +161,7 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 
 void ServerManager::run() {
 
-	while (true) {
+	while (true) { // while (self.not_stop)
 		
 		int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
 		if (ready < 0)
@@ -357,7 +363,14 @@ void ServerManager::checkCgiTimeouts() {
 	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 
 	std::map<int, Client>::iterator it = _clients.begin();
+	// for (client : _clients)
+	// for (std::pair<const int, Client>& c : _clients) {
+	// 	Client& client = c.second;
+	// 	if (client.getPendingRemoval() || client.getCgiState() == CGI_NONE) continue;
 
+	// 	// elapse
+	// 	// if elapse
+	// }
 	while (it != _clients.end()) {
 
 		Client& client = it->second;
@@ -520,8 +533,8 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 
 	serverConfig = &getClientServerManager(client.getServerFd(), client.getHost());
 	size_t maxBodySize = serverConfig->getClientMaxBodySize().back();
-	// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
-	const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequest().getPath(), *serverConfig);
+	const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
+	// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequest().getPath(), *serverConfig);
 	
 	if (location != NULL && location->hasClientMaxBodySize()) {
 		maxBodySize = location->getClientMaxBodySize();
@@ -637,6 +650,7 @@ void ServerManager::addFd(int fd, FdType type, int clientFd)
 
 void ServerManager::unregisterFd(int fd) {
 
+	// iterators?
 	for (size_t i = 0; i < _pollfds.size(); ++i)
 	{
 		if (_pollfds[i].fd == fd)
