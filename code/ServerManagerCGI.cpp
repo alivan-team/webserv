@@ -22,6 +22,7 @@ std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& r
 	cgiEnv.push_back("QUERY_STRING=" + request.getQuery());
 	cgiEnv.push_back("SERVER_NAME=" + servConf.getServerName()[0]);
 	cgiEnv.push_back("SERVER_PORT=" + std::to_string(servConf.getPort()));
+	cgiEnv.push_back("CONTENT_LENGTH=" + std::to_string(request.getBodySize()));
 
 	const std::map<std::string, std::string>& headers = request.getHeaders();
 
@@ -33,8 +34,7 @@ std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& r
 			cgiEnv.push_back("CONTENT_TYPE=" + secondValue);
 			continue;
 		}
-		if (firstName == "content-length") {
-			cgiEnv.push_back("CONTENT_LENGTH=" + secondValue);
+		if (firstName == "content-length" || firstName == "transfer-encoding") {
 			continue;
 		}
 		for (size_t i = 0; i < firstName.size(); i++) {

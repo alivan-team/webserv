@@ -363,14 +363,7 @@ void ServerManager::checkCgiTimeouts() {
 	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 
 	std::map<int, Client>::iterator it = _clients.begin();
-	// for (client : _clients)
-	// for (std::pair<const int, Client>& c : _clients) {
-	// 	Client& client = c.second;
-	// 	if (client.getPendingRemoval() || client.getCgiState() == CGI_NONE) continue;
-
-	// 	// elapse
-	// 	// if elapse
-	// }
+	
 	while (it != _clients.end()) {
 
 		Client& client = it->second;

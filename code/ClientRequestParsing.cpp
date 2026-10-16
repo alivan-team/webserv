@@ -37,22 +37,22 @@ static bool isValidHeaderName(const std::string& name)
 	return true;
 }
 
-const char *const usage_format =
-			"%s: [-[hfr]] [config file]\n"
-			"\t-h\n"
-			"\t\tprint help information\n";
+// const char *const usage_format =
+// 			"%s: [-[hfr]] [config file]\n"
+// 			"\t-h\n"
+// 			"\t\tprint help information\n";
 
-#define CRLF "\r\n"
-enum HTTPCode {
-	OK = 200,
-	NOT_FOUND = 404,
-	//etc...
-};
+// #define CRLF "\r\n"
+// enum HTTPCode {
+// 	OK = 200,
+// 	NOT_FOUND = 404,
+// 	//etc...
+// };
 RequestState Client::parseHeaderClient() {
 
-	static const size_t MAX_HEADER_SIZE = 32 * 1024; // KIBIBBIIBIBIBIIB
+	static const size_t MAX_HEADER_SIZE = 32 * 1024;
 
-	size_t headerEnd = _requestBuffer.find(CRLF CRLF); // crlf
+	size_t headerEnd = _requestBuffer.find("\r\n\r\n");
 
 	if (headerEnd == std::string::npos) {
 
