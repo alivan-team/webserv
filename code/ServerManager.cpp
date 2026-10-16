@@ -150,18 +150,6 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 		
 		const std::string& host = servers[i].getHost();
 		int port = servers[i].getPort();
-		// for (size_t j = 0; j < i; j++) {
-
-		// 	const std::string& existingHost = servers[j].getHost();
-		// 	int existingPort = servers[j].getPort();
-
-		// 	if (port == existingPort &&
-		// 		host != existingHost &&
-		// 		(host == "0.0.0.0" || existingHost == "0.0.0.0")) {
-
-		// 		throw std::runtime_error("Overlapping listen addresses on port " + std::to_string(port));
-		// 	}
-		// }
 		int serverFd = findServerFd(host, port);
 
 		if (serverFd == -1)
@@ -547,7 +535,9 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 	size_t maxBodySize = serverConfig->getClientMaxBodySize().back();
 	const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
 	// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequest().getPath(), *serverConfig);
-	
+	// std::cout << "client.getRequestUri() -> " << client.getRequestUri() << std::endl;
+	// std::cout << "client.getRequest().getPath() -> " << client.getRequest().getPath() << std::endl;
+
 	if (location != NULL && location->hasClientMaxBodySize()) {
 		maxBodySize = location->getClientMaxBodySize();
 	}
