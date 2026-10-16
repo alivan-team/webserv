@@ -112,6 +112,24 @@ void ConfigParser::parse(const std::string& filename)
 			if (i >= configTokens.size() || configTokens[i] != "}")
 				throw std::runtime_error("Missing closing brace for server");
 
+			for (const ServerConfig& existing : servers) {
+
+				if (existing.getPort() != server.getPort())
+					continue;
+
+				const std::string& existingHost = existing.getHost();
+				const std::string& newHost = server.getHost();
+
+				if (existingHost != newHost &&
+					(existingHost == "0.0.0.0" || newHost == "0.0.0.0")) {
+
+					throw std::runtime_error(
+						"Overlapping listen addresses on port " +
+						std::to_string(server.getPort())
+					);
+				}
+			}
+
 			servers.push_back(server);
 		} else {
 			throw std::runtime_error("Unexpected token at top level: " + configTokens[i]);

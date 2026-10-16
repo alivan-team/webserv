@@ -150,6 +150,18 @@ void ServerManager::initialize(const std::vector<ServerConfig>& servers) {
 		
 		const std::string& host = servers[i].getHost();
 		int port = servers[i].getPort();
+		// for (size_t j = 0; j < i; j++) {
+
+		// 	const std::string& existingHost = servers[j].getHost();
+		// 	int existingPort = servers[j].getPort();
+
+		// 	if (port == existingPort &&
+		// 		host != existingHost &&
+		// 		(host == "0.0.0.0" || existingHost == "0.0.0.0")) {
+
+		// 		throw std::runtime_error("Overlapping listen addresses on port " + std::to_string(port));
+		// 	}
+		// }
 		int serverFd = findServerFd(host, port);
 
 		if (serverFd == -1)
@@ -302,13 +314,18 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
 	for (size_t i = 0; i < servers.size(); i++) {
 
 		const std::vector<std::string>& serverNames = servers[i].getServerName();
+		// std::cout << "serverNames OUTER loop -> " << serverNames[i] << std::endl;
 
 		for (size_t j = 0; j < serverNames.size(); j++) {
+			// std::cout << "\t serverNames INNER loop -> " << serverNames[j] << std::endl;
+
 			if (toLower(serverNames[j]) == lowerHost) {
+				// std::cout << "\t\t RETURN serverNames -> " << serverNames[j] << "server -> " << servers[i].getServerName()[0] << std::endl;
 				return servers[i];
 			}
 		}
 	} 
+	// std::cout << "\t\t\t\t server -> " << servers[0].getServerName()[0] << std::endl;
 
 	return servers[0];
 }

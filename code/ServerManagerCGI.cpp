@@ -24,7 +24,6 @@ std::vector<std::string> ServerManager::buildCgiEnvironment(const HTTPRequest& r
 	cgiEnv.push_back("SERVER_NAME=" + servConf.getServerName()[0]);
 	cgiEnv.push_back("SERVER_PORT=" + std::to_string(servConf.getPort()));
 	cgiEnv.push_back("CONTENT_LENGTH=" + std::to_string(request.getBodySize()));
-	// REMOTE_ADDR
 
 	const std::map<std::string, std::string>& headers = request.getHeaders();
 
