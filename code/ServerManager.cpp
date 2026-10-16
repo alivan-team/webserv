@@ -164,9 +164,11 @@ void ServerManager::run() {
 	while (true) { // while (self.not_stop)
 		
 		int ready = poll(_pollfds.data(), _pollfds.size(), 1000);
-		if (ready < 0)
+		if (ready < 0){
+			if (errno == EINTR)
+				continue;
 			throw std::runtime_error("poll() failed");
-
+		}
 		size_t i = 0;
 		while (i < _pollfds.size()) {
 
