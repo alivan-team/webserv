@@ -564,7 +564,7 @@ HTTPResponse HTTPResponseBuild::makeEarlyErrorResponse(int code, const ServerCon
 	HTTPRequest errRequest;
 
 	errRequest.setVersion("1.1");
-	errRequest.addHeader("Connection", "close");
+	errRequest.addHeader("connection", "close");
 
 	return makeErrorResponse(code, errRequest, servConf);
 };
