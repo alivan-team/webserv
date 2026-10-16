@@ -403,11 +403,11 @@ HTTPResponse HTTPResponseBuild::handlePost(
 	res.setHeader(
 		"Connection",
 		decideConnection(request));
-	res.setHeader(
-		"Location",
-		joinPath(
-			location->getUriPath(),
-			filename));
+	// res.setHeader(
+	// 	"Location",
+	// 	joinPath(
+	// 		location->getUriPath(),
+	// 		filename));
 	res.setBody(body);
 
 	return res;
