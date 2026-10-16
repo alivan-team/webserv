@@ -583,11 +583,7 @@ std::string HTTPResponseBuild::buildErrorBody(int code, const ServerConfig &serv
 		return makeFallBackErrorBody(code);
 	}
 
-	try {
-		return readReadFile("./site/www/error_pages/index.html");
-	} catch (const std::exception& e) {
-		return makeFallBackErrorBody(code);
-	}
+	return makeFallBackErrorBody(code);
 }
 
 std::string HTTPResponseBuild::makeFallBackErrorBody(int code) {

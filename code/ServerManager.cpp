@@ -80,10 +80,10 @@ bool ServerManager::shouldKeepAlive(const HTTPRequest& request) const {
 }
 
 #define KiB 1024
-#define KB 1000
-#define MiB (KiB * KiB)
-#define MB (KB * KB)
-#define GiB (MiB * KiB)
+// #define KB 1000
+// #define MiB (KiB * KiB)
+// #define MB (KB * KB)
+// #define GiB (MiB * KiB)
 
 bool ServerManager::readClientData(size_t index) {
 

@@ -71,7 +71,7 @@ class ServerManager {
 		void checkCgiTimeouts();
 		void reapCgiChildern();
 		void finishCgiResponse(Client& client);
-		
+
 	public: 
 		std::string buildCgiResponse(const CgiResult& result, const HTTPRequest &request);
 		void queueResponse(size_t index, Client& client, HTTPResponse& response);
