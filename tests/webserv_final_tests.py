@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Black-box HTTP and resource regressions; standard library only, macOS/Linux."""
+"""Independent Codam Webserv final integration suite. Standard library only, macOS/Linux.
+Run from project root: python3 /path/to/webserv_final_tests.py
+Optional: WEBSERV_PROJECT=/path/to/project WEBSERV_BINARY=/path/to/webserv
+"""
 import concurrent.futures
 import os
 from pathlib import Path
@@ -12,7 +15,7 @@ import tempfile
 import time
 import unittest
 
-PROJECT = Path(__file__).resolve().parents[1]
+PROJECT = Path(os.environ.get('WEBSERV_PROJECT', os.getcwd())).resolve()
 BINARY = Path(os.environ.get('WEBSERV_BINARY', str(PROJECT / 'webserv'))).resolve()
 TIMEOUT = float(os.environ.get('WEBSERV_TEST_TIMEOUT', '3'))
 
@@ -88,6 +91,17 @@ class Integration(unittest.TestCase):
         cgi = cls.root / 'cgi'
         cgi.mkdir()
         (cgi / 'hello.py').write_text('print("Content-Type: text/plain\\r\\n\\r\\nCGI-EXECUTED", end="")\n')
+        (cgi / 'echo.py').write_text(
+            'import os, sys\n'
+            'n = int(os.environ.get("CONTENT_LENGTH", "0"))\n'
+            'data = sys.stdin.buffer.read(n)\n'
+            'sys.stdout.buffer.write(b"Content-Type: application/octet-stream\\r\\n\\r\\n" + data)\n'
+        )
+        (cgi / 'slow.py').write_text(
+            'import time\n'
+            'time.sleep(2)\n'
+            'print("Content-Type: text/plain\\r\\n\\r\\nSLOW", end="")\n'
+        )
         second = cls.base / 'second'
         second.mkdir()
         (second / 'index.html').write_bytes(b'second-index\n')
@@ -177,6 +191,39 @@ server {{
         self.assertEqual(status, 200)
         self.assertEqual(body, b'CGI-EXECUTED', 'CGI must execute instead of serving script source')
 
+    def test_cgi_chunked_content_length_and_body(self):
+        raw = (b'POST /cgi/echo.py HTTP/1.1\r\nHost: local.test\r\n'
+               b'Transfer-Encoding: chunked\r\nContent-Type: application/octet-stream\r\n'
+               b'Connection: close\r\n\r\n'
+               b'3\r\na\x00b\r\n3\r\nc\xffd\r\n0\r\n\r\n')
+        status, _, body = self.exchange(raw)
+        self.assertEqual(status, 200)
+        self.assertEqual(body, b'a\x00bc\xffd', 'CGI must receive decoded chunked body with accurate CONTENT_LENGTH')
+
+    def test_cgi_content_length_fixed_request(self):
+        status, _, body = self.exchange(request('/cgi/echo.py', 'POST', b'Hello\x00World'))
+        self.assertEqual(status, 200)
+        self.assertEqual(body, b'Hello\x00World')
+
+    @unittest.skipUnless(os.environ.get("WEBSERV_CGI_DISCONNECT_TEST") == "1",
+                         "set WEBSERV_CGI_DISCONNECT_TEST=1 for CGI disconnect stress test")
+    def test_disconnected_cgi_clients_cleanup(self):
+        # Warm up one CGI and establish a stable FD baseline.
+        self.assertEqual(self.exchange(request('/cgi/hello.py'))[0], 200)
+        before = self.fd_count()
+        for _ in range(50):
+            with self.connect() as sock:
+                sock.sendall(request('/cgi/slow.py'))
+                time.sleep(.01)
+        deadline = time.monotonic() + 6
+        after = self.fd_count()
+        while after > before and time.monotonic() < deadline:
+            time.sleep(.1)
+            after = self.fd_count()
+        self.assertLessEqual(after, before,
+            f'CGI disconnect FD leak: before={before}, after={after}')
+        self.assertEqual(self.exchange(request())[0], 200)
+
     def test_http10_default_close(self):
         with self.connect() as sock:
             sock.sendall(b'GET / HTTP/1.0\r\nHost: local.test\r\n\r\n')
@@ -194,7 +241,11 @@ server {{
         body = b'a\x00b\xff\r\n' * 100
         status, headers, _ = self.exchange(request('/upload', 'POST', body))
         self.assertEqual(status, 201)
-        path = headers[b'location'].decode()
+        self.assertNotIn(b'location', headers, 'upload_store is a filesystem path, not necessarily a public URL')
+        matches = [p for p in self.uploads.iterdir() if p.is_file() and p.read_bytes() == body]
+        self.assertTrue(matches, 'uploaded binary payload not found on disk')
+        # Test DELETE explicitly against the configured public /upload route.
+        path = '/upload/' + matches[-1].name
         self.assertEqual(self.exchange(request(path))[2], body)
         self.assertEqual(self.exchange(request(path, 'DELETE'))[0], 204)
         self.assertEqual(self.exchange(request(path))[0], 404)
@@ -218,7 +269,8 @@ server {{
                 time.sleep(.001)
             status, headers, _ = Wire(sock).read()
         self.assertEqual(status, 201)
-        self.assertEqual(self.exchange(request(headers[b'location'].decode()))[2], b'fragment\x00body')
+        self.assertNotIn(b'location', headers)
+        self.assertTrue(any(p.is_file() and p.read_bytes() == b'fragment\x00body' for p in self.uploads.iterdir()))
 
     def test_pipelining_and_connection_close(self):
         with self.connect() as sock:
@@ -245,7 +297,8 @@ server {{
             status, headers, _ = wire.read()
             self.assertEqual(status, 201)
             self.assertEqual(wire.read()[2], b'primary-index\n')
-        self.assertEqual(self.exchange(request(headers[b'location'].decode()))[2], b'a\x00bcd')
+        self.assertNotIn(b'location', headers)
+        self.assertTrue(any(p.is_file() and p.read_bytes() == b'a\x00bcd' for p in self.uploads.iterdir()))
 
     def test_malformed_headers(self):
         cases = [b'', b'Host: a\r\nHost: b\r\n', b'Host: \r\n',
