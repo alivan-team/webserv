@@ -52,8 +52,8 @@ void ServerManager::removeClient(size_t index) {
 
 	if (client.getCgiPid() > 0) {
 
-		// unregisterFd(clientFd);
-		removeFd(clientFd);
+		unregisterFd(clientFd);
+		// removeFd(clientFd);
 
 		kill(client.getCgiPid(), SIGKILL);
 		client.setPendingRemoval(true);
@@ -363,7 +363,7 @@ void ServerManager::checkCgiTimeouts() {
 	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 
 	std::map<int, Client>::iterator it = _clients.begin();
-	
+
 	while (it != _clients.end()) {
 
 		Client& client = it->second;
