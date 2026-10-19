@@ -529,7 +529,14 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 
 	serverConfig = &getClientServerManager(client.getServerFd(), client.getHost());
 	size_t maxBodySize = serverConfig->getClientMaxBodySize().back();
-	const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
+
+	std::string uriPath = client.getRequestUri();
+	size_t cut = uriPath.find_first_of("?#");
+	if (cut != std::string::npos)
+		uriPath.erase(cut);
+
+const LocationConfig* location = HTTPResponseBuild::getLocationForPath(uriPath, *serverConfig);
+// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
 	// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequest().getPath(), *serverConfig);
 	// std::cout << "client.getRequestUri() -> " << client.getRequestUri() << std::endl;
 	// std::cout << "client.getRequest().getPath() -> " << client.getRequest().getPath() << std::endl;
