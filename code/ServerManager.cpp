@@ -540,7 +540,7 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 		uriPath.erase(cut);
 
 const LocationConfig* location = HTTPResponseBuild::getLocationForPath(uriPath, *serverConfig);
-const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
+// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
 	// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequest().getPath(), *serverConfig);
 	// std::cout << "client.getRequestUri() -> " << client.getRequestUri() << std::endl;
 	// std::cout << "client.getRequest().getPath() -> " << client.getRequest().getPath() << std::endl;
