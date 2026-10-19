@@ -190,11 +190,13 @@ HTTPRequest HTTPRequestParser::parse(const std::string &buffer, size_t requestSi
 	std::string firstLine = buffer.substr(0, endFirstLine);
 	parseRequestLine(firstLine, httpparseresult);
 
-	size_t headersEnd = buffer.find("\r\n\r\n", endFirstLine + 2);
+	size_t headersEnd = buffer.find("\r\n\r\n", endFirstLine);
 	if (headersEnd == std::string::npos)
 		throw HTTPParseException(400, "Missing end of headers");
 
-	std::string headers = buffer.substr(endFirstLine + 2, headersEnd - endFirstLine - 2);
+	std::string headers;
+	if (headersEnd > endFirstLine)
+		headers = buffer.substr(endFirstLine + 2, headersEnd - endFirstLine - 2);
 	parseHeaders(headers, httpparseresult);
 
 	const std::map<std::string, std::string> allHeaders = httpparseresult.getHeaders();
