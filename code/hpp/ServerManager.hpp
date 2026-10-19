@@ -42,7 +42,6 @@ struct CgiResult {
 };
 
 class ServerManager {
-	// using fd = int;
 	private:
 		std::map<int, std::vector<ServerConfig>> _serversMap;
 		std::vector<int> _serverSockets;
@@ -84,7 +83,6 @@ class ServerManager {
 		void removeFd(int fd);
 		void unregisterFd(int fd);
 		void setFdEvents(int fd, short events);
-		// HTTPResponse buildCgiResponse(const Client& client);
 
 };
 

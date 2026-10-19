@@ -129,8 +129,6 @@ function deleteFile(filename)
 		if (response.ok) {
 			alert(filename + " deleted successfully");
 
-			// Reload the page so Webserv generates
-			// the new directory listing.
 			location.reload();
 		}
 		else {

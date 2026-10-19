@@ -30,7 +30,6 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 {
 	std::string path;
 	errorCode = 0;
-	// const LocationConfig* location = NULL;
 
 	int result = prepareRequestPath(request, servConf, path, location);
 	if (result != 0) {
@@ -40,21 +39,6 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 
 	if (location->hasRedirect())
 		return false;
-
-	// Method method = request.getMethod();
-	// if ((method == Method::GET && !location->isGetAllowed()) || 
-	// 	(method == Method::POST && !location->isPostAllowed()) || 
-	// 	(method == Method::DELETE && !location->isDeleteAllowed())) {
-	// 	errorCode = 405;
-	// 	return false;
-	// }
-	
-	// // Identify CGI from the URL before checking whether the script exists.
-	// const size_t dot = path.find_last_of('.');
-	// const size_t slash = path.find_last_of('/');
-	// if (dot == std::string::npos || (slash != std::string::npos && dot < slash))
-	// 	return false;
-	// const std::string extension = path.substr(dot);
 
 	// Begin of the new block
 	const std::string extension = getPathExtension(path);
@@ -707,50 +691,6 @@ HTTPResponse HTTPResponseBuild::buildAutoIndexPage(const HTTPRequest &request, c
 
 	return res;
 }
-
-// const LocationConfig *HTTPResponseBuild::findBestLocation(const std::string &path, const ServerConfig &servConf) {
-
-// 	const std::vector<LocationConfig>& locations = servConf.getLocations();
-
-// 	const LocationConfig* normalLoc = NULL;
-// 	const LocationConfig* cgiLoc = NULL;
-
-// 	size_t bestLength = 0;
-
-// 	std::string extension = getPathExtension(path);
-
-// 	for (size_t i = 0; i < locations.size(); ++i)
-// 	{
-// 		const LocationConfig& loc = locations[i];
-
-// 		if (!startsWithLocation(path, loc.getUriPath()))
-// 			continue;
-
-// 		size_t currentLength = loc.getUriPath().size();
-
-// 		if (currentLength > bestLength)
-// 		{
-// 			bestLength = currentLength;
-// 			normalLoc = NULL;
-// 			cgiLoc = NULL;
-// 		}
-// 		else if (currentLength < bestLength)
-// 			continue;
-
-// 		if (loc.hasCgiConfig())
-// 		{
-// 			if (!extension.empty() && loc.hasCgiExtension(extension))
-// 				cgiLoc = &loc;
-// 		}
-// 		else
-// 			normalLoc = &loc;
-// 	}
-
-// 	if (cgiLoc != NULL)
-// 		return cgiLoc;
-
-// 	return normalLoc;
-// };
 
 const LocationConfig *HTTPResponseBuild::findBestLocation(
 	const std::string &path,

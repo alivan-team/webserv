@@ -30,7 +30,6 @@ void LocationConfig::setUriPath(std::string uripath) {
 	if (!checkUriPath(uripath))
 		throw std::runtime_error("Incorrect URI path");
 	_uriPath = uripath;
-	// printDebug("\n_uriPath: ", _uriPath);
 }
 
 void LocationConfig::setAllowMethods(const std::vector<std::string>& methods) {

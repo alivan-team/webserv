@@ -73,7 +73,6 @@ void testLocationConfig()
 	check(location.isGetAllowed() && location.isPostAllowed(), "configured methods are enabled");
 	check(!location.isDeleteAllowed(), "unconfigured methods stay disabled");
 	check(location.getRoot() == "./site/www", "location root is stored");
-	// check(location.getIndex().size() == 2, "location indexes are stored");
 	check(location.getAutoIndex(), "autoindex on is stored");
 	check(location.hasRedirect() && location.getRedirect()._number == 301,
 		  "redirect is stored");
@@ -2607,7 +2606,7 @@ int main()
 	run("Client new response resets progress", testClientNewResponseResetsProgress);
 	run("Client header size limit", testClientHeaderSizeLimit);
 	run("Client close after response", testClientCloseAfterResponse);
-	run("Client chunked body decoding", testClientDecodeChunkedBody); // 
+	run("Client chunked body decoding", testClientDecodeChunkedBody);
 	run("Client Content-Length request", testClientContentLengthUnaffected);
 	run("Virtual host server configs", testVirtualHostServerConfigs);
 	run("Multiple server names", testMultipleServerNames);
@@ -2632,7 +2631,6 @@ int main()
 	run("HTTP protocol edge cases", testHttpProtocolEdgeCases);
 	run("Route and path edge cases", testRouteAndPathEdgeCases);
 	run("ServerConfig body-size edge cases", testServerConfigBodySizeEdgeCases);
-	// run("CGI routing and missing upload store", testCgiRoutingAndMissingUploadStore);
 	run("CGI 405 includes Allow header", testCgi405IncludesAllowHeader);
 	run("Unsupported CGI method returns 501", testUnsupportedMethodToCgiReturns501);
     run("BREAKER chunk + sign", testInvalidChunkSizePlusSign);

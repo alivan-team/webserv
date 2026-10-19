@@ -5,8 +5,6 @@
 #include "./hpp/printDebug.hpp"
 #include "./hpp/HTTPParseException.hpp"
 
-// ServerManager::ServerManager() {};
-
 const std::map<int, std::vector<ServerConfig>>& ServerManager::getServerManager() const {
 	return _serversMap;
 }
@@ -53,8 +51,6 @@ void ServerManager::removeClient(size_t index) {
 	if (client.getCgiPid() > 0) {
 
 		unregisterFd(clientFd);
-		// removeFd(clientFd);
-
 		kill(client.getCgiPid(), SIGKILL);
 		client.setPendingRemoval(true);
 		return ;
@@ -298,18 +294,13 @@ const ServerConfig& ServerManager::getClientServerManager(int serverIndex, const
 	for (size_t i = 0; i < servers.size(); i++) {
 
 		const std::vector<std::string>& serverNames = servers[i].getServerName();
-		// std::cout << "serverNames OUTER loop -> " << serverNames[i] << std::endl;
 
 		for (size_t j = 0; j < serverNames.size(); j++) {
-			// std::cout << "\t serverNames INNER loop -> " << serverNames[j] << std::endl;
-
 			if (toLower(serverNames[j]) == lowerHost) {
-				// std::cout << "\t\t RETURN serverNames -> " << serverNames[j] << "server -> " << servers[i].getServerName()[0] << std::endl;
 				return servers[i];
 			}
 		}
 	} 
-	// std::cout << "\t\t\t\t server -> " << servers[0].getServerName()[0] << std::endl;
 
 	return servers[0];
 }
@@ -536,10 +527,6 @@ RequestState ServerManager::getRequestState(Client& client, const ServerConfig*&
 		uriPath.erase(cut);
 
 const LocationConfig* location = HTTPResponseBuild::getLocationForPath(uriPath, *serverConfig);
-// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequestUri(), *serverConfig);
-	// const LocationConfig* location = HTTPResponseBuild::getLocationForPath(client.getRequest().getPath(), *serverConfig);
-	// std::cout << "client.getRequestUri() -> " << client.getRequestUri() << std::endl;
-	// std::cout << "client.getRequest().getPath() -> " << client.getRequest().getPath() << std::endl;
 
 	if (location != NULL && location->hasClientMaxBodySize()) {
 		maxBodySize = location->getClientMaxBodySize();
@@ -655,7 +642,6 @@ void ServerManager::addFd(int fd, FdType type, int clientFd)
 
 void ServerManager::unregisterFd(int fd) {
 
-	// iterators?
 	for (size_t i = 0; i < _pollfds.size(); ++i)
 	{
 		if (_pollfds[i].fd == fd)

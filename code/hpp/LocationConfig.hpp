@@ -59,7 +59,6 @@ class LocationConfig {
 		bool isDeleteAllowed() const;
 		void setClientMaxBodySize(const std::vector<std::string>& client_max_body_size);
 		unsigned int getClientMaxBodySize() const;
-		// int  getCgiExtensionIndex(const std::string& extension);
 		bool hasClientMaxBodySize() const;
 };
 

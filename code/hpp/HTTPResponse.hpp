@@ -27,7 +27,6 @@ class HTTPResponse {
 		const std::string& getBody() const;
 		const std::string& getVersion() const;
 		
-		// getStatusCode() is added only for TestMain.cpp 
 		int getStatusCode() const { return _statusCode; }; 
 };
 

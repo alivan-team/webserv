@@ -39,5 +39,4 @@ struct CgiRoute
 	std::string workingDirectory;
 };
 
-// HTTP CODE
 #endif
