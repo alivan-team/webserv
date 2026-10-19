@@ -37,17 +37,6 @@ static bool isValidHeaderName(const std::string& name)
 	return true;
 }
 
-// const char *const usage_format =
-// 			"%s: [-[hfr]] [config file]\n"
-// 			"\t-h\n"
-// 			"\t\tprint help information\n";
-
-// #define CRLF "\r\n"
-// enum HTTPCode {
-// 	OK = 200,
-// 	NOT_FOUND = 404,
-// 	//etc...
-// };
 RequestState Client::parseHeaderClient() {
 
 	static const size_t MAX_HEADER_SIZE = 32 * 1024;
@@ -206,7 +195,6 @@ RequestState Client::checkChunkedRequestBody(size_t maxBodySize) {
 
 	_requestEnd = checkedRequestEnd;
 	_bodySize = decodedBodySize;
-	// _bodySize = _requestEnd - _bodyPos; // size info + protocol;
 
 	return RequestState::Complete;
 };

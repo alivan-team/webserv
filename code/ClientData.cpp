@@ -250,7 +250,7 @@ void Client::setCgiInputOffset(size_t offset)
 	_cgiInputOffset = offset;
 }
 
-void Client::setCgiOutput(const std::string& output) // APPEND cgi output
+void Client::setCgiOutput(const std::string& output)
 {
 	_cgiOutput += output;
 }

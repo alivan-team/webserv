@@ -205,7 +205,6 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 		relativePath = path.substr(location->getUriPath().size());
 	if (!location->getRoot().empty()) {
 		baseDir = location->getRoot();
-		// fullPath = joinPath("./site/test-second/index.html", path);
 		fullPath = joinPath(location->getRoot(), relativePath);
 	} else {
 		if (servConf.getRoot().empty() || servConf.getRoot()[0].empty())
@@ -213,10 +212,7 @@ HTTPResponse HTTPResponseBuild::handleGet(const HTTPRequest &request, const Serv
 
 		baseDir = servConf.getRoot()[0];
 		fullPath = joinPath(servConf.getRoot()[0], path);
-		// fullPath = joinPath("./site/test-second/index.html", path);
-		// ./site/test-second/index.html
 	}
-	// std::cout << "Path: " << fullPath << std::endl;
 
 	if (!fileExists(fullPath))
 		return makeErrorResponse(404, request, servConf);
@@ -393,7 +389,6 @@ HTTPResponse HTTPResponseBuild::handlePost(
 		"<p>Upload successful.</p>"
 		"</body>"
 		"</html>";
-		// readReadFile("./site/www/post-result.html");
 
 	res.setStatusCode(201);
 	res.setStatus(getStatusText(201));
@@ -407,11 +402,6 @@ HTTPResponse HTTPResponseBuild::handlePost(
 	res.setHeader(
 		"Connection",
 		decideConnection(request));
-	// res.setHeader(
-	// 	"Location",
-	// 	joinPath(
-	// 		location->getUriPath(),
-	// 		filename));
 	res.setBody(body);
 
 	return res;
