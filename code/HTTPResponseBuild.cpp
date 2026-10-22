@@ -40,7 +40,6 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 	if (location->hasRedirect())
 		return false;
 
-	// Begin of the new block
 	const std::string extension = getPathExtension(path);
 
 	if (extension.empty() || !location->hasCgiExtension(extension))
@@ -55,7 +54,6 @@ bool HTTPResponseBuild::resolveCgiRoute(const HTTPRequest& request, const Server
 		errorCode = 405;
 		return false;
 	}
-	// End of the new block
 
 	const std::vector<std::string>& extensions = location->getCgiExtension();
 	const std::vector<std::string>& cgiPaths = location->getCgiPath();

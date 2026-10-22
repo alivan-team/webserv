@@ -73,6 +73,13 @@ document.addEventListener('click', async (event) => {
       const { response, text } = await request(`/cgi-bin/testjs.js?name=${value}&mode=get`);
       setOut('#out-cgi', `GET CGI → HTTP ${response.status}\n${text.slice(0, 900)}`, response.status === 200);
     }
+    if (test === 'cgi-dynamic') {
+      const value = $('#cgi-name').value.trim();
+      const url = value
+          ? `/cgi-bin/dynamic.py?name=${encodeURIComponent(value)}`
+          : '/cgi-bin/dynamic.py';
+      window.open(url, '_blank', 'noopener');
+    }
     if (test === 'upload') {
       const fileInput = $('#upload-file');
       if (!fileInput.files.length) {

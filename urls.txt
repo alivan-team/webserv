@@ -1,4 +1,0 @@
-http://localhost:8080/legacy
-http://localhost:8080
-http://localhost:8081
-http://localhost:8080/cgi-bin/echo.py

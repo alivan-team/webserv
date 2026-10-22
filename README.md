@@ -2,144 +2,139 @@
 
 # Webserv
 
+![Webserv — a custom HTTP/1.1 server in C++](assets/webserv-banner.png)
+
+**An event-driven HTTP server built from scratch in C++.**
+
+`C++17` · `HTTP/1.1` · `Sockets` · `poll()` · `CGI` · `Unix / POSIX`
+
 ## Description
 
-**Webserv** is a non-blocking HTTP server written in C++ for the 42/Codam curriculum. The goal of the project is to understand how an HTTP server works at a low level by implementing the server ourselves instead of relying on an existing web-server framework.
+What actually happens between a browser sending a request and a server returning a response?
 
-The server accepts TCP connections, parses HTTP requests, selects configuration rules, builds HTTP responses, serves static files, handles uploads and deletions, and can execute CGI programs. Network and CGI pipe I/O are handled through a single `poll()`-driven event loop so that one slow client or CGI process does not block the rest of the server.
+We built **Webserv** to answer that question by implementing an HTTP server ourselves. Rather than using an existing web-server framework, we worked directly with TCP sockets, HTTP message parsing, file descriptors, configuration rules, files, and processes.
 
-This implementation is compiled as **C++17**, following the C++ version allowance used for our Codam Amsterdam project.
+The central challenge was to support multiple connections without letting a slow client or CGI process stop the rest of the server. Our solution uses non-blocking I/O and a `poll()`-driven event loop, with individual client state maintained across reads and writes.
 
-### Main features
+This project was developed for the **42 / Codam Amsterdam** curriculum and successfully evaluated. It is written in C++17, which is permitted for our Codam project.
 
-- Non-blocking TCP server using `poll()`.
-- Multiple listening sockets and ports.
-- HTTP/1.0 and HTTP/1.1 request handling.
-- Persistent connections / keep-alive handling.
-- `GET`, `POST`, and `DELETE` methods.
-- Per-location method restrictions with `allow_methods`.
-- Static file serving.
-- Configurable server and location roots.
-- Configurable index files.
-- Automatic directory listings with `autoindex`.
-- Custom error pages and default fallback error responses.
-- Request-body size limits with `client_max_body_size`.
-- Request bodies using `Content-Length`.
-- Chunked request decoding.
-- File uploads, including `multipart/form-data` handling.
-- File deletion.
-- HTTP redirection.
-- CGI execution based on configured file extensions.
-- CGI request environment variables and request body forwarding through pipes.
-- CGI output returned as an HTTP response.
-- CGI timeout/process cleanup handling.
-- Virtual-host selection through the `Host` header.
-- Path validation to prevent requests from escaping the configured web root.
+## Features
 
-## Project structure
+![Webserv features and HTTP request lifecycle](assets/webserv-features.png)
+
+| Area | What we implemented |
+| --- | --- |
+| **Networking** | Non-blocking TCP sockets, `poll()`-based I/O multiplexing, multiple listening ports, and concurrent clients |
+| **HTTP** | HTTP/1.0 and HTTP/1.1 request parsing, `GET`, `POST`, `DELETE`, persistent connections, `Content-Length`, and chunked request bodies |
+| **Routing** | Configuration-driven server and location blocks, virtual hosts via `Host`, index files, and redirects |
+| **Static content** | File serving, optional directory listing, and custom error pages |
+| **Uploads** | File uploads, `multipart/form-data` parsing, configurable upload destinations, and request-body size limits |
+| **CGI** | CGI execution with `fork()`, `execve()`, pipes, request environment variables, and non-blocking communication |
+| **Reliability** | Request validation, method restrictions, timeouts, process cleanup, and filesystem path checks |
+
+## How it works
 
 ```text
-.
-├── main.cpp
-├── Makefile
-├── code/
-│   ├── ConfigParser.cpp
-│   ├── ServerManager.cpp
-│   ├── ServerManagerCGI.cpp
-│   ├── HTTPRequestParser.cpp
-│   ├── HTTPResponseBuild.cpp
-│   └── ...
-├── code/hpp/
-│   └── ...
-├── config/
-│   ├── default.conf
-│   └── ...
-├── site/
-│   └── www/
-└── tests/
-    └── TestMain.cpp
+                 +---------------------+
+                 |   Client / Browser  |
+                 +----------+----------+
+                            |
+                       TCP request
+                            |
+                 +----------v----------+
+                 |   Listening socket  |
+                 |     accept()        |
+                 +----------+----------+
+                            |
+                 +----------v----------+
+                 |   poll() event loop |
+                 |  non-blocking I/O   |
+                 +----------+----------+
+                            |
+                 +----------v----------+
+                 |    HTTP parser      |
+                 | headers + body      |
+                 +----------+----------+
+                            |
+                 +----------v----------+
+                 |  Config + routing   |
+                 | host / location     |
+                 +----------+----------+
+                            |
+                  +---------+---------+
+                  |                   |
+          +-------v-------+   +-------v-------+
+          | Static files  |   | CGI process   |
+          | / uploads     |   | fork / execve |
+          +-------+-------+   +-------+-------+
+                  |                   |
+                  +---------+---------+
+                            |
+                 +----------v----------+
+                 |   HTTP response     |
+                 | status + headers    |
+                 | + body              |
+                 +---------------------+
 ```
 
-## Instructions
+The server tracks each connected client's progress instead of assuming that an entire request or response will fit into a single read or write. CGI communication is integrated into the event loop through pipes, so the server can continue serving other connections while a script is running.
+
+## Getting started
 
 ### Requirements
 
-You need:
+- A C++17-capable compiler available as `c++`
+- `make`
+- A POSIX-compatible environment with sockets, `poll()`, pipes, and process system calls
+- An installed interpreter for any configured CGI scripts (the default configuration uses Python 3 at `/usr/bin/python3`)
 
-- a C++ compiler available as `c++`;
-- `make`;
-- a POSIX-compatible environment providing sockets, `poll()`, `fork()`, pipes, and related system calls;
-- a CGI interpreter if CGI is enabled in the configuration, for example Python 3.
+### Build
 
-### Compilation
+From the project root:
 
-Build the server with:
-
-```sh
+```bash
 make
 ```
 
-The project is compiled with:
+The Makefile uses `-Wall -Wextra -Werror -std=c++17`.
 
-```text
--Wall -Wextra -Werror -std=c++17
-```
+### Run
 
-Available Makefile targets:
+Start the server with the included configuration:
 
-```sh
-make          # Build webserv
-make test     # Build and run the test executable
-make clean    # Remove object and dependency files
-make fclean   # Remove objects, dependencies, and binaries
-make re       # Clean and rebuild webserv
-```
-
-### Running the server
-
-Run with the default configuration:
-
-```sh
+```bash
 ./webserv
 ```
 
-When no argument is supplied, Webserv loads:
+Or supply a configuration file:
 
-```text
-./config/default.conf
+```bash
+./webserv config/default.conf
 ```
 
-To use another configuration file:
+With the supplied configuration, the main server listens on **port 8080** and an additional server listens on **port 8081**.
 
-```sh
-./webserv path/to/config.conf
+Open `http://localhost:8080/` in a browser or try:
+
+```bash
+curl -i http://localhost:8080/
 ```
 
-Only zero or one configuration-file argument is accepted.
+### Makefile targets
 
-### Basic test
-
-With a configuration listening on port `8080`:
-
-```sh
-curl -i http://127.0.0.1:8080/
+```bash
+make          # Build the server
+make test     # Build and run the included tests
+make clean    # Remove build objects and dependency files
+make fclean   # Remove generated objects and binaries
+make re       # Rebuild from scratch
 ```
-
-You can also open the same address in a web browser.
-
-### Running the tests
-
-```sh
-make test
-```
-
-The included tests cover parts of configuration parsing, HTTP request parsing, response generation, request buffering, chunked-body decoding, host selection, body-size limits, uploads, and related server behaviour.
 
 ## Configuration
 
-The configuration format is inspired by the `server` and `location` blocks used by NGINX.
+We use a small configuration language inspired by NGINX. It supports multiple `server` blocks and location-specific behavior.
 
-Example:
+A simplified example:
 
 ```nginx
 server {
@@ -148,10 +143,8 @@ server {
 
     root ./site/www;
     index index.html;
-    client_max_body_size 1000000;
-
-    error_page 404 /error_pages/404.html;
-    error_page 500 /error_pages/500.html;
+    client_max_body_size 131072;
+    error_page 404 /errors/404.html;
 
     location / {
         allow_methods GET;
@@ -160,10 +153,9 @@ server {
 
     location /upload {
         root ./site/www/upload;
-        allow_methods GET POST DELETE;
+        allow_methods GET POST;
         upload_store ./site/www/uploads;
         index index.html;
-        autoindex on;
     }
 
     location /cgi-bin {
@@ -171,97 +163,108 @@ server {
         allow_methods GET POST;
         cgi_extension .py;
         cgi_path /usr/bin/python3;
+        client_max_body_size 100;
     }
 
-    location /old-page {
-        return 301 /new-page;
+    location /legacy {
+        return 301 /redirected.html;
     }
 }
 ```
 
-### Server directives
+The actual default configuration is in [`config/default.conf`](config/default.conf). It also defines routes for assets, documentation, uploaded files, and more.
 
-The server configuration supports directives including:
+Common directives include `listen`, `server_name`, `root`, `index`, `allow_methods`, `autoindex`, `client_max_body_size`, `error_page`, `upload_store`, `cgi_extension`, `cgi_path`, and `return`.
 
-- `listen` — interface/port on which the server listens;
-- `server_name` — names associated with a server block;
-- `root` — document root;
-- `index` — default files for directories;
-- `client_max_body_size` — maximum accepted request-body size;
-- `error_page` — custom error pages for one or more status codes.
+> The configured upload directory must exist before using uploads. CGI interpreters must be installed at the paths set in the configuration.
 
-### Location directives
+## CGI: the interesting part
 
-Location blocks support directives including:
+CGI was one of the more challenging pieces of the project because it brings networking and process management together.
 
-- `allow_methods` — accepted methods (`GET`, `POST`, `DELETE`);
-- `root` — location-specific filesystem root;
-- `index` — location-specific index files;
-- `autoindex` — enable or disable directory listing;
-- `upload_store` — destination directory for uploaded files;
-- `return` — HTTP redirection;
-- `cgi_extension` — file extension handled as CGI;
-- `cgi_path` — interpreter/executable used for the corresponding CGI extension.
+For a matching CGI request, Webserv resolves the script and interpreter, creates pipes, forks a child, prepares the CGI environment, and executes the interpreter with `execve()`. The parent process forwards the request body to the child and reads its output through non-blocking pipes before constructing the HTTP response.
 
-For CGI, each configured CGI extension must have a corresponding CGI executable path.
+We also had to think about what happens when a client disconnects, a script takes too long, or a pipe reaches EOF. Correct cleanup of file descriptors and child processes is part of making the server reliable.
 
-## HTTP and CGI behaviour
+## Testing
 
-### Static resources
+Run the project's test executable with:
 
-For a normal `GET` request, Webserv resolves the request against the selected server/location root. Depending on the resource and configuration it can return a file, serve an index page, generate an autoindex page, redirect the client, or return an appropriate error response.
+```bash
+make test
+```
 
-### Uploads
+We tested both individual components and full request flows, including fragmented requests, chunked bodies, keep-alive connections, virtual hosts, uploads, malformed headers, CGI execution, simultaneous clients, and connection cleanup.
 
-Locations configured with `POST` and `upload_store` can receive request bodies and save uploaded files. Multipart form uploads are parsed so that uploaded file content can be stored separately from the multipart metadata.
+A few useful manual checks:
 
-The configured upload directory must exist before starting the server.
+```bash
+# Basic response
+curl -i http://localhost:8080/
 
-### DELETE
+# Inspect the second configured port
+curl -i http://localhost:8081/
 
-When `DELETE` is allowed for a location, Webserv validates the requested filesystem path before removing the target resource.
+# Send a request with an explicit Host header
+curl -i -H 'Host: localhost' http://localhost:8080/
 
-### CGI
+# Confirm an unsupported method is rejected for the root route
+curl -i -X DELETE http://localhost:8080/
+```
 
-CGI programs are selected using the requested file extension and the CGI rules in the matching location. Webserv:
+The `tests/` directory contains the project's C++ test code and fixtures.
 
-1. creates pipes for CGI input and output;
-2. forks a child process;
-3. connects the CGI process's standard input/output to the pipes;
-4. builds CGI environment variables from the HTTP request;
-5. changes to the CGI working directory;
-6. executes the configured interpreter/program with `execve()`;
-7. communicates with the CGI pipes through the main event loop;
-8. converts the CGI output into the response sent to the client.
+## Project layout
 
-Chunked request bodies are decoded before they are provided to CGI. EOF on the CGI input/output pipes is used as part of the CGI request/response lifecycle where applicable.
+```text
+webserv/
+├── main.cpp
+├── Makefile
+├── code/
+│   ├── ServerManager.cpp       # Socket lifecycle and event loop
+│   ├── ServerManagerCGI.cpp    # CGI process and pipe handling
+│   ├── HTTPRequestParser.cpp   # HTTP request parsing
+│   ├── HTTPResponseBuild.cpp   # HTTP response construction
+│   ├── ConfigParser.cpp        # Configuration parsing
+│   └── hpp/                    # Header files
+├── config/
+│   └── default.conf
+├── site/                       # Demo content and CGI scripts
+├── tests/                      # Test code and fixtures
+└── assets/                     # README images (add this folder)
+```
+
+## What we learned
+
+This project gave us a much clearer picture of what a web server does behind the scenes. Some of the hardest problems were not about producing a correct response in the happy case, but about handling all the situations around it: partial I/O, persistent connections, CGI processes, disconnected clients, and cleanup after errors.
+
+Working through those cases helped us become more comfortable with **system calls, event-driven architecture, HTTP, and debugging behavior that only appears under specific timing or concurrency conditions**.
+
+We also learned the value of testing assumptions. A server can look perfectly fine in a browser and still behave incorrectly when a request arrives in pieces or a client goes away halfway through an operation.
 
 ## Resources
 
-The following references were useful while studying and implementing the project:
+- [42 Webserv subject](https://github.com/42School) — project requirements and scope (see the subject distributed with the course)
+- [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110) — methods, status codes, and headers
+- [RFC 9112: HTTP/1.1](https://www.rfc-editor.org/rfc/rfc9112) — HTTP message framing and connections
+- [RFC 3875: CGI/1.1](https://www.rfc-editor.org/rfc/rfc3875) — CGI environment and protocol
+- [NGINX documentation](https://nginx.org/en/docs/) — configuration concepts and server behavior
+- [Linux man-pages](https://man7.org/linux/man-pages/) — sockets, `poll()`, `fork()`, pipes, `dup2()`, `execve()`, and related APIs
+- [cppreference](https://en.cppreference.com/) — C++ language and library reference
 
-- **42 Webserv subject** — mandatory project requirements and allowed project scope.
-- **RFC 9110 — HTTP Semantics** — HTTP methods, status codes, headers, and general protocol semantics: https://www.rfc-editor.org/rfc/rfc9110
-- **RFC 9112 — HTTP/1.1** — HTTP/1.1 message framing and connection behaviour: https://www.rfc-editor.org/rfc/rfc9112
-- **RFC 3875 — The Common Gateway Interface (CGI) Version 1.1** — CGI environment and server/CGI communication: https://www.rfc-editor.org/rfc/rfc3875
-- **NGINX documentation** — reference behaviour and configuration concepts: https://nginx.org/en/docs/
-- **Linux/POSIX manual pages** for `socket`, `bind`, `listen`, `accept`, `poll`, `recv`, `send`, `fcntl`, `pipe`, `fork`, `dup2`, `execve`, `waitpid`, and related system calls: https://man7.org/linux/man-pages/
-- **cppreference** — C++ language and standard-library reference: https://en.cppreference.com/
+### AI-assisted learning and review
 
-### Use of AI
+We used AI as a supporting tool for explaining unfamiliar concepts, discussing failure scenarios, reviewing code and configuration, suggesting tests, and improving documentation. Suggestions were checked against the project requirements and our own implementation and tests rather than accepted without review. The implementation and project decisions remain our responsibility.
 
-AI tools were used as a supporting learning and review resource during the project. In particular, they were used to:
+The README graphics were also AI-generated and are **illustrations**, not screenshots of real server output.
 
-- explain networking, HTTP, CGI, process, pipe, and file-descriptor concepts;
-- discuss possible edge cases and failure scenarios;
-- review parts of the code for subject compliance and robustness;
-- suggest tests for HTTP, CGI, uploads, timeouts, and concurrent behaviour;
-- help review configuration and error-handling logic;
-- assist with documentation wording and the evaluation/demo website.
+## Authors
 
-AI output was treated as suggestions rather than authoritative answers. Proposed changes were reviewed against the project subject, the existing codebase, documentation, testing, and team discussion before being accepted. The authors remain responsible for understanding and being able to explain the submitted implementation.
+Developed together at **Codam Amsterdam (42 Network)**:
 
-## Team
+- **Ivan Pavlov** — 42 login: `ipavlov` · GitHub: [@12Ivan03](https://github.com/12Ivan03)
+- **Alina Erokhina** — 42 login: `agerokhina` · GitHub: [@agerokhina](https://github.com/agerokhina)
 
-- **Ivan Pavlov** — Codam login: `ipavlov` — GitHub: `12Ivan03`
-- **Anastasia Erokhina** — Codam login: `agerokhina` — GitHub: `agerokhina`
+---
+
+*Built to understand what happens beneath the HTTP response.*

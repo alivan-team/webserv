@@ -1330,7 +1330,6 @@ void testServerConfigListen()
 {
 	ServerConfig server;
 
-	// Default
 	check(
 		server.getHost() == "0.0.0.0",
 		"default listen host is 0.0.0.0"
@@ -1341,7 +1340,6 @@ void testServerConfigListen()
 		"default listen port is 8080"
 	);
 
-	// Port only
 	std::vector<std::string> listenPort;
 	listenPort.push_back("9000");
 
@@ -1357,7 +1355,6 @@ void testServerConfigListen()
 		"port-only listen sets port"
 	);
 
-	// Interface + port
 	std::vector<std::string> listenAddress;
 	listenAddress.push_back("127.0.0.1:8081");
 
@@ -1732,7 +1729,6 @@ void testCgiResponseIgnoresCgiConnectionHeader()
     result.statusCode = 200;
     result.headers["content-type"] = "text/plain";
 
-    // CGI tries to decide connection itself.
     result.headers["connection"] = "close";
 
     result.body = "Hello CGI";
